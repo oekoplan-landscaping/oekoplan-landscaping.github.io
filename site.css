@@ -187,3 +187,5 @@ footer .base{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 .phead.project h1{color:var(--ink);text-transform:none;letter-spacing:0}
 
 @media (min-width:861px){.steps>*:last-child:nth-child(odd){grid-column:1/-1}}
+
+.hero .img video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:2px;background:#dfe3e6}@media (max-width:860px){.hero .img video{aspect-ratio:16/11}}

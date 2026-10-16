@@ -114,7 +114,7 @@
       if (j.module && j.site) {
         MODULE = true; const w = j.site;
         const two = k => [w[k + 'En'] || '', w[k + 'Ar'] || w[k + 'En'] || ''];
-        if (w.heroEn) OFFICE.hero = two('hero'); if (w.heroSubEn) OFFICE.heroSub = two('heroSub');
+        if (w.heroEn) OFFICE.hero = two('hero'); if (w.heroSubEn) OFFICE.heroSub = two('heroSub'); OFFICE.heroImg = w.heroImg || ''; OFFICE.heroVideo = w.heroVideo || '';
         if (w.aboutEn) OFFICE.about = two('about'); if (w.visionEn) OFFICE.vision = two('vision'); if (w.missionEn) OFFICE.mission = two('mission');
         if (w.valuesEn) { const e = w.valuesEn.split(/[,،]/).map(x => x.trim()).filter(Boolean), a = (w.valuesAr || '').split(/[,،]/).map(x => x.trim()).filter(Boolean); OFFICE.values = e.map((x, i) => [x, a[i] || x]); }
         if (Array.isArray(w.stats) && w.stats.length) OFFICE.stats = w.stats.map(x => [+x.n || 0, x.s || '', x.en || '', x.ar || x.en || '']);
@@ -182,9 +182,9 @@
   /* ------------------------------------------------------------------ pages */
   const PAGES = {
     async home(main) {
-      const FEAT = PROJECTS.filter(p => p.featured); const SEL = (FEAT.length ? FEAT : PROJECTS).slice(0, 8); const heroP = SEL[0] || FALLBACK[0];
+      const FEAT = PROJECTS.filter(p => p.featured); const SEL = (FEAT.length ? FEAT : PROJECTS).slice(0, 8); const heroP = PROJECTS.find(p => p.hero) || SEL[0] || FALLBACK[0];
       main.innerHTML = `<section class="hero"><div class="wrap"><div class="txt"><div class="eyebrow">${esc(L('Landscape architecture · Cairo, Egypt', 'عمارة اللاند سكيب · القاهرة'))}</div><h1>${esc(OFFICE.hero ? L(OFFICE.hero[0], OFFICE.hero[1]) : L('Landscape architecture for resorts, residences and public places.', 'عمارة لاند سكيب للمنتجعات والمجمعات السكنية والأماكن العامة.'))}</h1><p>${esc(OFFICE.heroSub ? L(OFFICE.heroSub[0], OFFICE.heroSub[1]) : L('Ökoplan Landscaping stands as an award-winning, pioneering consultancy firm that has been reshaping the landscape architecture scene in Egypt for nearly three decades.', 'مكتب استشاري حائز على جوايز بتلاتين سنة من الشغل المنفّذ في مصر — فريق واحد من أول مشية في الأرض لحد الإشراف في الموقع.'))}</p><div class="btns"><a class="btn" href="${withLang('work.html')}">${esc(L('Our work', 'شغلنا'))} <span aria-hidden="true">${arrow()}</span></a><a class="btn ghost" href="${withLang('services.html')}">${esc(L('Our services', 'خدماتنا'))}</a></div></div>
-        <figure class="img"><img src="${esc(cover(heroP).full || cover(heroP).src)}" alt="${esc(heroP.title)}" fetchpriority="high"><figcaption>${esc(heroP.title)}${heroP.location ? ' — ' + esc(heroP.location) : ''}</figcaption></figure></div></section>
+        <figure class="img ${OFFICE.heroVideo ? 'video' : ''}">${OFFICE.heroVideo ? `<video src="${esc(OFFICE.heroVideo)}" ${OFFICE.heroImg ? `poster="${esc(OFFICE.heroImg)}"` : ''} autoplay muted loop playsinline preload="auto" aria-label="Ökoplan Landscaping"></video>` : `<img src="${esc(OFFICE.heroImg || cover(heroP).full || cover(heroP).src)}" alt="${esc(OFFICE.heroImg ? 'Ökoplan Landscaping' : heroP.title)}" fetchpriority="high">`}${OFFICE.heroImg || OFFICE.heroVideo ? '' : `<figcaption>${esc(heroP.title)}${heroP.location ? ' — ' + esc(heroP.location) : ''}</figcaption>`}</figure></div></section>
       <section class="numband"><div class="wrap">${numbers()}</div></section>
       <section class="sec"><div class="wrap">${sechead(T('selected'), L('Selected projects', 'مشاريع مختارة'), L('Resorts and residences on the coasts, public places in the cities — a few of the places we have shaped.', 'منتجعات ومجمعات على السواحل وأماكن عامة في المدن — شوية من الأماكن اللي شكّلناها.'), T('all'), 'work.html')}<div class="g3">${SEL.map(tile).join('')}</div></div></section>
       <section class="sec alt"><div class="wrap">${sechead(T('special'), L('What we design', 'إيه اللي بنصممه'), L('Eight disciplines, carried by one team inside every project.', 'تماني تخصصات بيشيلها فريق واحد جوه كل مشروع.'), L('How we work', 'إزاي بنشتغل'), 'services.html')}${specGrid()}</div></section>
