@@ -18,7 +18,7 @@
   const withLang = href => { const u = new URL(href, location.href); if (ar()) u.searchParams.set('lang', 'ar'); else u.searchParams.delete('lang'); return u.pathname.replace(/^.*\//, '') + u.search + u.hash; };
 
   /* ------------------------------------------------------------------ content */
-  const TYPES = { hotel: ['Hotels & Resorts', 'فنادق ومنتجعات'], res: ['Residential', 'سكني'], urban: ['Urban Planning', 'تخطيط عمراني'], com: ['Commercial & Leisure', 'تجاري وترفيهي'], edu: ['Education', 'تعليمي'], gov: ['Government', 'حكومي'], park: ['Public Parks', 'حدائق عامة'] };
+  const TYPES = { hotel: ['Hotels & Resorts', 'فنادق ومنتجعات'], res: ['Residential', 'سكني'], urban: ['Urban & City Planning', 'تخطيط عمراني'], com: ['Mixed-Use & Retail', 'متعدد الاستخدامات وتجاري'], office: ['Offices', 'مكاتب'], edu: ['Educational', 'تعليمي'], gov: ['Governmental', 'حكومي'], sport: ['Sports', 'رياضي'], park: ['Public Parks', 'حدائق عامة'] };
   const typeL = k => (TYPES[k] ? L(TYPES[k][0], TYPES[k][1]) : '');
   const SCOPE_AR = { 'Landscape Design': 'تصميم اللاند سكيب', 'Concept Design': 'التصميم المبدئي', 'Schematic Design': 'التصميم التخطيطي', 'Design Development': 'تطوير التصميم', 'Construction Drawings': 'رسومات التنفيذ', 'Tender Documents': 'مستندات الطرح', 'Site Supervision': 'الإشراف على التنفيذ' };
   const svcL = s => (ar() && SCOPE_AR[s]) || s;
@@ -122,10 +122,10 @@
         if (w.email) OFFICE.email = w.email; if (w.phone) OFFICE.phone = w.phone; if (w.addressEn) OFFICE.address = two('address'); if (w.hoursEn) OFFICE.hours = two('hours');
         if (j.services && j.services.steps && j.services.steps.length) OFFICE.steps = j.services.steps.map(x => [x.en, x.ar || x.en, x.textEn, x.textAr || x.textEn, x.note || '']);
         if (j.services && j.services.specs && j.services.specs.length) OFFICE.specialisms = j.services.specs.map(x => [x.icon || 'land', x.en, x.ar || x.en, x.textEn, x.textAr || x.textEn]);
-        if (Array.isArray(j.awards)) OFFICE.awards = j.awards.map(a => [a.img, a.year, a.titleEn, a.titleAr || a.titleEn, a.subEn, a.subAr || a.subEn]);
-        if (Array.isArray(j.collab)) OFFICE.collab = j.collab.map(c => [c.img, c.name, c.projectsEn, c.projectsAr || c.projectsEn]);
-        if (Array.isArray(j.logos)) OFFICE.partners = j.logos.map(l => l.img);
-        if (Array.isArray(j.team)) OFFICE.team = j.team.map(t => t.img);
+        if (Array.isArray(j.awards) && j.awards.length) OFFICE.awards = j.awards.map(a => [a.img, a.year, a.titleEn, a.titleAr || a.titleEn, a.subEn, a.subAr || a.subEn]);
+        if (Array.isArray(j.collab) && j.collab.length) OFFICE.collab = j.collab.map(c => [c.img, c.name, c.projectsEn, c.projectsAr || c.projectsEn]);
+        if (Array.isArray(j.logos) && j.logos.length) OFFICE.partners = j.logos.map(l => l.img);
+        if (Array.isArray(j.team) && j.team.length) OFFICE.team = j.team.map(t => t.img);
       }
     } catch (e) { /* the built-in content stays */ }
     return PROJECTS;

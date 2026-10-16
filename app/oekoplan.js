@@ -2274,7 +2274,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
   const all = () => list(COL).filter(d => d && !d.deleted);
   const one = id => byId(COL, id) || null;
   const ofKind = k => all().filter(d => d.kind === k).sort((a, b) => (a.order || 99) - (b.order || 99) || String(a.title || a.name || '').localeCompare(String(b.title || b.name || '')));
-  const TYPES = { hotel: ['فنادق ومنتجعات', 'Hotels & Resorts'], res: ['سكني', 'Residential'], urban: ['تخطيط عمراني', 'Urban Planning'], com: ['تجاري وترفيهي', 'Commercial & Leisure'], edu: ['تعليمي', 'Education'], gov: ['حكومي', 'Government'], park: ['حدائق عامة', 'Public Parks'] };
+  const TYPES = { hotel: ['فنادق ومنتجعات', 'Hotels & Resorts'], res: ['سكني', 'Residential'], urban: ['تخطيط عمراني', 'Urban & City Planning'], com: ['متعدد الاستخدامات وتجاري', 'Mixed-Use & Retail'], office: ['مكاتب', 'Offices'], edu: ['تعليمي', 'Educational'], gov: ['حكومي', 'Governmental'], sport: ['رياضي', 'Sports'], park: ['حدائق عامة', 'Public Parks'] };
   const SCOPES = ['Landscape Design', 'Concept Design', 'Schematic Design', 'Design Development', 'Construction Drawings', 'Tender Documents', 'Site Supervision'];
 
   /* ------------------------------------------------------------ the defaults (what the website shows until the office edits them) */
@@ -2338,18 +2338,18 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
   };
   const ABS = PUBLIC + 'app/_src/';
   async function seed() {
-    if (!can() || all().length) return 0; const now = nowISO(); let n = 0;
-    await Store.save(COL, Object.assign({}, D.site, { createdAt: now, updatedAt: now })); n++;
-    await Store.save(COL, Object.assign({}, D.svc, { createdAt: now, updatedAt: now })); n++;
-    for (let k = 0; k < D.projects.length; k++) {
+    if (!can()) return 0; const now = nowISO(); let n = 0; const has = k => ofKind(k).length > 0;
+    if (!one('site')) { await Store.save(COL, Object.assign({}, D.site, { createdAt: now, updatedAt: now })); n++; }
+    if (!one('svc')) { await Store.save(COL, Object.assign({}, D.svc, { createdAt: now, updatedAt: now })); n++; }
+    for (let k = 0; k < D.projects.length && !has('project'); k++) {
       const p = D.projects[k]; const order = [p.cover].concat(Array.from({ length: p.n }, (_, j) => j + 1).filter(i => i !== p.cover)); const ids = [];
       for (const i of order) { const fid = `okweb-${p.id}-${i}`; if (!byId('files', fid)) await Store.save('files', { id: fid, name: `${p.title} — ${i}.jpg`, kind: 'render', mime: 'image/jpeg', store: 'thumb', ref: null, enc: null, size: 0, thumb: `${ABS}portfolio/${p.id}/${i}-m.jpg`, full: `${ABS}portfolio/${p.id}/${i}.jpg`, rev: 'Website', websiteId: 'p:' + p.id, projectId: null, createdAt: now }); ids.push(fid); }
       await Store.save(COL, { id: 'p:' + p.id, kind: 'project', title: p.title, client: p.client, location: p.location, year: p.year, type: p.type, services: p.services, aboutEn: p.aboutEn, aboutAr: p.aboutAr, shots: ids, coverId: ids[0], order: k + 1, show: true, createdAt: now, updatedAt: now }); n++;
     }
-    for (let k = 0; k < D.awards.length; k++) { const a = D.awards[k]; await Store.save(COL, { id: 'a:' + a[0], kind: 'award', year: a[1], titleEn: a[2], titleAr: a[3], subEn: a[4], subAr: a[5], img: `${ABS}awards/${a[0]}.png`, order: k + 1, show: true, createdAt: now, updatedAt: now }); n++; }
-    for (let k = 0; k < D.collab.length; k++) { const c = D.collab[k]; await Store.save(COL, { id: 'c:' + c[0], kind: 'collab', name: c[1], projectsEn: c[2], projectsAr: c[3], img: `${ABS}collab/${c[0]}.png`, order: k + 1, show: true, createdAt: now, updatedAt: now }); n++; }
-    for (let k = 0; k < D.logos.length; k++) { await Store.save(COL, { id: 'l:' + D.logos[k], kind: 'logo', name: D.logos[k], img: `${ABS}partners/${D.logos[k]}.png`, order: k + 1, show: true, createdAt: now, updatedAt: now }); n++; }
-    for (let k = 0; k < D.team.length; k++) { await Store.save(COL, { id: 't:' + D.team[k], kind: 'team', img: `${ABS}team/${D.team[k]}.jpg`, order: k + 1, show: true, createdAt: now, updatedAt: now }); n++; }
+    for (let k = 0; k < D.awards.length && !has('award'); k++) { const a = D.awards[k]; await Store.save(COL, { id: 'a:' + a[0], kind: 'award', year: a[1], titleEn: a[2], titleAr: a[3], subEn: a[4], subAr: a[5], img: `${ABS}awards/${a[0]}.png`, order: k + 1, show: true, createdAt: now, updatedAt: now }); n++; }
+    for (let k = 0; k < D.collab.length && !has('collab'); k++) { const c = D.collab[k]; await Store.save(COL, { id: 'c:' + c[0], kind: 'collab', name: c[1], projectsEn: c[2], projectsAr: c[3], img: `${ABS}collab/${c[0]}.png`, order: k + 1, show: true, createdAt: now, updatedAt: now }); n++; }
+    for (let k = 0; k < D.logos.length && !has('logo'); k++) { await Store.save(COL, { id: 'l:' + D.logos[k], kind: 'logo', name: D.logos[k], img: `${ABS}partners/${D.logos[k]}.png`, order: k + 1, show: true, createdAt: now, updatedAt: now }); n++; }
+    for (let k = 0; k < D.team.length && !has('team'); k++) { await Store.save(COL, { id: 't:' + D.team[k], kind: 'team', img: `${ABS}team/${D.team[k]}.jpg`, order: k + 1, show: true, createdAt: now, updatedAt: now }); n++; }
     return n;
   }
 
@@ -2375,7 +2375,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
 
   function page() {
     if (!can()) return `<div class="empty"><b>${esc(L('الصفحة دي للمالك والأدمن', 'This page is for the owner and admins'))}</b></div>`;
-    if (!all().length) return `<div class="empty"><b>${esc(L('محتوى الموقع لسه ما اتجهزش', 'The website content is not set up yet'))}</b>${esc(L('دوس وهنحط المحتوى الحالي للموقع كبداية — وبعدها عدّل براحتك.', 'Tap and the current website content goes in as a start — then edit freely.'))}<div style="margin-top:12px"><button type="button" class="btn p" data-action="okwSeed">${icon('plus')}${esc(L('جهّز محتوى الموقع', 'Set up the website content'))}</button></div></div>`;
+    if (!one('site')) return `<div class="empty"><b>${esc(L('محتوى الموقع لسه ما اتجهزش', 'The website content is not set up yet'))}</b>${esc(L('دوس وهنحط المحتوى الحالي للموقع كبداية — وبعدها عدّل براحتك.', 'Tap and the current website content goes in as a start — then edit freely.'))}<div style="margin-top:12px"><button type="button" class="btn p" data-action="okwSeed">${icon('plus')}${esc(L('جهّز محتوى الموقع', 'Set up the website content'))}</button></div></div>`;
     const t = tab();
     const head = `<div class="okwhead"><div class="okwtabs">${TABS.map(x => `<a href="#/okweb/${x[0]}" class="${t === x[0] ? 'on' : ''}">${esc(L(x[1], x[2]))}</a>`).join('')}</div><div class="grow"></div><a class="btn sm" href="${PUBLIC}${en() ? '' : '?lang=ar'}" target="_blank" rel="noopener">${icon('globe')}${esc(L('افتح الموقع', 'Open the website'))}</a></div>
       <div class="tiny muted" style="margin:-4px 2px 10px">${esc(L('كل تعديل هنا بيوصل الموقع خلال 5 دقايق. مفيش أسعار ولا مبالغ على الموقع.', 'Every change here reaches the website within 5 minutes. No prices or amounts on the website.'))}</div>`;
@@ -2480,7 +2480,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
 .okwshots{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}.okws{position:relative;border:2px solid transparent;border-radius:10px;overflow:hidden;background:var(--surface-2,var(--bg))}.okws.cov{border-color:#38a599}.okws img{width:100%;aspect-ratio:4/3;object-fit:cover}.okwsa{display:flex;flex-wrap:wrap;gap:4px;padding:6px}
 </style>`);
   /* the first admin to open the page with nothing in it gets the current content (once) */
-  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { if (S.route && S.route.view === 'okweb' && can() && !all().length && !window.__okwSeeding && S.staffReady) { window.__okwSeeding = 1; seed().then(n => { if (n) { toast(L('محتوى الموقع الحالي اتحط كبداية', 'The current website content is in as a start')); rerender(); } }); } });
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { if (S.route && S.route.view === 'okweb' && can() && !one('site') && !window.__okwSeeding && S.staffReady) { window.__okwSeeding = 1; seed().then(n => { if (n) { toast(L('محتوى الموقع الحالي اتحط كبداية', 'The current website content is in as a start')); rerender(); } }); } });
 })();
 
 /* 16 Oct: group names in the side menu never get cut to «Com…» — they wrap, and the count pill stays small */
