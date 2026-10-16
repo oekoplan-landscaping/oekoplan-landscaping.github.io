@@ -185,3 +185,5 @@ footer .base{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 .filters .count{margin:0;align-self:flex-end}.more{display:flex;justify-content:center;margin-top:clamp(20px,3vw,32px)}
 @media (max-width:860px){.frow{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch;width:100%}.frow::-webkit-scrollbar{display:none}.frow button{white-space:nowrap;flex:0 0 auto}.flbl{flex:0 0 auto}}
 .phead.project h1{color:var(--ink);text-transform:none;letter-spacing:0}
+
+@media (min-width:861px){.steps>*:last-child:nth-child(odd){grid-column:1/-1}}
