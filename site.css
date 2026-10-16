@@ -178,3 +178,4 @@ footer .base{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 .marq .pp:hover{transform:translateY(-4px) scale(1.04);box-shadow:0 10px 24px rgba(0,0,0,.12)}.marq .pp:hover img{filter:none;transform:scale(1.06)}
 @media (max-width:860px){.marq .pp{width:84px;height:84px;border-radius:10px}}
 .teamlist{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:-10px 0 22px}.teamlist .chip{border:1px solid var(--teal);color:var(--teal);border-radius:2px;padding:6px 12px;font-size:13px;letter-spacing:.04em}
+.marq.static{-webkit-mask-image:none;mask-image:none}.marq.static .tr{animation:none;flex-wrap:wrap;width:auto}
