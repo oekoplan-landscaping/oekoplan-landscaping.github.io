@@ -149,7 +149,7 @@
   const langHref = () => { const u = new URL(location.href); if (ar()) u.searchParams.delete('lang'); else u.searchParams.set('lang', 'ar'); return u.pathname.replace(/^.*\//, '') + u.search + u.hash; };
   function footer() {
     const el = document.createElement('footer'); const y = new Date().getFullYear();
-    el.innerHTML = `<div class="wrap"><div class="cols"><div class="lk"><img src="${SRC}brand/lockup-dark.png" alt="Ökoplan Landscaping"><p>${esc(L('Landscape architecture consultancy — Cairo, Egypt. Resorts, residences and public places since the 1990s.', 'مكتب استشاري لعمارة اللاند سكيب — القاهرة. منتجعات ومجمعات سكنية وأماكن عامة من التسعينات.'))}</p></div>
+    el.innerHTML = `<div class="wrap"><div class="cols"><div class="lk"><img src="${SRC}brand/lockup.png" alt="Ökoplan Landscaping"><p>${esc(L('Landscape architecture consultancy — Cairo, Egypt. Resorts, residences and public places since the 1990s.', 'مكتب استشاري لعمارة اللاند سكيب — القاهرة. منتجعات ومجمعات سكنية وأماكن عامة من التسعينات.'))}</p></div>
       <div><b>${esc(T('office'))}</b>${NAVS.slice(1).map(n => `<a href="${withLang(n[0])}">${esc(L(n[1], n[2]))}</a>`).join('')}</div>
       <div><b>${esc(T('sectors'))}</b>${Object.keys(TYPES).slice(0, 5).map(k => `<a href="${withLang('work.html')}">${esc(typeL(k))}</a>`).join('')}</div>
       <div><b>${esc(L('Contact', 'تواصل'))}</b><a href="mailto:${OFFICE.email}">${OFFICE.email}</a><span>${esc(L(OFFICE.address[0], OFFICE.address[1]))}</span><a href="app/" rel="nofollow" class="signin">${esc(T('signin'))} ${arrow()}</a></div></div>
