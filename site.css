@@ -189,3 +189,8 @@ footer .base{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 @media (min-width:861px){.steps>*:last-child:nth-child(odd){grid-column:1/-1}}
 
 .hero .img video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:2px;background:#dfe3e6}@media (max-width:860px){.hero .img video{aspect-ratio:16/11}}
+
+/* an own hero picture (a plan, a drawing): shown whole, never cropped, on a soft paper tone */
+.hero .img.own{background:#f4f6f7;border:1px solid var(--line);border-radius:2px;padding:clamp(8px,1vw,14px);display:flex;align-items:center;justify-content:center;max-height:min(72vh,760px)}
+.hero .img.own img{aspect-ratio:auto;height:auto;max-height:calc(min(72vh,760px) - 2*clamp(8px,1vw,14px));object-fit:contain;width:100%}
+@media (max-width:860px){.hero .img.own{max-height:none}.hero .img.own img{max-height:none}}
