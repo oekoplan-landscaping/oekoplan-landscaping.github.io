@@ -104,16 +104,34 @@
   const T = k => (UI[k] ? L(UI[k][0], UI[k][1]) : k);
 
   /* ------------------------------------------------------------------ data */
-  let PROJECTS = FALLBACK.slice();
+  let PROJECTS = FALLBACK.slice(); let MODULE = false;
+  const pic = (v, folder, ext) => (/^(https?:)?\//.test(String(v || '')) ? v : `${SRC}${folder}/${v}.${ext}`);
   async function loadProjects() {
     try {
-      const r = await fetch(API + '?a=projects', { cache: 'default' }); if (!r.ok) throw new Error(r.status);
-      const j = await r.json(); if (j && j.ok && Array.isArray(j.projects) && j.projects.length) PROJECTS = j.projects.filter(p => p.shots && p.shots.length);
-    } catch (e) { /* the fallback stays */ }
+      const r = await fetch(API + '?a=site', { cache: 'default' }); if (!r.ok) throw new Error(r.status);
+      const j = await r.json(); if (!j || !j.ok) throw new Error('bad');
+      if (Array.isArray(j.projects) && j.projects.length) PROJECTS = j.projects.filter(p => p.shots && p.shots.length);
+      if (j.module && j.site) {
+        MODULE = true; const w = j.site;
+        const two = k => [w[k + 'En'] || '', w[k + 'Ar'] || w[k + 'En'] || ''];
+        if (w.heroEn) OFFICE.hero = two('hero'); if (w.heroSubEn) OFFICE.heroSub = two('heroSub');
+        if (w.aboutEn) OFFICE.about = two('about'); if (w.visionEn) OFFICE.vision = two('vision'); if (w.missionEn) OFFICE.mission = two('mission');
+        if (w.valuesEn) { const e = w.valuesEn.split(/[,،]/).map(x => x.trim()).filter(Boolean), a = (w.valuesAr || '').split(/[,،]/).map(x => x.trim()).filter(Boolean); OFFICE.values = e.map((x, i) => [x, a[i] || x]); }
+        if (Array.isArray(w.stats) && w.stats.length) OFFICE.stats = w.stats.map(x => [+x.n || 0, x.s || '', x.en || '', x.ar || x.en || '']);
+        if (w.leaderEn) OFFICE.leader = two('leader'); if (w.leader2En) OFFICE.leader2 = two('leader2');
+        if (w.email) OFFICE.email = w.email; if (w.phone) OFFICE.phone = w.phone; if (w.addressEn) OFFICE.address = two('address'); if (w.hoursEn) OFFICE.hours = two('hours');
+        if (j.services && j.services.steps && j.services.steps.length) OFFICE.steps = j.services.steps.map(x => [x.en, x.ar || x.en, x.textEn, x.textAr || x.textEn, x.note || '']);
+        if (j.services && j.services.specs && j.services.specs.length) OFFICE.specialisms = j.services.specs.map(x => [x.icon || 'land', x.en, x.ar || x.en, x.textEn, x.textAr || x.textEn]);
+        if (Array.isArray(j.awards)) OFFICE.awards = j.awards.map(a => [a.img, a.year, a.titleEn, a.titleAr || a.titleEn, a.subEn, a.subAr || a.subEn]);
+        if (Array.isArray(j.collab)) OFFICE.collab = j.collab.map(c => [c.img, c.name, c.projectsEn, c.projectsAr || c.projectsEn]);
+        if (Array.isArray(j.logos)) OFFICE.partners = j.logos.map(l => l.img);
+        if (Array.isArray(j.team)) OFFICE.team = j.team.map(t => t.img);
+      }
+    } catch (e) { /* the built-in content stays */ }
     return PROJECTS;
   }
   const cover = p => (p.shots && p.shots[0]) || { src: '', full: '' };
-  const story = p => { const s = STORY[p.id]; return s ? [L(s[0], s[1])] : [p.about].filter(Boolean); };
+  const story = p => { if (p.aboutEn || p.aboutAr) return [L(p.aboutEn || p.aboutAr, p.aboutAr || p.aboutEn)]; const s = STORY[p.id]; return s ? [L(s[0], s[1])] : [p.about].filter(Boolean); };
 
   /* ------------------------------------------------------------------ chrome */
   const arrow = () => (ar() ? '←' : '→');
@@ -150,9 +168,9 @@
   const tile = p => `<a class="card rv" href="${withLang('work.html?p=' + encodeURIComponent(p.id))}"><div class="ph"><img data-src="${esc(cover(p).src)}" alt="${esc(p.title)}" loading="lazy"><span class="pill">${esc(typeL(p.type) || L('Landscape', 'لاند سكيب'))}</span></div><div class="cap"><b>${esc(p.title)}</b><small>${esc([p.location, p.year].filter(Boolean).join(' · '))}</small><span class="go">${esc(T('view'))} ${arrow()}</span></div></a>`;
   const numbers = () => `<div class="nums">${OFFICE.stats.map(s => `<div class="num rv"><b><span data-count="${s[0]}">0</span><i>${s[1]}</i></b><span>${esc(L(s[2], s[3]))}</span></div>`).join('')}</div>`;
   function countUp() { const io = new IntersectionObserver(es => es.forEach(e => { if (!e.isIntersecting) return; io.unobserve(e.target); const el = e.target, to = +el.dataset.count, t0 = performance.now(); const tick = t => { const k = Math.min(1, (t - t0) / 1400), v = Math.round(to * (1 - Math.pow(1 - k, 3))); el.textContent = v; if (k < 1) requestAnimationFrame(tick); }; requestAnimationFrame(tick); })); $$('[data-count]').forEach(el => io.observe(el)); }
-  const partnersMarquee = () => { const row = OFFICE.partners.map(k => `<img src="${SRC}partners/${k}.png" alt="" loading="lazy">`).join(''); return `<div class="marq" aria-label="${esc(T('partners'))}"><div class="tr">${row}${row}</div></div>`; };
-  const awardCards = n => `<div class="g3">${OFFICE.awards.slice(0, n || 99).map(a => `<div class="awc rv"><img src="${SRC}awards/${a[0]}.png" alt=""><span class="y">${a[1]}</span><b>${esc(L(a[2], a[3]))}</b><small>${esc(L(a[4], a[5]))}</small></div>`).join('')}</div>`;
-  const collabGrid = () => `<div class="g3 collab">${OFFICE.collab.map(c => `<div class="cc rv"><img src="${SRC}collab/${c[0]}.png" alt="${esc(c[1])}"><div><b>${esc(c[1])}</b><small>${esc(L(c[2], c[3]))}</small></div></div>`).join('')}</div>`;
+  const partnersMarquee = () => { const row = OFFICE.partners.map(k => `<img src="${esc(pic(k, 'partners', 'png'))}" alt="" loading="lazy">`).join(''); return `<div class="marq" aria-label="${esc(T('partners'))}"><div class="tr">${row}${row}</div></div>`; };
+  const awardCards = n => `<div class="g3">${OFFICE.awards.slice(0, n || 99).map(a => `<div class="awc rv"><img src="${esc(pic(a[0], 'awards', 'png'))}" alt=""><span class="y">${a[1]}</span><b>${esc(L(a[2], a[3]))}</b><small>${esc(L(a[4], a[5]))}</small></div>`).join('')}</div>`;
+  const collabGrid = () => `<div class="g3 collab">${OFFICE.collab.map(c => `<div class="cc rv"><img src="${esc(pic(c[0], 'collab', 'png'))}" alt="${esc(c[1])}"><div><b>${esc(c[1])}</b><small>${esc(L(c[2], c[3]))}</small></div></div>`).join('')}</div>`;
   const specGrid = () => `<div class="g4 spec">${OFFICE.specialisms.map(s => `<div class="sc rv"><span class="ico">${ic(s[0])}</span><b>${esc(L(s[1], s[2]))}</b><small>${esc(L(s[3], s[4]))}</small></div>`).join('')}</div>`;
   const stepsGrid = () => `<div class="steps">${OFFICE.steps.map((s, i) => `<div class="step rv"><span class="n">${String(i + 1).padStart(2, '0')}</span><div><b>${esc(L(s[0], s[1]))}</b><p>${esc(L(s[2], s[3]))}</p><small>${esc(s[4])}</small></div></div>`).join('')}</div>`;
   const sectorsRow = () => `<div class="chips">${Object.keys(TYPES).map(k => `<span class="rv">${esc(typeL(k))}</span>`).join('')}</div>`;
@@ -163,7 +181,7 @@
   const PAGES = {
     async home(main) {
       const heroP = PROJECTS[0] || FALLBACK[0];
-      main.innerHTML = `<section class="hero"><div class="wrap"><div class="txt"><div class="eyebrow">${esc(L('Landscape architecture · Cairo, Egypt', 'عمارة اللاند سكيب · القاهرة'))}</div><h1>${esc(L('Landscape architecture for resorts, residences and public places.', 'عمارة لاند سكيب للمنتجعات والمجمعات السكنية والأماكن العامة.'))}</h1><p>${esc(L('An award-winning consultancy with three decades of built work across Egypt — one team from the first site walk to supervision on site.', 'مكتب استشاري حائز على جوايز بتلاتين سنة من الشغل المنفّذ في مصر — فريق واحد من أول مشية في الأرض لحد الإشراف في الموقع.'))}</p><div class="btns"><a class="btn" href="${withLang('work.html')}">${esc(L('Our work', 'شغلنا'))} <span aria-hidden="true">${arrow()}</span></a><a class="btn ghost" href="${withLang('services.html')}">${esc(L('Our services', 'خدماتنا'))}</a></div></div>
+      main.innerHTML = `<section class="hero"><div class="wrap"><div class="txt"><div class="eyebrow">${esc(L('Landscape architecture · Cairo, Egypt', 'عمارة اللاند سكيب · القاهرة'))}</div><h1>${esc(OFFICE.hero ? L(OFFICE.hero[0], OFFICE.hero[1]) : L('Landscape architecture for resorts, residences and public places.', 'عمارة لاند سكيب للمنتجعات والمجمعات السكنية والأماكن العامة.'))}</h1><p>${esc(OFFICE.heroSub ? L(OFFICE.heroSub[0], OFFICE.heroSub[1]) : L('An award-winning consultancy with three decades of built work across Egypt — one team from the first site walk to supervision on site.', 'مكتب استشاري حائز على جوايز بتلاتين سنة من الشغل المنفّذ في مصر — فريق واحد من أول مشية في الأرض لحد الإشراف في الموقع.'))}</p><div class="btns"><a class="btn" href="${withLang('work.html')}">${esc(L('Our work', 'شغلنا'))} <span aria-hidden="true">${arrow()}</span></a><a class="btn ghost" href="${withLang('services.html')}">${esc(L('Our services', 'خدماتنا'))}</a></div></div>
         <figure class="img"><img src="${esc(cover(heroP).full || cover(heroP).src)}" alt="${esc(heroP.title)}" fetchpriority="high"><figcaption>${esc(heroP.title)}${heroP.location ? ' — ' + esc(heroP.location) : ''}</figcaption></figure></div></section>
       <section class="numband"><div class="wrap">${numbers()}</div></section>
       <section class="sec"><div class="wrap">${sechead(T('selected'), L('Selected projects', 'مشاريع مختارة'), L('Resorts and residences on the coasts, public places in the cities — a few of the places we have shaped.', 'منتجعات ومجمعات على السواحل وأماكن عامة في المدن — شوية من الأماكن اللي شكّلناها.'), T('all'), 'work.html')}<div class="g3">${PROJECTS.slice(0, 6).map(tile).join('')}</div></div></section>
@@ -219,15 +237,15 @@
       <section class="wrap"><figure class="wide rv"><img src="${esc(cover(h).full || cover(h).src)}" alt="${esc(h.title)}"><figcaption>${esc(h.title)}${h.location && !h.title.includes(h.location.split(',')[0]) ? ' — ' + esc(h.location) : ''}</figcaption></figure></section>
       <section class="numband"><div class="wrap">${numbers()}</div></section>
       <section class="sec"><div class="wrap"><div class="g3 vm"><div class="vmc rv"><div class="eyebrow">${esc(L('Vision', 'رؤيتنا'))}</div><p>${esc(L(OFFICE.vision[0], OFFICE.vision[1]))}</p></div><div class="vmc rv"><div class="eyebrow">${esc(L('Mission', 'مهمتنا'))}</div><p>${esc(L(OFFICE.mission[0], OFFICE.mission[1]))}</p></div><div class="vmc rv"><div class="eyebrow">${esc(L('Values', 'قيمنا'))}</div><div class="chips sm">${OFFICE.values.map(v => `<span>${esc(L(v[0], v[1]))}</span>`).join('')}</div></div></div></div></section>
-      <section class="sec alt"><div class="wrap">${sechead(T('leadership'), L('Dr. Tarek Sobhy', 'د. طارق صبحي'))}<div class="lead2"><div class="ph rv"><img src="${SRC}brand/tarek.jpg" alt="Dr. Tarek Sobhy"></div><div class="rv"><p class="big">${esc(L('Founder and principal. In 2019 he received the first Lifetime Achievement Award given by Landscape Middle East — a recognition of three decades shaping the discipline in Egypt and the region.', 'المؤسس ورئيس المكتب. سنة 2019 استلم أول جايزة إنجاز مدى الحياة بتمنحها Landscape Middle East — تقدير لتلاتين سنة من تشكيل المهنة في مصر والمنطقة.'))}</p><p>${esc(L('He leads every project personally from the first site walk, with a studio of more than ninety landscape architects, engineers and site supervisors behind him.', 'بيقود كل مشروع بنفسه من أول مشية في الأرض، ووراه مكتب فيه أكتر من تسعين مهندس لاند سكيب ومهندس ومشرف موقع.'))}</p><div class="name"><img src="${SRC}brand/sig.png" alt=""><div><b>Dr. Tarek Sobhy</b><small>${esc(L('Founder & Principal', 'المؤسس ورئيس المكتب'))}</small></div></div></div></div></div></section>
-      <section class="sec"><div class="wrap">${sechead(T('team'), L('Ninety people, one studio', 'تسعين شخص ومكتب واحد'))}<div class="team rv">${OFFICE.team.map(k => `<img src="${SRC}team/${k}.jpg" alt="" loading="lazy">`).join('')}</div></div></section>
+      <section class="sec alt"><div class="wrap">${sechead(T('leadership'), L('Dr. Tarek Sobhy', 'د. طارق صبحي'))}<div class="lead2"><div class="ph rv"><img src="${SRC}brand/tarek.jpg" alt="Dr. Tarek Sobhy"></div><div class="rv"><p class="big">${esc(OFFICE.leader ? L(OFFICE.leader[0], OFFICE.leader[1]) : L('Founder and principal. In 2019 he received the first Lifetime Achievement Award given by Landscape Middle East — a recognition of three decades shaping the discipline in Egypt and the region.', 'المؤسس ورئيس المكتب. سنة 2019 استلم أول جايزة إنجاز مدى الحياة بتمنحها Landscape Middle East — تقدير لتلاتين سنة من تشكيل المهنة في مصر والمنطقة.'))}</p><p>${esc(OFFICE.leader2 ? L(OFFICE.leader2[0], OFFICE.leader2[1]) : L('He leads every project personally from the first site walk, with a studio of more than ninety landscape architects, engineers and site supervisors behind him.', 'بيقود كل مشروع بنفسه من أول مشية في الأرض، ووراه مكتب فيه أكتر من تسعين مهندس لاند سكيب ومهندس ومشرف موقع.'))}</p><div class="name"><img src="${SRC}brand/sig.png" alt=""><div><b>Dr. Tarek Sobhy</b><small>${esc(L('Founder & Principal', 'المؤسس ورئيس المكتب'))}</small></div></div></div></div></div></section>
+      <section class="sec"><div class="wrap">${sechead(T('team'), L('Ninety people, one studio', 'تسعين شخص ومكتب واحد'))}<div class="team rv">${OFFICE.team.map(k => `<img src="${esc(pic(k, 'team', 'jpg'))}" alt="" loading="lazy">`).join('')}</div></div></section>
       <section class="sec alt"><div class="wrap">${sechead(T('awards'), L('Awards & honours', 'جوايز وتكريمات'))}${awardCards()}</div></section>
       <section class="sec"><div class="wrap">${sechead(T('collab'), L('Alongside the world\'s studios', 'جنب مكاتب العالم'))}${collabGrid()}</div></section>
       <section class="sec alt"><div class="wrap">${sechead(T('partners'), L('Developers and operators we work with', 'المطوّرين والمشغّلين اللي بنشتغل معاهم'))}</div>${partnersMarquee()}</section>`;
       main.appendChild(band());
     },
     async contact(main) {
-      main.innerHTML = pagehead(L('Contact', 'تواصل معانا'), T('talk'), T('talkSub')) + `<section class="sec tight"><div class="wrap contact"><div class="info rv"><div class="ib"><small>${esc(T('mail'))}</small><a href="mailto:${OFFICE.email}">${OFFICE.email}</a></div><div class="ib"><small>${esc(T('visit'))}</small><span>${esc(L(OFFICE.address[0], OFFICE.address[1]))}</span></div><div class="ib"><small>${esc(L('Working hours', 'مواعيد العمل'))}</small><span>${esc(L('Sunday – Thursday, 9:00 – 17:00', 'الأحد – الخميس، 9:00 – 17:00'))}</span></div></div>
+      main.innerHTML = pagehead(L('Contact', 'تواصل معانا'), T('talk'), T('talkSub')) + `<section class="sec tight"><div class="wrap contact"><div class="info rv"><div class="ib"><small>${esc(T('mail'))}</small><a href="mailto:${OFFICE.email}">${OFFICE.email}</a></div><div class="ib"><small>${esc(T('visit'))}</small><span>${esc(L(OFFICE.address[0], OFFICE.address[1]))}</span></div>${OFFICE.phone ? `<div class="ib"><small>${esc(L('Phone', 'التليفون'))}</small><a href="tel:${esc(OFFICE.phone)}" dir="ltr">${esc(OFFICE.phone)}</a></div>` : ''}<div class="ib"><small>${esc(L('Working hours', 'مواعيد العمل'))}</small><span>${esc(OFFICE.hours ? L(OFFICE.hours[0], OFFICE.hours[1]) : L('Sunday – Thursday, 9:00 – 17:00', 'الأحد – الخميس، 9:00 – 17:00'))}</span></div></div>
         <form class="form rv" id="f" novalidate><div class="f"><label for="fn">${esc(T('fName'))}</label><input id="fn" name="name" required autocomplete="name"></div><div class="f"><label for="fc">${esc(T('fCompany'))}</label><input id="fc" name="company" autocomplete="organization"></div>
           <div class="f"><label for="fe">${esc(T('fEmail'))}</label><input id="fe" name="email" type="email" autocomplete="email" inputmode="email"></div><div class="f"><label for="fp">${esc(T('fPhone'))}</label><input id="fp" name="phone" type="tel" autocomplete="tel" inputmode="tel" dir="ltr"></div>
           <div class="f"><label for="fl">${esc(T('fLocation'))}</label><input id="fl" name="location"></div><div class="f"><label for="ft">${esc(T('fType'))}</label><select id="ft" name="type"><option value="">${esc(T('choose'))}</option>${Object.keys(TYPES).map(k => `<option value="${k}">${esc(typeL(k))}</option>`).join('')}</select></div>
@@ -249,7 +267,7 @@
     document.documentElement.lang = ar() ? 'ar' : 'en'; document.documentElement.dir = ar() ? 'rtl' : 'ltr';
     const page = document.body.dataset.page || 'home'; const main = $('#main') || document.body.appendChild(Object.assign(document.createElement('main'), { id: 'main' }));
     nav();
-    if (page !== 'contact') await loadProjects();
+    await loadProjects();
     await PAGES[page](main);
     footer(); lazy(); reveal(); if ($('[data-count]')) countUp();
     const tt = { home: ['Ökoplan Landscaping — Landscape architecture, Cairo', 'أوكوبلان لتنسيق المواقع — عمارة اللاند سكيب، القاهرة'], work: ['Projects — Ökoplan Landscaping', 'المشاريع — أوكوبلان'], services: ['Services — Ökoplan Landscaping', 'الخدمات — أوكوبلان'], studio: ['The studio — Ökoplan Landscaping', 'المكتب — أوكوبلان'], contact: ['Contact — Ökoplan Landscaping', 'تواصل معانا — أوكوبلان'] };
