@@ -108,7 +108,7 @@
   const pic = (v, folder, ext) => (/^(https?:)?\//.test(String(v || '')) ? v : `${SRC}${folder}/${v}.${ext}`);
   async function loadProjects() {
     try {
-      const r = await fetch(API + '?a=site', { cache: 'default' }); if (!r.ok) throw new Error(r.status);
+      const r = await fetch(API + '?a=site&_=' + Math.floor(Date.now() / 30000), { cache: 'no-store' }); if (!r.ok) throw new Error(r.status);
       const j = await r.json(); if (!j || !j.ok) throw new Error('bad');
       if (Array.isArray(j.projects) && j.projects.length) PROJECTS = j.projects.filter(p => p.shots && p.shots.length);
       if (j.module && j.site) {
