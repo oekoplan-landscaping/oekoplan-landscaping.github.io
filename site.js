@@ -195,7 +195,7 @@
       const id = qs.get('p'); const p = id && PROJECTS.find(x => x.id === id);
       if (p) return PAGES.project(main, p);
       const types = Array.from(new Set(PROJECTS.map(x => x.type).filter(Boolean)));
-      const locs = Array.from(new Set(PROJECTS.map(x => (x.location || '').split(',')[0].trim()).filter(Boolean)));
+      const lc = {}; PROJECTS.forEach(x => { const k = (x.location || '').split(',')[0].trim(); if (k) lc[k] = (lc[k] || 0) + 1; }); const locs = Object.keys(lc).sort((a, b) => lc[b] - lc[a]).slice(0, 8);
       main.innerHTML = pagehead(L('Work', 'المشاريع'), L('Projects', 'المشاريع'), L('Published work from the studio\'s gallery — filter by sector or city.', 'شغل منشور من معرض المكتب — فلتر بالقطاع أو المدينة.')) + `<section class="sec tight"><div class="wrap">
         <div class="filters rv" id="filters"><button class="on" data-f="">${esc(T('all'))}</button>${types.length > 1 ? types.map(t => `<button data-f="t:${esc(t)}">${esc(typeL(t))}</button>`).join('') : ''}${locs.length > 1 ? '<span class="sep"></span>' + locs.map(l => `<button data-f="l:${esc(l)}">${esc(l)}</button>`).join('') : ''}<span class="count" id="count"></span></div>
         <div class="g3" id="grid"></div></div></section>`;
