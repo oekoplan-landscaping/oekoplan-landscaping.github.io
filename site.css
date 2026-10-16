@@ -181,7 +181,7 @@ footer .base{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
 .marq.static{-webkit-mask-image:none;mask-image:none}.marq.static .tr{animation:none;flex-wrap:wrap;width:auto}
 
 /* filters: two labelled rows, scrollable on the phone; load more */
-.filters{flex-direction:column;align-items:stretch;gap:10px}.frow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.flbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);min-width:56px}html[dir=rtl] .flbl{letter-spacing:0}
+.filters{flex-direction:column;align-items:stretch;gap:10px}.frow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-width:0;max-width:100%}.filters{min-width:0;max-width:100%}.flbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);min-width:56px}html[dir=rtl] .flbl{letter-spacing:0}
 .filters .count{margin:0;align-self:flex-end}.more{display:flex;justify-content:center;margin-top:clamp(20px,3vw,32px)}
-@media (max-width:860px){.frow{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 calc(var(--gut)*-1);padding-inline:var(--gut)}.frow::-webkit-scrollbar{display:none}.frow button{white-space:nowrap;flex:0 0 auto}.flbl{flex:0 0 auto}}
+@media (max-width:860px){.frow{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch;width:100%}.frow::-webkit-scrollbar{display:none}.frow button{white-space:nowrap;flex:0 0 auto}.flbl{flex:0 0 auto}}
 .phead.project h1{color:var(--ink);text-transform:none;letter-spacing:0}
