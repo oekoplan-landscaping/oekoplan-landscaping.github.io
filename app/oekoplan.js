@@ -2482,3 +2482,6 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
   /* the first admin to open the page with nothing in it gets the current content (once) */
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { if (S.route && S.route.view === 'okweb' && can() && !all().length && !window.__okwSeeding && S.staffReady) { window.__okwSeeding = 1; seed().then(n => { if (n) { toast(L('محتوى الموقع الحالي اتحط كبداية', 'The current website content is in as a start')); rerender(); } }); } });
 })();
+
+/* 16 Oct: group names in the side menu never get cut to «Com…» — they wrap, and the count pill stays small */
+document.head.insertAdjacentHTML('beforeend', '<style id="ok-ngt">#nav .ngh .ngt{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.2;word-break:normal}#nav .ngh .ngc{flex:none;min-width:22px;max-width:44px;padding:0 7px}</style>');
