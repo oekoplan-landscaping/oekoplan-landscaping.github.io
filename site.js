@@ -9,7 +9,7 @@
   const SRC = 'app/_src/';
   const qs = new URLSearchParams(location.search);
   let LANG = qs.get('lang') || (() => { try { return localStorage.getItem('ok.lang'); } catch (e) { return null; } })() || 'en';
-  if (LANG !== 'ar') LANG = 'en'; try { localStorage.setItem('ok.lang', LANG); } catch (e) { /* ignore */ }
+  LANG = 'en'; /* English only (Mahmoud, 16 Oct) — the Arabic strings stay in the code for later */ try { localStorage.setItem('ok.lang', LANG); } catch (e) { /* ignore */ }
   const ar = () => LANG === 'ar';
   const L = (a, b) => (ar() ? (b == null ? a : b) : a);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -140,7 +140,7 @@
     const el = document.createElement('header'); el.className = 'nav'; el.id = 'nav';
     el.innerHTML = `<div class="wrap"><a class="brand" href="${withLang('index.html')}" aria-label="Ökoplan Landscaping"><img src="${SRC}brand/lockup.png" alt="Ökoplan Landscaping"></a>
       <nav class="menu" id="menu">${NAVS.slice(0, 4).map(n => `<a href="${withLang(n[0])}" class="${here === n[0] ? 'on' : ''}">${esc(L(n[1], n[2]))}</a>`).join('')}
-        <a class="lang" href="${langHref()}" hreflang="${ar() ? 'en' : 'ar'}">${ar() ? 'EN' : 'عربي'}</a><a class="btn sm" href="${withLang('contact.html')}">${esc(L('Contact us', 'تواصل معانا'))}</a></nav>
+        <a class="btn sm" href="${withLang('contact.html')}">${esc(L('Contact us', 'تواصل معانا'))}</a></nav>
       <button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><i></i><i></i><i></i></button></div>`;
     document.body.prepend(el);
     $('#burger').addEventListener('click', () => { const o = el.classList.toggle('open'); $('#burger').setAttribute('aria-expanded', o ? 'true' : 'false'); document.body.style.overflow = o ? 'hidden' : ''; });
