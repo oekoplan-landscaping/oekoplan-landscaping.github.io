@@ -2338,18 +2338,18 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
   };
   const ABS = PUBLIC + 'app/_src/';
   async function seed() {
-    if (!can()) return 0; const now = nowISO(); let n = 0; const has = k => ofKind(k).length > 0;
+    if (!can()) return 0; const now = nowISO(); let n = 0; const had = { project: ofKind('project').length > 0 }; const have = id => !!byId(COL, id);
     if (!one('site')) { await Store.save(COL, Object.assign({}, D.site, { createdAt: now, updatedAt: now })); n++; }
     if (!one('svc')) { await Store.save(COL, Object.assign({}, D.svc, { createdAt: now, updatedAt: now })); n++; }
-    for (let k = 0; k < D.projects.length && !has('project'); k++) {
+    for (let k = 0; k < D.projects.length && !had.project; k++) {
       const p = D.projects[k]; const order = [p.cover].concat(Array.from({ length: p.n }, (_, j) => j + 1).filter(i => i !== p.cover)); const ids = [];
       for (const i of order) { const fid = `okweb-${p.id}-${i}`; if (!byId('files', fid)) await Store.save('files', { id: fid, name: `${p.title} — ${i}.jpg`, kind: 'render', mime: 'image/jpeg', store: 'thumb', ref: null, enc: null, size: 0, thumb: `${ABS}portfolio/${p.id}/${i}-m.jpg`, full: `${ABS}portfolio/${p.id}/${i}.jpg`, rev: 'Website', websiteId: 'p:' + p.id, projectId: null, createdAt: now }); ids.push(fid); }
       await Store.save(COL, { id: 'p:' + p.id, kind: 'project', title: p.title, client: p.client, location: p.location, year: p.year, type: p.type, services: p.services, aboutEn: p.aboutEn, aboutAr: p.aboutAr, shots: ids, coverId: ids[0], order: k + 1, show: true, createdAt: now, updatedAt: now }); n++;
     }
-    for (let k = 0; k < D.awards.length && !has('award'); k++) { const a = D.awards[k]; await Store.save(COL, { id: 'a:' + a[0], kind: 'award', year: a[1], titleEn: a[2], titleAr: a[3], subEn: a[4], subAr: a[5], img: `${ABS}awards/${a[0]}.png`, order: k + 1, show: true, createdAt: now, updatedAt: now }); n++; }
-    for (let k = 0; k < D.collab.length && !has('collab'); k++) { const c = D.collab[k]; await Store.save(COL, { id: 'c:' + c[0], kind: 'collab', name: c[1], projectsEn: c[2], projectsAr: c[3], img: `${ABS}collab/${c[0]}.png`, order: k + 1, show: true, createdAt: now, updatedAt: now }); n++; }
-    for (let k = 0; k < D.logos.length && !has('logo'); k++) { await Store.save(COL, { id: 'l:' + D.logos[k], kind: 'logo', name: D.logos[k], img: `${ABS}partners/${D.logos[k]}.png`, order: k + 1, show: true, createdAt: now, updatedAt: now }); n++; }
-    for (let k = 0; k < D.team.length && !has('team'); k++) { await Store.save(COL, { id: 't:' + D.team[k], kind: 'team', img: `${ABS}team/${D.team[k]}.jpg`, order: k + 1, show: true, createdAt: now, updatedAt: now }); n++; }
+    for (let k = 0; k < D.awards.length; k++) { const a = D.awards[k]; if (have('a:' + a[0])) continue; await Store.save(COL, { id: 'a:' + a[0], kind: 'award', year: a[1], titleEn: a[2], titleAr: a[3], subEn: a[4], subAr: a[5], img: `${ABS}awards/${a[0]}.png`, order: k + 1, show: true, createdAt: now, updatedAt: now }); n++; }
+    for (let k = 0; k < D.collab.length; k++) { const c = D.collab[k]; if (have('c:' + c[0])) continue; await Store.save(COL, { id: 'c:' + c[0], kind: 'collab', name: c[1], projectsEn: c[2], projectsAr: c[3], img: `${ABS}collab/${c[0]}.png`, order: k + 1, show: true, createdAt: now, updatedAt: now }); n++; }
+    for (let k = 0; k < D.logos.length; k++) { if (have('l:' + D.logos[k])) continue; await Store.save(COL, { id: 'l:' + D.logos[k], kind: 'logo', name: D.logos[k], img: `${ABS}partners/${D.logos[k]}.png`, order: k + 1, show: true, createdAt: now, updatedAt: now }); n++; }
+    for (let k = 0; k < D.team.length; k++) { if (have('t:' + D.team[k])) continue; await Store.save(COL, { id: 't:' + D.team[k], kind: 'team', img: `${ABS}team/${D.team[k]}.jpg`, order: k + 1, show: true, createdAt: now, updatedAt: now }); n++; }
     return n;
   }
 
@@ -2481,7 +2481,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
 .okwshots{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}.okws{position:relative;border:2px solid transparent;border-radius:10px;overflow:hidden;background:var(--surface-2,var(--bg))}.okws.cov{border-color:#38a599}.okws img{width:100%;aspect-ratio:4/3;object-fit:cover}.okwsa{display:flex;flex-wrap:wrap;gap:4px;padding:6px}
 </style>`);
   /* the first admin to open the page with nothing in it gets the current content (once) */
-  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { if (S.route && S.route.view === 'okweb' && can() && !one('site') && !window.__okwSeeding && S.staffReady) { window.__okwSeeding = 1; seed().then(n => { if (n) { toast(L('محتوى الموقع الحالي اتحط كبداية', 'The current website content is in as a start')); rerender(); } }); } });
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { if (S.route && S.route.view === 'okweb' && can() && !window.__okwSeeding && S.staffReady && (!one('site') || !one('svc') || D.awards.some(a => !byId(COL, 'a:' + a[0])) || D.logos.some(k => !byId(COL, 'l:' + k)) || D.team.some(k => !byId(COL, 't:' + k)) || D.collab.some(c => !byId(COL, 'c:' + c[0])))) { window.__okwSeeding = 1; seed().then(n => { if (n) { toast(L('محتوى الموقع الحالي اتحط كبداية', 'The current website content is in as a start')); rerender(); } }); } });
 })();
 
 /* 16 Oct: group names in the side menu never get cut to «Com…» — they wrap, and the count pill stays small */
