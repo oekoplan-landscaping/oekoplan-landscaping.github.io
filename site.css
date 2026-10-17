@@ -222,3 +222,6 @@ figure.wide .fit{aspect-ratio:21/9;height:auto;border-radius:var(--r)}
 /* work page search */
 .fsearch{justify-content:space-between;align-items:center;flex-wrap:nowrap!important;overflow:visible!important}#psearch{flex:1 1 auto;min-width:0;max-width:420px;height:40px;border:1px solid var(--line);border-radius:2px;padding:0 14px;font:inherit;font-size:14px;color:var(--ink);background:#fff;outline:none}#psearch:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,174,239,.14)}.filters .count{align-self:center}
 @media (max-width:860px){.fsearch{margin:0;padding-inline:0}#psearch{max-width:none}}
+
+/* numbered pages on the work page */
+.pager{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap}.pager .pg{min-width:40px;height:40px;padding:0 12px;border:1px solid var(--line);background:#fff;color:var(--ink);font:inherit;font-size:14px;letter-spacing:.04em;border-radius:2px;cursor:pointer;transition:border-color .2s,background .2s,color .2s}.pager .pg:hover:not(:disabled){border-color:var(--teal);color:var(--teal)}.pager .pg.on{background:var(--teal);border-color:var(--teal);color:#fff}.pager .pg:disabled{opacity:.35;cursor:default}.pager .dots{padding:0 4px;color:var(--muted)}

@@ -216,10 +216,21 @@
       main.innerHTML = pagehead(L('Work', 'المشاريع'), L('Projects', 'المشاريع'), L('Three decades of built work across Egypt and the region — filter by sector or city.', 'تلاتين سنة من الشغل المنفّذ في مصر والمنطقة — فلتر بالقطاع أو المدينة.')) + `<section class="sec tight"><div class="wrap">
         <div class="filters rv" id="filters"><div class="frow"><span class="flbl">${esc(L('Sector', 'القطاع'))}</span><button class="on" data-f="">${esc(T('all'))}</button>${types.map(t => `<button data-f="t:${esc(t)}">${esc(typeL(t))}</button>`).join('')}</div>${locs.length > 1 ? `<div class="frow"><span class="flbl">${esc(L('City', 'المدينة'))}</span>${locs.map(l => `<button data-f="l:${esc(l)}">${esc(l)}</button>`).join('')}</div>` : ''}<div class="frow fsearch"><input type="search" id="psearch" placeholder="${esc(L('Search a project, client or city…', 'ابحث باسم المشروع أو العميل أو المدينة…'))}" autocomplete="off"><span class="count" id="count"></span></div></div>
         <div class="g3" id="grid"></div><div class="more" id="more"></div></div></section>`;
-      const grid = $('#grid'); const PAGE = 36; let cur = '', shown = PAGE, q = '';
-      const norm = s => String(s || '').toLowerCase().replace(/[\u064B-\u0652]/g, '').replace(/[-–—_.,']/g, ' ').replace(/\s+/g, ' ').trim();
-      const draw = () => { const f = cur; const qq = norm(q); const xs = PROJECTS.filter(x => (!f || (f.startsWith('t:') ? x.type === f.slice(2) : (x.location || '').startsWith(f.slice(2)))) && (!qq || norm(`${x.title} ${x.client} ${x.location} ${typeL(x.type)}`).includes(qq))); grid.innerHTML = xs.slice(0, shown).map(tile).join('') || `<div class="empty">—</div>`; $('#count').textContent = L(`${Math.min(shown, xs.length)} of ${xs.length} projects`, `${Math.min(shown, xs.length)} من ${xs.length} مشروع`); $('#more').innerHTML = xs.length > shown ? `<button class="btn ghost" id="morebtn">${esc(L('Show more projects', 'اعرض مشاريع أكتر'))} <span aria-hidden="true">${arrow()}</span></button>` : ''; const mb = $('#morebtn'); if (mb) mb.onclick = () => { shown += PAGE; draw(); }; lazy(grid); reveal(); };
-      draw(); $('#psearch').addEventListener('input', e => { q = e.target.value; shown = PAGE; draw(); }); $('#filters').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; $$('#filters button').forEach(x => x.classList.toggle('on', x === b)); cur = b.dataset.f; shown = PAGE; draw(); window.scrollTo({ top: $('#filters').offsetTop - 120, behavior: 'smooth' }); });
+      const grid = $('#grid'); const PAGE = 24; let cur = '', page = 1, q = '';
+      const norm = s => String(s || '').toLowerCase().replace(/[ً-ْ]/g, '').replace(/[-–—_.,']/g, ' ').replace(/\s+/g, ' ').trim();
+      const top = () => window.scrollTo({ top: $('#filters').offsetTop - 120, behavior: 'smooth' });
+      const draw = (scroll) => {
+        const f = cur; const qq = norm(q);
+        const xs = PROJECTS.filter(x => (!f || (f.startsWith('t:') ? x.type === f.slice(2) : (x.location || '').startsWith(f.slice(2)))) && (!qq || norm(`${x.title} ${x.client} ${x.location} ${typeL(x.type)}`).includes(qq)));
+        const pages = Math.max(1, Math.ceil(xs.length / PAGE)); page = Math.min(Math.max(1, page), pages); const from = (page - 1) * PAGE;
+        grid.innerHTML = xs.slice(from, from + PAGE).map(tile).join('') || `<div class="empty">${esc(L('No projects match.', 'مفيش مشاريع مطابقة.'))}</div>`;
+        $('#count').textContent = xs.length ? L(`${from + 1}–${Math.min(from + PAGE, xs.length)} of ${xs.length} projects`, `${from + 1}–${Math.min(from + PAGE, xs.length)} من ${xs.length} مشروع`) : '';
+        const nums = []; for (let i = 1; i <= pages; i++) { if (pages <= 7 || i === 1 || i === pages || Math.abs(i - page) <= 1) nums.push(i); else if (nums[nums.length - 1] !== '…') nums.push('…'); }
+        $('#more').innerHTML = pages > 1 ? `<nav class="pager" aria-label="Pages"><button class="pg prev" data-p="${page - 1}" ${page === 1 ? 'disabled' : ''} aria-label="Previous">${ar() ? '→' : '←'}</button>${nums.map(n => n === '…' ? '<span class="dots">…</span>' : `<button class="pg ${n === page ? 'on' : ''}" data-p="${n}" ${n === page ? 'aria-current="page"' : ''}>${n}</button>`).join('')}<button class="pg next" data-p="${page + 1}" ${page === pages ? 'disabled' : ''} aria-label="Next">${ar() ? '←' : '→'}</button></nav>` : '';
+        $$('#more .pg').forEach(b => b.addEventListener('click', () => { page = +b.dataset.p; draw(true); }));
+        if (scroll) top(); lazy(grid); reveal();
+      };
+      draw(); $('#psearch').addEventListener('input', e => { q = e.target.value; page = 1; draw(); }); $('#filters').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; $$('#filters button').forEach(x => x.classList.toggle('on', x === b)); cur = b.dataset.f; page = 1; draw(true); });
       main.appendChild(band());
     },
     async project(main, p) {
