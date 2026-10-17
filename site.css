@@ -218,3 +218,7 @@ figure.wide .fit{aspect-ratio:21/9;height:auto;border-radius:var(--r)}
 
 /* phone: the section number sits in the eyebrow row, so headings never run under it */
 @media (max-width:860px){.sechead>div:first-child{padding-inline-end:48px;width:100%;box-sizing:border-box}.sechead::after{width:30px;height:30px;font-size:13px;top:-4px}.sechead h2{max-width:none}.sechead .btn{margin-inline-end:0}.phead h1{font-size:clamp(26px,8vw,36px)}.hero h1{font-size:clamp(26px,7.4vw,34px)}}
+
+/* work page search */
+.fsearch{justify-content:space-between;align-items:center;flex-wrap:nowrap!important;overflow:visible!important}#psearch{flex:1 1 auto;min-width:0;max-width:420px;height:40px;border:1px solid var(--line);border-radius:2px;padding:0 14px;font:inherit;font-size:14px;color:var(--ink);background:#fff;outline:none}#psearch:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,174,239,.14)}.filters .count{align-self:center}
+@media (max-width:860px){.fsearch{margin:0;padding-inline:0}#psearch{max-width:none}}
