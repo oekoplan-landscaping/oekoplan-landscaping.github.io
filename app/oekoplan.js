@@ -518,6 +518,9 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
     document.querySelectorAll('.co[data-action="ninetyGo"], .ninetyhub, [data-view="ninety"], .nfhomebtn, [data-action="ninetyHome"]').forEach(e => e.remove());
   });
   document.addEventListener('DOMContentLoaded', () => { document.title = NAME; swapLogos(); });
+  /* 18 Oct: a person marked «no punch required» never sees the word punch in the menu */
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try { const w = S.session && S.session.workerId ? byId('workers', S.session.workerId) : null; if (!w || !w.noPunch) return; document.querySelectorAll('#side a, #side button, .tabbar a, .tabbar button').forEach(a => { a.childNodes.forEach(n => { if (n.nodeType === 3 && /بصمتي وطلباتي|punches and requests/.test(n.textContent)) n.textContent = n.textContent.replace('بصمتي وطلباتي', 'طلباتي').replace('my punches and requests', 'my requests'); }); }); } catch (e) { /* cosmetic */ } });
+
 
   /* local / preview mode (no server yet): the engine seeds factory demo data — wipe it once, the owner account is Dr. Tarek */
   const oekoCleanStart = async () => {
