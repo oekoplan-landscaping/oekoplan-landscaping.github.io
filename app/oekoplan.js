@@ -2570,7 +2570,7 @@ document.head.insertAdjacentHTML('beforeend', '<style id="ok-ngt">#nav .ngh .ngt
    picture). Everything saves as you type. Table public.nf_notes (RLS: only the owner). Opened from the + dial («My notes»).
    ===================================================================== */
 (function () {
-  if (window.__OK_NOTES__) return; window.__OK_NOTES__ = 3;
+  if (window.__OK_NOTES__) return; window.__OK_NOTES__ = 4;
   const L = (ar, en) => (typeof I18N !== 'undefined' && I18N.lang === 'en' ? en : ar);
   const COLORS = { yellow: ['#fff7a8', '#ffe66d'], green: ['#d6f6c3', '#a9e88b'], pink: ['#ffd5e7', '#ffa9cf'], purple: ['#e5d6ff', '#c9b2ff'], blue: ['#cfe8ff', '#9fd0ff'], grey: ['#eceff2', '#cfd5db'], dark: ['#3b4048', '#2a2e34'] };
   const DARK = { yellow: ['#55501c', '#6e6724'], green: ['#2d4f2a', '#3c6a38'], pink: ['#5a3044', '#75405a'], purple: ['#3d3360', '#53478a'], blue: ['#2a4660', '#375f82'], grey: ['#3a3f47', '#4a515b'], dark: ['#23262b', '#17191d'] };
@@ -2658,13 +2658,20 @@ document.head.insertAdjacentHTML('beforeend', '<style id="ok-ngt">#nav .ngh .ngt
   function panelEl() { let el = document.getElementById('oknotes'); if (!el) { el = document.createElement('div'); el.id = 'oknotes'; el.setAttribute('dir', L('rtl', 'ltr')); document.body.appendChild(el); } return el; }
   function renderPanel() {
     const el = panelEl(); const q = N.q.trim().toLowerCase(); const xs = N.list.filter(n => !q || plain(n.html || n.text).toLowerCase().includes(q));
-    el.innerHTML = `<aside class="okn-panel" role="dialog" aria-label="Sticky Notes"><header class="okn-h"><button type="button" class="okn-new" data-okn="new" title="${esc(L('ملاحظة جديدة', 'New note'))}">${I.plus}</button><h3>Sticky Notes</h3><button type="button" class="okn-x" data-okn="close" aria-label="${esc(L('إغلاق', 'Close'))}">${I.x}</button></header>
+    const pp = panelPos(); el.innerHTML = `<aside class="okn-panel ${pp.full || mobile() ? 'full' : ''}" role="dialog" aria-label="Sticky Notes" style="left:${pp.x}px;top:${pp.y}px;width:${pp.w}px;height:${pp.h}px"><header class="okn-h" data-pdrag="1"><button type="button" class="okn-new" data-okn="new" title="${esc(L('ملاحظة جديدة', 'New note'))}">${I.plus}</button><h3>Sticky Notes</h3><button type="button" class="okn-x" data-okn="full" title="${esc(L('شاشة كاملة', 'Full screen'))}">${pp.full ? I.min : I.max}</button><button type="button" class="okn-x" data-okn="close" aria-label="${esc(L('إغلاق', 'Close'))}">${I.x}</button></header>
       <div class="okn-s"><input class="okn-q notr" dir="auto" type="search" placeholder="${esc(L('ابحث…', 'Search…'))}" value="${esc(N.q)}"></div>
       <div class="okn-list">${xs.length ? xs.map(n => { const col = colorOf(n.color); const t = plain(n.html || n.text); return `<button type="button" class="okn-card ${n.color === 'dark' || isDark() ? 'dark' : ''} ${winEl(n.id) ? 'isopen' : ''}" data-okn="open" data-id="${esc(n.id)}" style="--nc:${col[0]};--nb:${col[1]}"><span class="okn-bar"></span><span class="okn-txt">${t ? esc(t.slice(0, 160)) : `<i>${esc(L('ملاحظة فاضية', 'Empty note'))}</i>`}</span><span class="okn-meta">${n.pinned ? I.pin : ''}${esc(when(n.updated_at))}${n.project_id ? ` · ${I.folder} ${esc(projName(n.project_id))}` : ''}${!mine(n) ? ` · ${I.share} ${esc(personName(n.uid))}` : ((n.shared || []).length ? ` · ${I.share} ${(n.shared || []).length}` : '')}</span>${mine(n) ? `<span class="okn-del" data-okn="del" data-id="${esc(n.id)}" title="${esc(L('حذف', 'Delete'))}">${I.trash}</span>` : ''}</button>`; }).join('') : `<div class="okn-empty">${esc(N.loaded ? (q ? L('مفيش ملاحظة فيها الكلمة دي', 'No note matches') : L('لسه مفيش ملاحظات — دوس + وابدأ', 'No notes yet — tap + to start')) : L('بيحمّل…', 'Loading…'))}</div>`}</div>
       <footer class="okn-foot">${esc(L('ملاحظاتك خاصة بيك وبتتحفظ وأنت بتكتب. دوس على ملاحظة تفتحها في نافذة لوحدها.', 'Your notes are private and save as you type. Tap a note to open it in its own window.'))}</footer></aside>`;
-    el.classList.toggle('open', N.panel);
+    el.classList.toggle('open', N.panel); panelDrag(el.querySelector('.okn-panel'));
   }
-  function openPanel() { N.panel = true; renderPanel(); if (!N.loaded) load().then(renderPanel); const q = document.querySelector('#oknotes .okn-q'); if (q && !mobile()) q.focus(); }
+  function panelPos() { let p = null; try { p = JSON.parse(localStorage.getItem('okn.panel') || 'null'); } catch (e) { /* ignore */ } const d = { x: Math.max(16, window.innerWidth - 400), y: 70, w: 370, h: Math.min(620, window.innerHeight - 90), full: false }; return Object.assign(d, p || {}); }
+  function panelSave(el) { if (!el || mobile()) return; const full = el.classList.contains('full'); const cur = panelPos(); const pos = full ? Object.assign(cur, { full: true }) : { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight, full: false }; try { localStorage.setItem('okn.panel', JSON.stringify(pos)); } catch (e) { /* ignore */ } }
+  function panelDrag(el) { if (!el || el.__drag) return; el.__drag = 1; const h = el.querySelector('.okn-h'); let d = null;
+    h.addEventListener('pointerdown', e => { if (e.target.closest('button') || el.classList.contains('full') || mobile()) return; d = { x: e.clientX, y: e.clientY, l: el.offsetLeft, t: el.offsetTop }; h.setPointerCapture(e.pointerId); });
+    h.addEventListener('pointermove', e => { if (!d) return; el.style.left = Math.max(0, Math.min(window.innerWidth - 80, d.l + e.clientX - d.x)) + 'px'; el.style.top = Math.max(0, Math.min(window.innerHeight - 60, d.t + e.clientY - d.y)) + 'px'; });
+    const up = () => { if (!d) return; d = null; panelSave(el); }; h.addEventListener('pointerup', up); h.addEventListener('pointercancel', up);
+    if (window.ResizeObserver) { let t; new ResizeObserver(() => { clearTimeout(t); t = setTimeout(() => panelSave(el), 400); }).observe(el); } }
+  function openPanel() { N.panel = true; renderPanel(); const pe = document.querySelector('#oknotes'); if (pe) pe.style.zIndex = ++N.z; if (!N.loaded) load().then(renderPanel); const q = document.querySelector('#oknotes .okn-q'); if (q && !mobile()) q.focus(); }
   function closePanel() { N.panel = false; renderPanel(); }
   ACTIONS.okNotes = () => openPanel();
   ACTIONS.okNoteNew = () => { (N.loaded ? Promise.resolve() : load()).then(() => add()); };
@@ -2672,7 +2679,7 @@ document.head.insertAdjacentHTML('beforeend', '<style id="ok-ngt">#nav .ngh .ngt
   /* ---------------- events ---------------- */
   document.addEventListener('click', ev => {
     const p = ev.target.closest && ev.target.closest('#oknotes [data-okn]');
-    if (p) { const k = p.dataset.okn; if (k === 'close') return closePanel(); if (k === 'new') return add(); if (k === 'del') { ev.stopPropagation(); return del(p.dataset.id); } if (k === 'open') { openWin(p.dataset.id); if (mobile()) closePanel(); else renderPanel(); } return; }
+    if (p) { const k = p.dataset.okn; const host = document.getElementById('oknotes'); if (host) host.style.zIndex = ++N.z; if (k === 'close') return closePanel(); if (k === 'new') return add(); if (k === 'full') { const pe = p.closest('.okn-panel'); const full = !pe.classList.contains('full'); pe.classList.toggle('full', full); p.innerHTML = full ? I.min : I.max; panelSave(pe); return; } if (k === 'del') { ev.stopPropagation(); return del(p.dataset.id); } if (k === 'open') { openWin(p.dataset.id); if (mobile()) closePanel(); else renderPanel(); } return; }
     const w = ev.target.closest && ev.target.closest('.oknw [data-w]'); const wn = ev.target.closest && ev.target.closest('.oknw');
     if (w && wn) { const id = wn.dataset.id; const k = w.dataset.w; const menu = wn.querySelector('.oknw-menu');
       if (k === 'new') return add(); if (k === 'close') return closeWin(id); if (k === 'menu') { menu.hidden = !menu.hidden; return; }
@@ -2702,9 +2709,11 @@ document.head.insertAdjacentHTML('beforeend', '<style id="ok-ngt">#nav .ngh .ngt
 .notesfab{position:fixed;left:18px;bottom:calc(290px + env(safe-area-inset-bottom,0px));width:54px;height:54px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;z-index:60;cursor:pointer}
 body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf-chatpage .notesfab,body.stuboard .notesfab,body:has(.side.open) .notesfab{display:none!important}
 /* the list */
-#oknotes{position:fixed;inset:0;z-index:9500;pointer-events:none}
-#oknotes .okn-panel{position:absolute;top:0;bottom:0;inset-inline-end:0;width:min(360px,100vw);background:var(--surface,#fff);color:var(--ink,#111);box-shadow:-12px 0 40px rgba(0,0,0,.18);display:flex;flex-direction:column;transform:translateX(110%);transition:transform .28s cubic-bezier(.2,.8,.2,1);pointer-events:auto}
-html[dir=rtl] #oknotes .okn-panel{transform:translateX(-110%)}#oknotes.open .okn-panel{transform:none!important}
+#oknotes{position:fixed;inset:0;z-index:9500;pointer-events:none}#oknotes:has(.okn-panel.full){z-index:9700}
+#oknotes .okn-panel.full .okn-list{grid-template-columns:repeat(auto-fill,minmax(230px,1fr));padding:14px 18px}#oknotes .okn-panel.full .okn-card{min-height:150px}#oknotes .okn-panel.full .okn-txt{-webkit-line-clamp:6}
+#oknotes .okn-panel{position:fixed;min-width:280px;min-height:260px;max-width:100vw;max-height:100vh;background:var(--surface,#fff);color:var(--ink,#111);box-shadow:0 14px 40px rgba(0,0,0,.22),0 2px 6px rgba(0,0,0,.12);border:1px solid var(--line,#e3e7ea);border-radius:6px;display:none;flex-direction:column;pointer-events:auto;resize:both;overflow:hidden}
+#oknotes.open .okn-panel{display:flex}#oknotes .okn-panel.full{left:0!important;top:0!important;width:100vw!important;height:100vh!important;border-radius:0;resize:none}
+#oknotes .okn-h{cursor:grab;user-select:none;touch-action:none;background:var(--surface-2,#f4f6f7);border-bottom:1px solid var(--line,#e3e7ea)}#oknotes .okn-h:active{cursor:grabbing}
 #oknotes .okn-h{display:flex;align-items:center;gap:10px;padding:12px 12px 8px}#oknotes .okn-h h3{margin:0;font-size:17px;flex:1 1 auto;font-weight:600}
 #oknotes .okn-new,#oknotes .okn-x{width:34px;height:34px;border-radius:8px;border:0;background:transparent;color:inherit;display:grid;place-items:center;cursor:pointer}#oknotes .okn-new:hover,#oknotes .okn-x:hover{background:rgba(0,0,0,.07)}
 #oknotes .okn-s{padding:0 12px 10px}#oknotes .okn-q{width:100%;height:36px;border:1px solid var(--line,#e3e7ea);border-bottom:2px solid #00aeef;border-radius:6px;padding:0 10px;background:var(--surface-2,#f4f6f7);color:inherit;font:inherit;box-sizing:border-box}
@@ -2725,6 +2734,6 @@ html[dir=rtl] #oknotes .okn-panel{transform:translateX(-110%)}#oknotes.open .okn
 .oknw-b{flex:1 1 auto;overflow:auto;padding:12px 14px;outline:none;font-size:15px;line-height:1.6;word-break:break-word}.oknw-b:empty::before{content:attr(data-ph);opacity:.5}.oknw-b img{max-width:100%;border-radius:4px;display:block;margin:6px 0}.oknw-b ul{padding-inline-start:22px;margin:4px 0}
 .oknw-tag{font-size:11px;opacity:.75;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40%;cursor:pointer}.oknw-tag:empty{display:none}.oknw.shared .oknw-f button{display:none}.oknw.shared .oknw-b{cursor:default}.oknw-m.muted{color:var(--muted,#6b7480);cursor:default;font-size:12.5px}.oknw-m.muted:hover{background:transparent}
 .oknw-f{display:flex;align-items:center;gap:2px;padding:4px 6px;border-top:1px solid rgba(0,0,0,.08);flex:0 0 auto}.oknw-f button{width:32px;height:30px;border:0;background:transparent;color:inherit;border-radius:6px;cursor:pointer;font:inherit;font-size:14px;display:grid;place-items:center}.oknw-f button:hover{background:rgba(0,0,0,.1)}.oknw-when{margin-inline-start:auto;font-size:11px;opacity:.65;padding:0 6px}
-@media (max-width:699px){.oknw{left:0!important;top:0!important;width:100vw!important;height:100vh!important;border-radius:0;resize:none}.oknw .oknw-i[data-w="full"]{display:none}#oknotes .okn-panel{width:100vw}}
+@media (max-width:699px){.oknw{left:0!important;top:0!important;width:100vw!important;height:100vh!important;border-radius:0;resize:none}.oknw .oknw-i[data-w="full"]{display:none}#oknotes .okn-panel{left:0!important;top:0!important;width:100vw!important;height:100vh!important;border-radius:0;resize:none}#oknotes .okn-x[data-okn="full"]{display:none}}
 </style>`);
 })();
