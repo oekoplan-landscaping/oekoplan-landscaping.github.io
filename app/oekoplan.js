@@ -2564,85 +2564,140 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
 document.head.insertAdjacentHTML('beforeend', '<style id="ok-ngt">#nav .ngh .ngt{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.2;word-break:normal}#nav .ngh .ngc{flex:none;min-width:22px;max-width:44px;padding:0 7px}</style>');
 
 /* =====================================================================
-   18 Oct 2026 (Mahmoud: «the notes under the + button — like Microsoft Sticky Notes»)
-   Private sticky notes: a drawer of coloured notes that save as you type. Each person sees only their own
-   (table public.nf_notes, RLS uid = auth.uid()). Opened from the + button («Notes») or ACTIONS.okNotes.
+   18 Oct 2026 (Mahmoud: «the notes under the + button — exactly like Microsoft Sticky Notes, with full screen»)
+   Private sticky notes: a notes list + each note is its own floating window (drag, resize, full screen) that stays over
+   the app, with a coloured title bar (+ new · … colours · ✕) and a formatting bar (bold, italic, underline, strike, list,
+   picture). Everything saves as you type. Table public.nf_notes (RLS: only the owner). Opened from the + dial («My notes»).
    ===================================================================== */
 (function () {
-  if (window.__OK_NOTES__) return; window.__OK_NOTES__ = 1;
+  if (window.__OK_NOTES__) return; window.__OK_NOTES__ = 2;
   const L = (ar, en) => (typeof I18N !== 'undefined' && I18N.lang === 'en' ? en : ar);
-  const COLORS = { yellow: '#fff6a8', green: '#d7f6c4', pink: '#ffd4e6', purple: '#e6d7ff', blue: '#cfe9ff', grey: '#e9ecef', dark: '#3a3f47' };
-  const N = { list: [], open: false, q: '', loaded: false, timers: {} };
+  const COLORS = { yellow: ['#fff7a8', '#ffe66d'], green: ['#d6f6c3', '#a9e88b'], pink: ['#ffd5e7', '#ffa9cf'], purple: ['#e5d6ff', '#c9b2ff'], blue: ['#cfe8ff', '#9fd0ff'], grey: ['#eceff2', '#cfd5db'], dark: ['#3b4048', '#2a2e34'] };
+  const N = { list: [], panel: false, q: '', loaded: false, timers: {}, z: 9600 };
   const sb = () => (typeof sbOn === 'function' && sbOn() ? S.sb : null);
-  const when = iso => { try { const d = new Date(iso); const today = new Date(); const same = d.toDateString() === today.toDateString(); return (same ? '' : d.toLocaleDateString(L('ar-EG', 'en-GB'), { day: 'numeric', month: 'short' }) + ' · ') + d.toLocaleTimeString(L('ar-EG', 'en-GB'), { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } };
-  async function load() { const c = sb(); if (!c) return; const { data, error } = await c.from('nf_notes').select('*').order('pinned', { ascending: false }).order('updated_at', { ascending: false }); if (!error) { N.list = data || []; N.loaded = true; } else { console.warn('notes', error); toast(L('معرفتش أجيب الملاحظات', 'Could not load the notes'), 'err'); } }
-  function host() { let el = document.getElementById('oknotes'); if (!el) { el = document.createElement('div'); el.id = 'oknotes'; el.setAttribute('dir', L('rtl', 'ltr')); document.body.appendChild(el); } return el; }
-  function card(n) {
-    const bg = COLORS[n.color] || COLORS.yellow; const dark = n.color === 'dark';
-    return `<article class="okn ${dark ? 'dark' : ''} ${n.pinned ? 'pin' : ''}" data-id="${esc(n.id)}" style="background:${bg}">
-      <textarea class="okn-t notr" dir="auto" placeholder="${esc(L('اكتب ملاحظة…', 'Take a note…'))}" rows="1">${esc(n.text || '')}</textarea>
-      <div class="okn-f"><span class="okn-when">${esc(when(n.updated_at))}</span><span class="okn-dots">${Object.keys(COLORS).map(k => `<button type="button" class="okn-d ${k === n.color ? 'on' : ''}" data-okn="color" data-c="${k}" style="background:${COLORS[k]}" title="${k}"></button>`).join('')}</span>
-        <button type="button" class="okn-b ${n.pinned ? 'on' : ''}" data-okn="pin" title="${esc(L('تثبيت فوق', 'Pin to top'))}">📌</button><button type="button" class="okn-b" data-okn="del" title="${esc(L('حذف', 'Delete'))}">🗑</button></div>
-    </article>`;
-  }
-  function render() {
-    const el = host(); const q = N.q.trim().toLowerCase(); const xs = N.list.filter(n => !q || (n.text || '').toLowerCase().includes(q));
-    el.innerHTML = `<div class="okn-veil" data-okn="close"></div><aside class="okn-panel" role="dialog" aria-label="${esc(L('ملاحظاتي', 'My notes'))}">
-      <header class="okn-h"><button type="button" class="okn-new" data-okn="new" title="${esc(L('ملاحظة جديدة', 'New note'))}">＋</button><h3>${esc(L('ملاحظاتي', 'My notes'))}</h3><input class="okn-q notr" dir="auto" type="search" placeholder="${esc(L('ابحث…', 'Search…'))}" value="${esc(N.q)}"><button type="button" class="okn-x" data-okn="close" aria-label="${esc(L('إغلاق', 'Close'))}">✕</button></header>
-      <div class="okn-list">${xs.length ? xs.map(card).join('') : `<div class="okn-empty">${esc(N.loaded ? (q ? L('مفيش ملاحظة فيها الكلمة دي', 'No note matches') : L('لسه مفيش ملاحظات — دوس ＋ وابدأ', 'No notes yet — tap ＋ to start')) : L('بيحمّل…', 'Loading…'))}</div>`}</div>
-      <footer class="okn-foot">${esc(L('ملاحظاتك خاصة بيك — محدش غيرك بيشوفها، وبتتحفظ وأنت بتكتب.', 'Your notes are private — nobody else sees them; they save as you type.'))}</footer></aside>`;
-    el.classList.toggle('open', N.open); document.body.classList.toggle('okn-open', N.open);
-    el.querySelectorAll('.okn-t').forEach(grow);
-  }
-  const grow = t => { t.style.height = 'auto'; t.style.height = Math.min(600, Math.max(72, t.scrollHeight)) + 'px'; };
+  const I = {
+    plus: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+    dots: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
+    x: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    max: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 15v5h-5M20 4l-6 6M4 20l6-6"/></svg>',
+    min: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 20v-5h5M10 10L4 4M14 14l6 6"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+    img: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M20 16l-5-5-8 8"/></svg>',
+    list: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/></svg>',
+    pin: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l-1 6 3 3v2H7v-2l3-3z"/><path d="M12 15v5"/></svg>',
+  };
+  const when = iso => { try { const d = new Date(iso), t = new Date(); const same = d.toDateString() === t.toDateString(); return (same ? '' : d.toLocaleDateString(L('ar-EG', 'en-GB'), { day: 'numeric', month: 'short' }) + ' · ') + d.toLocaleTimeString(L('ar-EG', 'en-GB'), { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } };
+  /* rich text: only the tags the formatting bar makes */
+  const OK_TAGS = { B: 1, STRONG: 1, I: 1, EM: 1, U: 1, S: 1, STRIKE: 1, DEL: 1, UL: 1, OL: 1, LI: 1, BR: 1, DIV: 1, P: 1, IMG: 1, SPAN: 1 };
+  function clean(html) { const t = document.createElement('div'); t.innerHTML = html || ''; (function walk(n) { [...n.childNodes].forEach(c => { if (c.nodeType === 1) { if (!OK_TAGS[c.tagName]) { const f = document.createDocumentFragment(); while (c.firstChild) f.appendChild(c.firstChild); n.replaceChild(f, c); walk(n); return; } [...c.attributes].forEach(at => { if (!(c.tagName === 'IMG' && at.name === 'src' && /^https:\/\//.test(at.value))) c.removeAttribute(at.name); }); walk(c); } else if (c.nodeType !== 3) c.remove(); }); })(t); return t.innerHTML; }
+  const plain = html => { const t = document.createElement('div'); t.innerHTML = String(html || '').replace(/<(br|\/li|\/p|\/div)[^>]*>/gi, '$& '); return (t.textContent || '').replace(/\s+/g, ' ').trim(); };
   const byId_ = id => N.list.find(n => n.id === id);
-  async function save(id, patch) { const n = byId_(id); if (!n) return; Object.assign(n, patch, { updated_at: new Date().toISOString() }); const c = sb(); if (!c) return; const { error } = await c.from('nf_notes').update(Object.assign({}, patch, { updated_at: n.updated_at })).eq('id', id); if (error) { console.warn('note save', error); toast(L('الملاحظة ماتحفظتش', 'The note did not save'), 'err'); } else { const w = document.querySelector(`.okn[data-id="${CSS.escape(id)}"] .okn-when`); if (w) w.textContent = when(n.updated_at); } }
-  async function add() { const c = sb(); if (!c) { toast(L('الملاحظات بتشتغل وإنت متصل بالسيرفر', 'Notes work when connected to the server'), 'err'); return; } const n = { id: 'n' + uid(), text: '', color: 'yellow', pinned: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }; const { error } = await c.from('nf_notes').insert({ id: n.id, text: '', color: 'yellow', pinned: false }); if (error) { console.warn('note add', error); toast(L('معرفتش أضيف الملاحظة', 'Could not add the note'), 'err'); return; } N.list.unshift(n); N.q = ''; render(); const t = document.querySelector(`.okn[data-id="${CSS.escape(n.id)}"] .okn-t`); if (t) t.focus(); }
-  async function del(id) { const n = byId_(id); if (!n) return; if ((n.text || '').trim() && !confirm(L('تحذف الملاحظة دي؟', 'Delete this note?'))) return; N.list = N.list.filter(x => x.id !== id); render(); const c = sb(); if (c) { const { error } = await c.from('nf_notes').delete().eq('id', id); if (error) console.warn('note del', error); } }
-  function open() { N.open = true; render(); if (!N.loaded) load().then(render); }
-  function close() { N.open = false; render(); }
-  ACTIONS.okNotes = () => open();
-  ACTIONS.okNoteNew = () => { open(); (N.loaded ? Promise.resolve() : load()).then(() => add()); };
-  document.addEventListener('click', ev => { const b = ev.target.closest && ev.target.closest('#oknotes [data-okn]'); if (!b) return; const k = b.dataset.okn; const art = b.closest('.okn'); const id = art && art.dataset.id;
-    if (k === 'close') return close(); if (k === 'new') return add(); if (!id) return;
-    if (k === 'del') return del(id);
-    if (k === 'pin') { const n = byId_(id); save(id, { pinned: !n.pinned }).then(() => { N.list.sort((a, b) => (b.pinned - a.pinned) || (b.updated_at > a.updated_at ? 1 : -1)); render(); }); return; }
-    if (k === 'color') { const col = b.dataset.c; art.style.background = COLORS[col]; art.classList.toggle('dark', col === 'dark'); art.querySelectorAll('.okn-d').forEach(d => d.classList.toggle('on', d.dataset.c === col)); save(id, { color: col }); }
+  async function load() { const c = sb(); if (!c) return; const { data, error } = await c.from('nf_notes').select('*').order('pinned', { ascending: false }).order('updated_at', { ascending: false }); if (error) { console.warn('notes', error); toast(L('معرفتش أجيب الملاحظات', 'Could not load the notes'), 'err'); return; } N.list = data || []; N.loaded = true; N.list.filter(n => n.open).forEach(n => openWin(n.id, true)); }
+  async function save(id, patch, quiet) { const n = byId_(id); if (!n) return; const stamp = !quiet; Object.assign(n, patch); if (stamp) n.updated_at = new Date().toISOString(); const c = sb(); if (!c) return; const { error } = await c.from('nf_notes').update(Object.assign({}, patch, stamp ? { updated_at: n.updated_at } : {})).eq('id', id); if (error) { console.warn('note save', error); toast(L('الملاحظة ماتحفظتش', 'The note did not save'), 'err'); } else { const w = document.querySelector(`#okn-${CSS.escape(id)} .oknw-when`); if (w) w.textContent = when(n.updated_at); if (N.panel) renderPanel(); } }
+
+  /* ---------------- a note window ---------------- */
+  const mobile = () => window.innerWidth < 700;
+  function winEl(id) { return document.getElementById('okn-' + id); }
+  function openWin(id, restoring) {
+    const n = byId_(id); if (!n) return; let el = winEl(id); if (el) { bring(el); return; }
+    const col = COLORS[n.color] || COLORS.yellow; const pos = Object.assign({ x: 80 + (N.list.indexOf(n) % 5) * 28, y: 80 + (N.list.indexOf(n) % 5) * 28, w: 340, h: 360, full: false }, n.pos || {});
+    el = document.createElement('section'); el.className = 'oknw' + (n.color === 'dark' ? ' dark' : '') + (pos.full || mobile() ? ' full' : ''); el.id = 'okn-' + id; el.dataset.id = id; el.setAttribute('dir', L('rtl', 'ltr'));
+    el.style.cssText = `left:${pos.x}px;top:${pos.y}px;width:${pos.w}px;height:${pos.h}px;z-index:${++N.z}`; el.style.setProperty('--nc', col[0]); el.style.setProperty('--nb', col[1]);
+    el.innerHTML = `<header class="oknw-h" data-drag="1"><button type="button" class="oknw-i" data-w="new" title="${esc(L('ملاحظة جديدة', 'New note'))}">${I.plus}</button><span class="oknw-sp"></span><button type="button" class="oknw-i" data-w="full" title="${esc(L('شاشة كاملة', 'Full screen'))}">${pos.full ? I.min : I.max}</button><button type="button" class="oknw-i" data-w="menu" title="${esc(L('قائمة', 'Menu'))}">${I.dots}</button><button type="button" class="oknw-i" data-w="close" title="${esc(L('إغلاق', 'Close'))}">${I.x}</button></header>
+      <div class="oknw-menu" hidden><div class="oknw-cols">${Object.keys(COLORS).map(k => `<button type="button" class="oknw-c ${k === n.color ? 'on' : ''}" data-w="color" data-c="${k}" style="background:${COLORS[k][0]}"></button>`).join('')}</div>
+        <button type="button" class="oknw-m" data-w="pin">${I.pin}<span>${esc(n.pinned ? L('إلغاء التثبيت', 'Unpin') : L('تثبيت فوق في القائمة', 'Pin to top of the list'))}</span></button>
+        <button type="button" class="oknw-m" data-w="list">${I.list}<span>${esc(L('قائمة الملاحظات', 'Notes list'))}</span></button>
+        <button type="button" class="oknw-m del" data-w="del">${I.trash}<span>${esc(L('حذف الملاحظة', 'Delete note'))}</span></button></div>
+      <div class="oknw-b notr" contenteditable="true" dir="auto" data-ph="${esc(L('اكتب ملاحظة…', 'Take a note…'))}">${clean(n.html || (n.text ? esc(n.text).replace(/\n/g, '<br>') : ''))}</div>
+      <footer class="oknw-f"><button type="button" data-cmd="bold" title="Bold"><b>B</b></button><button type="button" data-cmd="italic" title="Italic"><i>I</i></button><button type="button" data-cmd="underline" title="Underline"><u>U</u></button><button type="button" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button><button type="button" data-cmd="insertUnorderedList" title="${esc(L('قائمة', 'Bullets'))}">${I.list}</button><button type="button" data-w="img" title="${esc(L('صورة', 'Picture'))}">${I.img}</button><span class="oknw-when">${esc(when(n.updated_at))}</span></footer>`;
+    document.body.appendChild(el); if (!restoring) { save(id, { open: true }, true); const b = el.querySelector('.oknw-b'); setTimeout(() => b.focus(), 30); }
+    drag(el); resizeWatch(el);
+  }
+  function bring(el) { el.style.zIndex = ++N.z; const b = el.querySelector('.oknw-b'); if (b) b.focus(); }
+  function closeWin(id) { const el = winEl(id); if (el) el.remove(); save(id, { open: false }, true); }
+  function drag(el) {
+    const h = el.querySelector('.oknw-h'); let d = null;
+    h.addEventListener('pointerdown', e => { if (e.target.closest('button') || el.classList.contains('full')) return; d = { x: e.clientX, y: e.clientY, l: el.offsetLeft, t: el.offsetTop }; h.setPointerCapture(e.pointerId); el.style.zIndex = ++N.z; });
+    h.addEventListener('pointermove', e => { if (!d) return; el.style.left = Math.max(0, Math.min(window.innerWidth - 80, d.l + e.clientX - d.x)) + 'px'; el.style.top = Math.max(0, Math.min(window.innerHeight - 60, d.t + e.clientY - d.y)) + 'px'; });
+    const up = () => { if (!d) return; d = null; savePos(el); }; h.addEventListener('pointerup', up); h.addEventListener('pointercancel', up);
+    el.addEventListener('pointerdown', () => { if (+el.style.zIndex !== N.z) el.style.zIndex = ++N.z; }, true);
+  }
+  function resizeWatch(el) { if (!window.ResizeObserver) return; let t; const ro = new ResizeObserver(() => { clearTimeout(t); t = setTimeout(() => savePos(el), 400); }); ro.observe(el); }
+  function savePos(el) { if (el.classList.contains('full') || mobile()) return; const id = el.dataset.id; const n = byId_(id); if (!n) return; const pos = { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight, full: false }; if (JSON.stringify(pos) === JSON.stringify(n.pos)) return; save(id, { pos }, true); }
+  function setColor(id, k) { const n = byId_(id); if (!n) return; const el = winEl(id); if (el) { el.style.setProperty('--nc', COLORS[k][0]); el.style.setProperty('--nb', COLORS[k][1]); el.classList.toggle('dark', k === 'dark'); el.querySelectorAll('.oknw-c').forEach(c => c.classList.toggle('on', c.dataset.c === k)); } save(id, { color: k }); }
+  async function add() { const c = sb(); if (!c) { toast(L('الملاحظات بتشتغل وإنت متصل بالسيرفر', 'Notes work when connected to the server'), 'err'); return; } const n = { id: 'n' + uid(), text: '', html: '', color: 'yellow', pinned: false, open: true, pos: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }; const { error } = await c.from('nf_notes').insert({ id: n.id, text: '', html: '', color: 'yellow', pinned: false, open: true }); if (error) { console.warn('note add', error); toast(L('معرفتش أضيف الملاحظة', 'Could not add the note'), 'err'); return; } N.list.unshift(n); openWin(n.id); if (N.panel) renderPanel(); }
+  async function del(id) { const n = byId_(id); if (!n) return; if (plain(n.html || n.text) && !confirm(L('تحذف الملاحظة دي؟', 'Delete this note?'))) return; const el = winEl(id); if (el) el.remove(); N.list = N.list.filter(x => x.id !== id); if (N.panel) renderPanel(); const c = sb(); if (c) { const { error } = await c.from('nf_notes').delete().eq('id', id); if (error) console.warn('note del', error); } }
+  async function pickImage(id) { const el = winEl(id); if (!el) return; const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.onchange = async () => { const f = inp.files && inp.files[0]; if (!f) return; toast(L('بيرفع الصورة…', 'Uploading the picture…')); try { const bm = await createImageBitmap(f); const k = Math.min(1, 1400 / Math.max(bm.width, bm.height)); const cv = document.createElement('canvas'); cv.width = Math.round(bm.width * k); cv.height = Math.round(bm.height * k); cv.getContext('2d').drawImage(bm, 0, 0, cv.width, cv.height); const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.86)); const st = await Files.put(blob, 'image/jpeg'); const url = await Files.url(st); if (!url) throw new Error('url'); const b = el.querySelector('.oknw-b'); b.focus(); document.execCommand('insertHTML', false, `<img src="${esc(url)}"><br>`); b.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) { console.warn('note img', e); toast(L('معرفتش أرفع الصورة', 'Could not upload the picture'), 'err'); } }; inp.click(); }
+
+  /* ---------------- the notes list ---------------- */
+  function panelEl() { let el = document.getElementById('oknotes'); if (!el) { el = document.createElement('div'); el.id = 'oknotes'; el.setAttribute('dir', L('rtl', 'ltr')); document.body.appendChild(el); } return el; }
+  function renderPanel() {
+    const el = panelEl(); const q = N.q.trim().toLowerCase(); const xs = N.list.filter(n => !q || plain(n.html || n.text).toLowerCase().includes(q));
+    el.innerHTML = `<aside class="okn-panel" role="dialog" aria-label="Sticky Notes"><header class="okn-h"><button type="button" class="okn-new" data-okn="new" title="${esc(L('ملاحظة جديدة', 'New note'))}">${I.plus}</button><h3>Sticky Notes</h3><button type="button" class="okn-x" data-okn="close" aria-label="${esc(L('إغلاق', 'Close'))}">${I.x}</button></header>
+      <div class="okn-s"><input class="okn-q notr" dir="auto" type="search" placeholder="${esc(L('ابحث…', 'Search…'))}" value="${esc(N.q)}"></div>
+      <div class="okn-list">${xs.length ? xs.map(n => { const col = COLORS[n.color] || COLORS.yellow; const t = plain(n.html || n.text); return `<button type="button" class="okn-card ${n.color === 'dark' ? 'dark' : ''} ${winEl(n.id) ? 'isopen' : ''}" data-okn="open" data-id="${esc(n.id)}" style="--nc:${col[0]};--nb:${col[1]}"><span class="okn-bar"></span><span class="okn-txt">${t ? esc(t.slice(0, 160)) : `<i>${esc(L('ملاحظة فاضية', 'Empty note'))}</i>`}</span><span class="okn-meta">${n.pinned ? I.pin : ''}${esc(when(n.updated_at))}</span><span class="okn-del" data-okn="del" data-id="${esc(n.id)}" title="${esc(L('حذف', 'Delete'))}">${I.trash}</span></button>`; }).join('') : `<div class="okn-empty">${esc(N.loaded ? (q ? L('مفيش ملاحظة فيها الكلمة دي', 'No note matches') : L('لسه مفيش ملاحظات — دوس + وابدأ', 'No notes yet — tap + to start')) : L('بيحمّل…', 'Loading…'))}</div>`}</div>
+      <footer class="okn-foot">${esc(L('ملاحظاتك خاصة بيك وبتتحفظ وأنت بتكتب. دوس على ملاحظة تفتحها في نافذة لوحدها.', 'Your notes are private and save as you type. Tap a note to open it in its own window.'))}</footer></aside>`;
+    el.classList.toggle('open', N.panel);
+  }
+  function openPanel() { N.panel = true; renderPanel(); if (!N.loaded) load().then(renderPanel); const q = document.querySelector('#oknotes .okn-q'); if (q && !mobile()) q.focus(); }
+  function closePanel() { N.panel = false; renderPanel(); }
+  ACTIONS.okNotes = () => openPanel();
+  ACTIONS.okNoteNew = () => { (N.loaded ? Promise.resolve() : load()).then(() => add()); };
+
+  /* ---------------- events ---------------- */
+  document.addEventListener('click', ev => {
+    const p = ev.target.closest && ev.target.closest('#oknotes [data-okn]');
+    if (p) { const k = p.dataset.okn; if (k === 'close') return closePanel(); if (k === 'new') return add(); if (k === 'del') { ev.stopPropagation(); return del(p.dataset.id); } if (k === 'open') { openWin(p.dataset.id); if (mobile()) closePanel(); else renderPanel(); } return; }
+    const w = ev.target.closest && ev.target.closest('.oknw [data-w]'); const wn = ev.target.closest && ev.target.closest('.oknw');
+    if (w && wn) { const id = wn.dataset.id; const k = w.dataset.w; const menu = wn.querySelector('.oknw-menu');
+      if (k === 'new') return add(); if (k === 'close') return closeWin(id); if (k === 'menu') { menu.hidden = !menu.hidden; return; }
+      if (k === 'full') { const full = !wn.classList.contains('full'); wn.classList.toggle('full', full); w.innerHTML = full ? I.min : I.max; wn.style.zIndex = ++N.z; const n = byId_(id); save(id, { pos: Object.assign({}, n && n.pos || {}, { full }) }, true); return; }
+      if (k === 'color') { setColor(id, w.dataset.c); menu.hidden = true; return; }
+      if (k === 'pin') { const n = byId_(id); save(id, { pinned: !n.pinned }); menu.hidden = true; w.querySelector('span').textContent = !n.pinned ? L('إلغاء التثبيت', 'Unpin') : L('تثبيت فوق في القائمة', 'Pin to top of the list'); return; }
+      if (k === 'list') { menu.hidden = true; openPanel(); return; } if (k === 'del') return del(id); if (k === 'img') return pickImage(id); return; }
+    const cmd = ev.target.closest && ev.target.closest('.oknw [data-cmd]');
+    if (cmd) { const b = cmd.closest('.oknw').querySelector('.oknw-b'); b.focus(); document.execCommand(cmd.dataset.cmd, false, null); b.dispatchEvent(new Event('input', { bubbles: true })); return; }
+    document.querySelectorAll('.oknw-menu:not([hidden])').forEach(m => { if (!ev.target.closest('.oknw-menu') && !ev.target.closest('[data-w="menu"]')) m.hidden = true; });
   });
-  document.addEventListener('input', ev => { const t = ev.target; if (!t.closest || !t.closest('#oknotes')) return;
-    if (t.classList.contains('okn-q')) { N.q = t.value; const list = document.querySelector('#oknotes .okn-list'); const q = N.q.trim().toLowerCase(); if (list) { list.innerHTML = N.list.filter(n => !q || (n.text || '').toLowerCase().includes(q)).map(card).join('') || `<div class="okn-empty">${esc(L('مفيش ملاحظة فيها الكلمة دي', 'No note matches'))}</div>`; list.querySelectorAll('.okn-t').forEach(grow); } return; }
-    if (t.classList.contains('okn-t')) { grow(t); const id = t.closest('.okn').dataset.id; const n = byId_(id); if (n) n.text = t.value; clearTimeout(N.timers[id]); N.timers[id] = setTimeout(() => save(id, { text: t.value }), 500); }
+  document.addEventListener('mousedown', ev => { if (!ev.target.closest('.oknw [data-cmd], .oknw [data-w]')) return; ev.preventDefault(); });  /* keep the selection while tapping the bar */
+  document.addEventListener('input', ev => { const t = ev.target;
+    if (t.classList && t.classList.contains('okn-q')) { N.q = t.value; renderPanel(); const q = document.querySelector('#oknotes .okn-q'); if (q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); } return; }
+    if (t.classList && t.classList.contains('oknw-b')) { const id = t.closest('.oknw').dataset.id; clearTimeout(N.timers[id]); N.timers[id] = setTimeout(() => { const html = clean(t.innerHTML); save(id, { html, text: plain(html) }); }, 500); }
   });
-  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && N.open && !document.querySelector('#modalroot .overlay')) close(); });
-  /* the + menu gets «Notes» for everyone; the floating button itself opens the menu as before */
-  const hookFab = () => { const m = document.querySelector('#mform .fabm'); if (!m || m.querySelector('[data-action="okNotes"]')) return; m.insertAdjacentHTML('afterbegin', `<button type="button" class="fabm-i" data-action="okNotes">${icon('edit')}<span>${esc(L('ملاحظاتي (Sticky Notes)', 'My notes (Sticky Notes)'))}</span></button>`); };
-  const mo = new MutationObserver(hookFab); document.addEventListener('DOMContentLoaded', () => { const r = document.getElementById('modalroot'); if (r) mo.observe(r, { childList: true, subtree: true }); });
-  setTimeout(() => { const r = document.getElementById('modalroot'); if (r) mo.observe(r, { childList: true, subtree: true }); }, 1500);
-  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { if (N.open && !document.getElementById('oknotes')) render();
-    /* a hidden source button so the speed dial (the green +) lists «My notes» for every signed-in person */
-    const want = !!(S.session && sb()); let b = document.querySelector('.notesfab'); if (!want) { if (b) b.remove(); return; }
-    if (!b) document.body.insertAdjacentHTML('beforeend', `<button type="button" class="notesfab" data-action="okNotes" title="${esc(L('ملاحظاتي', 'My notes'))}" aria-label="${esc(L('ملاحظاتي', 'My notes'))}">${icon('edit')}</button>`); });
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && N.panel && !document.querySelector('#modalroot .overlay')) closePanel(); });
+  /* open notes come back after a reload, on the server copy of the app */
+  let booted = false;
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => {
+    const want = !!(S.session && sb()); let b = document.querySelector('.notesfab'); if (!want) { if (b) b.remove(); document.querySelectorAll('.oknw').forEach(e => e.remove()); booted = false; return; }
+    if (!b) document.body.insertAdjacentHTML('beforeend', `<button type="button" class="notesfab" data-action="okNotes" title="${esc(L('ملاحظاتي', 'My notes'))}" aria-label="${esc(L('ملاحظاتي', 'My notes'))}">${icon('edit')}</button>`);
+    if (!booted) { booted = true; setTimeout(() => { if (!N.loaded) load(); }, 1200); }
+  });
   document.head.insertAdjacentHTML('beforeend', `<style id="ok-notes-css">
-#oknotes{position:fixed;inset:0;z-index:9500;pointer-events:none;font-family:inherit}
-#oknotes .okn-veil{position:absolute;inset:0;background:rgba(10,14,20,.28);opacity:0;transition:opacity .25s}
-#oknotes .okn-panel{position:absolute;top:0;bottom:0;inset-inline-end:0;width:min(420px,100vw);background:var(--surface,#fff);color:var(--ink,#111);box-shadow:-12px 0 40px rgba(0,0,0,.18);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
-html[dir=ltr] #oknotes .okn-panel,#oknotes[dir=ltr] .okn-panel{transform:translateX(100%)}html[dir=rtl] #oknotes .okn-panel{transform:translateX(-100%)}
-#oknotes.open{pointer-events:auto}#oknotes.open .okn-veil{opacity:1}#oknotes.open .okn-panel{transform:none!important}
-#oknotes .okn-h{display:flex;align-items:center;gap:10px;padding:14px 14px 10px;border-bottom:1px solid var(--line,#e3e7ea)}
-#oknotes .okn-h h3{margin:0;font-size:16px;flex:0 0 auto}#oknotes .okn-q{flex:1 1 auto;min-width:0;height:36px;border:1px solid var(--line,#e3e7ea);border-radius:10px;padding:0 10px;background:var(--surface-2,#f4f6f7);color:inherit;font:inherit}
-#oknotes .okn-new{width:36px;height:36px;border-radius:10px;border:0;background:#00aeef;color:#fff;font-size:22px;line-height:1;cursor:pointer;flex:0 0 auto}#oknotes .okn-x{width:34px;height:34px;border:0;background:transparent;color:inherit;font-size:16px;cursor:pointer;flex:0 0 auto}
-#oknotes .okn-list{flex:1 1 auto;overflow:auto;padding:14px;display:grid;gap:12px;align-content:start}
-#oknotes .okn{border-radius:4px;box-shadow:0 6px 18px rgba(0,0,0,.10),0 1px 0 rgba(0,0,0,.05);padding:12px 12px 8px;color:#1b1f23;position:relative;transition:transform .15s}#oknotes .okn:focus-within{transform:translateY(-1px);box-shadow:0 10px 26px rgba(0,0,0,.16)}
-#oknotes .okn.dark{color:#f3f5f7}#oknotes .okn.pin::before{content:'📌';position:absolute;top:-8px;inset-inline-start:10px;font-size:14px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.25))}
-#oknotes .okn-t{width:100%;border:0;background:transparent;resize:none;font:inherit;font-size:15px;line-height:1.55;color:inherit;outline:none;min-height:72px;padding:0}
-#oknotes .okn-f{display:flex;align-items:center;gap:6px;margin-top:6px;opacity:.75;transition:opacity .2s}#oknotes .okn:hover .okn-f,#oknotes .okn:focus-within .okn-f{opacity:1}
-#oknotes .okn-when{font-size:11px;flex:1 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#oknotes .okn-dots{display:flex;gap:4px}#oknotes .okn-d{width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.18);padding:0;cursor:pointer}#oknotes .okn-d.on{outline:2px solid #00aeef;outline-offset:1px}
-#oknotes .okn-b{border:0;background:transparent;cursor:pointer;font-size:14px;padding:2px 4px;border-radius:6px;opacity:.6}#oknotes .okn-b.on,#oknotes .okn-b:hover{opacity:1;background:rgba(0,0,0,.08)}
-#oknotes .okn-empty{text-align:center;color:var(--muted,#6b7480);padding:40px 10px;font-size:14px}#oknotes .okn-foot{padding:10px 14px;font-size:11.5px;color:var(--muted,#6b7480);border-top:1px solid var(--line,#e3e7ea)}
-@media (max-width:640px){#oknotes .okn-panel{width:100vw}#oknotes .okn-list{padding:12px;padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))}}
-body.okn-open .fab{display:none!important}
 .notesfab{position:fixed;left:18px;bottom:calc(290px + env(safe-area-inset-bottom,0px));width:54px;height:54px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;z-index:60;cursor:pointer}
 body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf-chatpage .notesfab,body.stuboard .notesfab,body:has(.side.open) .notesfab{display:none!important}
+/* the list */
+#oknotes{position:fixed;inset:0;z-index:9500;pointer-events:none}
+#oknotes .okn-panel{position:absolute;top:0;bottom:0;inset-inline-end:0;width:min(360px,100vw);background:var(--surface,#fff);color:var(--ink,#111);box-shadow:-12px 0 40px rgba(0,0,0,.18);display:flex;flex-direction:column;transform:translateX(110%);transition:transform .28s cubic-bezier(.2,.8,.2,1);pointer-events:auto}
+html[dir=rtl] #oknotes .okn-panel{transform:translateX(-110%)}#oknotes.open .okn-panel{transform:none!important}
+#oknotes .okn-h{display:flex;align-items:center;gap:10px;padding:12px 12px 8px}#oknotes .okn-h h3{margin:0;font-size:17px;flex:1 1 auto;font-weight:600}
+#oknotes .okn-new,#oknotes .okn-x{width:34px;height:34px;border-radius:8px;border:0;background:transparent;color:inherit;display:grid;place-items:center;cursor:pointer}#oknotes .okn-new:hover,#oknotes .okn-x:hover{background:rgba(0,0,0,.07)}
+#oknotes .okn-s{padding:0 12px 10px}#oknotes .okn-q{width:100%;height:36px;border:1px solid var(--line,#e3e7ea);border-bottom:2px solid #00aeef;border-radius:6px;padding:0 10px;background:var(--surface-2,#f4f6f7);color:inherit;font:inherit;box-sizing:border-box}
+#oknotes .okn-list{flex:1 1 auto;overflow:auto;padding:4px 12px 12px;display:grid;gap:10px;align-content:start}
+#oknotes .okn-card{position:relative;display:grid;grid-template-columns:1fr;gap:6px;text-align:start;border:0;border-radius:4px;background:var(--nc);color:#1b1f23;padding:12px 12px 10px 12px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.08);font:inherit;min-height:72px;overflow:hidden}
+#oknotes .okn-card .okn-bar{position:absolute;top:0;left:0;right:0;height:5px;background:var(--nb)}#oknotes .okn-card.dark{color:#f3f5f7}#oknotes .okn-card.isopen{outline:2px solid #00aeef}
+#oknotes .okn-txt{font-size:14px;line-height:1.45;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}#oknotes .okn-meta{font-size:11px;opacity:.7;display:flex;gap:6px;align-items:center}
+#oknotes .okn-del{position:absolute;top:8px;inset-inline-end:8px;opacity:0;padding:4px;border-radius:6px;display:grid;place-items:center}#oknotes .okn-card:hover .okn-del{opacity:.7}#oknotes .okn-del:hover{opacity:1!important;background:rgba(0,0,0,.08)}
+#oknotes .okn-empty{text-align:center;color:var(--muted,#6b7480);padding:40px 10px;font-size:14px}#oknotes .okn-foot{padding:10px 14px;font-size:11.5px;color:var(--muted,#6b7480);border-top:1px solid var(--line,#e3e7ea)}
+/* a note window */
+.oknw{position:fixed;min-width:240px;min-height:200px;max-width:100vw;max-height:100vh;background:var(--nc);color:#1b1f23;box-shadow:0 10px 30px rgba(0,0,0,.22),0 2px 6px rgba(0,0,0,.12);display:flex;flex-direction:column;border-radius:3px;overflow:hidden;resize:both;z-index:9600;font-family:inherit}
+.oknw.dark{color:#f3f5f7}.oknw.full{left:0!important;top:0!important;width:100vw!important;height:100vh!important;border-radius:0;resize:none;z-index:9700!important}
+.oknw-h{height:38px;background:var(--nb);display:flex;align-items:center;padding:0 4px;cursor:grab;flex:0 0 auto;user-select:none;touch-action:none}.oknw-h:active{cursor:grabbing}.oknw-sp{flex:1 1 auto}
+.oknw-i{width:34px;height:34px;border:0;background:transparent;color:inherit;display:grid;place-items:center;border-radius:6px;cursor:pointer;opacity:.85}.oknw-i:hover{background:rgba(0,0,0,.1);opacity:1}
+.oknw-menu{position:absolute;top:40px;inset-inline-end:6px;background:var(--surface,#fff);color:var(--ink,#111);border:1px solid var(--line,#e3e7ea);border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,.18);padding:8px;z-index:3;min-width:220px}
+.oknw-cols{display:flex;gap:8px;padding:4px 4px 10px;border-bottom:1px solid var(--line,#e3e7ea);margin-bottom:6px}.oknw-c{width:26px;height:26px;border-radius:50%;border:1px solid rgba(0,0,0,.15);cursor:pointer;padding:0}.oknw-c.on{outline:2px solid #00aeef;outline-offset:2px}
+.oknw-m{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:inherit;font:inherit;font-size:13.5px;padding:8px 8px;border-radius:6px;cursor:pointer;text-align:start}.oknw-m:hover{background:rgba(0,0,0,.06)}.oknw-m.del{color:#c0392b}
+.oknw-b{flex:1 1 auto;overflow:auto;padding:12px 14px;outline:none;font-size:15px;line-height:1.6;word-break:break-word}.oknw-b:empty::before{content:attr(data-ph);opacity:.5}.oknw-b img{max-width:100%;border-radius:4px;display:block;margin:6px 0}.oknw-b ul{padding-inline-start:22px;margin:4px 0}
+.oknw-f{display:flex;align-items:center;gap:2px;padding:4px 6px;border-top:1px solid rgba(0,0,0,.08);flex:0 0 auto}.oknw-f button{width:32px;height:30px;border:0;background:transparent;color:inherit;border-radius:6px;cursor:pointer;font:inherit;font-size:14px;display:grid;place-items:center}.oknw-f button:hover{background:rgba(0,0,0,.1)}.oknw-when{margin-inline-start:auto;font-size:11px;opacity:.65;padding:0 6px}
+@media (max-width:699px){.oknw{left:0!important;top:0!important;width:100vw!important;height:100vh!important;border-radius:0;resize:none}.oknw .oknw-i[data-w="full"]{display:none}#oknotes .okn-panel{width:100vw}}
 </style>`);
 })();
