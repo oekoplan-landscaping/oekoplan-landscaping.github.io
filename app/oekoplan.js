@@ -2809,6 +2809,7 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
           if (det) { const codes = await det.detect(v); if (codes && codes[0]) text = codes[0].rawValue || ''; }
           else { cv.width = v.videoWidth; cv.height = v.videoHeight; cx.drawImage(v, 0, 0); const img = cx.getImageData(0, 0, cv.width, cv.height); const r = window.jsQR && window.jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' }); if (r && r.data) text = r.data; }
           if (text && /^OKQ\./.test(text)) { stopScan(); hint.textContent = L('بيتأكد من الكود…', 'Checking the code…'); await punchWith(text, w); }
+          else if (text && /NQ1\.[A-Za-z0-9_-]+\.[iobpe]\.\d+\.[0-9a-f]{12}/.test(text)) { /* the engine's own computer code (Check in / out / break on the person's computer) */ stopScan(); closeModal(); try { sessionStorage.setItem('nq.pending', JSON.stringify({ c: text, at: Date.now() })); } catch (e) { } rerender(); }
           else if (text) { hint.textContent = L('ده مش كود بصمة أوكوبلان', 'That is not an Ökoplan attendance code'); }
         } catch (e) { /* keep scanning */ } busy = false; };
       loop();
@@ -2823,7 +2824,7 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
 
   /* ---------------- QR-only people: the normal punch refuses, the scan is offered instead ---------------- */
   const qrOnly = w => !!(w && w.punchQrOnly);
-  if (typeof ACTIONS.selfPunch === 'function') { const orig = ACTIONS.selfPunch; ACTIONS.selfPunch = async (arg, btn) => { const w = me(); if (qrOnly(w)) { toast(L('بصمتك بالكود بس — امسح الكود اللي على شاشة المكتب', 'You punch by QR only — scan the code on the office screen'), 'err'); return ACTIONS.okQrScan(); } return orig(arg, btn); }; }
+  if (typeof ACTIONS.selfPunch === 'function') { const orig = ACTIONS.selfPunch; ACTIONS.selfPunch = async (arg, btn) => { const w = me(); if (qrOnly(w) && !S._nqQR) { toast(L('بصمتك بالكود بس — امسح الكود اللي على شاشة المكتب', 'You punch by QR only — scan the code on the office screen'), 'err'); return ACTIONS.okQrScan(); } return orig(arg, btn); }; }
   if (typeof ACTIONS.okPunchQuick === 'function') { const origQ = ACTIONS.okPunchQuick; ACTIONS.okPunchQuick = async (arg, btn) => { const w = me(); if (qrOnly(w)) return ACTIONS.okQrScan(); return origQ(arg, btn); }; }
 
   /* ---------------- wiring: page, menu, + dial ---------------- */
