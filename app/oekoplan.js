@@ -2745,3 +2745,107 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
 @media (max-width:699px){.oknw{left:0!important;top:0!important;width:100vw!important;height:100vh!important;border-radius:0;resize:none}.oknw .oknw-i[data-w="full"]{display:none}#oknotes .okn-panel{left:0!important;top:0!important;width:100vw!important;height:100vh!important;border-radius:0;resize:none}#oknotes .okn-x[data-okn="full"]{display:none}}
 </style>`);
 })();
+
+/* =====================================================================
+   12 Nov 2026 (Mahmoud): attendance by QR code.
+   · «Punch station» (#/okqr, admin / manager / HR): the office computer shows a code that changes every 40 s.
+   · The person opens the app on the phone → + → «Scan the QR» → camera → the code is checked on the server (oeko-qr)
+     → the punch is recorded like any other (method 'qr', station in the record).
+   · A person marked punchQrOnly can punch ONLY this way (Rawan): the phone button and the + «Punch» refuse politely.
+   Libraries: vendor/qrcode.js (MIT) to draw, vendor/jsQR.js (Apache-2) to read where the browser has no BarcodeDetector.
+   ===================================================================== */
+(function () {
+  if (window.__OK_QR__) return; window.__OK_QR__ = 1;
+  const L = (ar, en) => (typeof I18N !== 'undefined' && I18N.lang === 'en' ? en : ar);
+  const BASE = (() => { try { const s = document.currentScript && document.currentScript.src; return s ? s.replace(/[^/]*$/, '') : './'; } catch (e) { return './'; } })();
+  const me = () => (S.session && S.session.workerId ? byId('workers', S.session.workerId) : null);
+  const canStation = () => !!S.session && ['admin', 'manager', 'hr', 'vice', 'head'].includes(typeof role === 'function' ? role() : '');
+  const loadScript = src => new Promise((res, rej) => { if (document.querySelector(`script[src="${src}"]`)) return res(); const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('load ' + src)); document.head.appendChild(s); });
+  const fn = async body => { if (!S.sb || !S.sb.functions) throw new Error('offline'); const r = await S.sb.functions.invoke('oeko-qr', { body }); if (r.error) { let msg = r.error.message; try { const j = await r.error.context.json(); if (j && j.why) msg = j.why; } catch (e) { /* ignore */ } throw new Error(msg); } return r.data || {}; };
+
+  /* ---------------- the station (office computer) ---------------- */
+  const ST = { timer: null, token: '', at: 0, station: '' };
+  function stationName() { return (S.settings && S.settings.qrStation) || L('مكتب أوكوبلان', 'Ökoplan office'); }
+  function stationPage() {
+    if (!canStation()) return `<div class="card"><p class="muted">${esc(L('الصفحة دي للإدارة — بتتفتح على كمبيوتر المكتب.', 'This page is for management — it is opened on the office computer.'))}</p></div>`;
+    setTimeout(stationTick, 50);
+    return `<div class="okqr-wrap"><div class="okqr-card">
+      <div class="okqr-h"><img src="${BASE}_src/brand/lockup.png" alt="" class="okqr-logo"><div><div class="okqr-t">${esc(L('بصمة الحضور — امسح الكود بتطبيق أوكوبلان', 'Attendance — scan the code with the Ökoplan app'))}</div><div class="okqr-s notr" dir="auto">${esc(stationName())}</div></div></div>
+      <div class="okqr-q" id="okqr-q"><div class="okqr-wait">${esc(L('بيجهّز الكود…', 'Preparing the code…'))}</div></div>
+      <div class="okqr-f"><span id="okqr-clock"></span><span class="okqr-bar"><i id="okqr-bar"></i></span><span class="tiny muted">${esc(L('الكود بيتغيّر كل 40 ثانية', 'The code changes every 40 s'))}</span></div>
+      <div class="okqr-how"><b>${esc(L('إزاي تبصم؟', 'How to punch'))}</b> ${esc(L('افتح تطبيق أوكوبلان على موبايلك ← زرار + ← «امسح الكود» ← وجّه الكاميرا على الشاشة.', 'Open the Ökoplan app on your phone → + button → «Scan the QR» → point the camera at the screen.'))}</div>
+      <div class="row" style="justify-content:center;gap:8px;margin-top:10px"><button type="button" class="btn sm ghost" data-action="okQrFull">${esc(L('ملء الشاشة', 'Full screen'))}</button><button type="button" class="btn sm ghost" data-action="okQrName">${esc(L('اسم المحطة', 'Station name'))}</button></div>
+    </div></div>`;
+  }
+  async function stationTick() {
+    const host = document.getElementById('okqr-q'); if (!host) { clearTimeout(ST.timer); return; }
+    try {
+      if (!ST.token || Date.now() - ST.at > 40000) { const r = await fn({ a: 'token', station: stationName() }); if (!r.ok) throw new Error(r.why || 'token'); ST.token = r.token; ST.at = Date.now(); await loadScript(BASE + 'vendor/qrcode.js'); const q = qrcode(0, 'M'); q.addData(ST.token); q.make(); host.innerHTML = q.createSvgTag({ cellSize: 8, margin: 2, scalable: true }); }
+      const c = document.getElementById('okqr-clock'); if (c) c.textContent = new Date().toLocaleTimeString(L('ar-EG', 'en-GB'), { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const b = document.getElementById('okqr-bar'); if (b) b.style.width = Math.max(0, 100 - (Date.now() - ST.at) / 400) + '%';
+    } catch (e) { host.innerHTML = `<div class="okqr-wait" style="color:#c0392b">${esc(L('مش قادر أجيب الكود — اتأكد من الإنترنت', 'Cannot get a code — check the internet'))}<br><small>${esc(String(e.message || e))}</small></div>`; ST.token = ''; }
+    ST.timer = setTimeout(stationTick, 1000);
+  }
+  ACTIONS.okQrFull = () => { const el = document.querySelector('.okqr-wrap'); if (!el) return; if (document.fullscreenElement) document.exitFullscreen(); else if (el.requestFullscreen) el.requestFullscreen(); };
+  ACTIONS.okQrName = async () => { const v = prompt(L('اسم المحطة (يظهر في سجل البصمة)', 'Station name (shown in the attendance record)'), stationName()); if (v == null) return; await Store.saveSettings(Object.assign({}, S.settings, { qrStation: v.trim() })); ST.token = ''; rerender(); };
+
+  /* ---------------- the scanner (phone) ---------------- */
+  let scan = null;
+  function stopScan() { if (!scan) return; try { scan.stream.getTracks().forEach(t => t.stop()); } catch (e) { /* ignore */ } cancelAnimationFrame(scan.raf); scan = null; }
+  ACTIONS.okQrScan = async () => {
+    const w = me(); if (!w) return; if (w.noPunch) { toast(L('دورك مش محتاج بصمة', 'Your role needs no punch')); return; }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toast(L('الكاميرا مش متاحة هنا — افتح التطبيق من الموبايل', 'No camera here — open the app on the phone'), 'err'); return; }
+    openModal({ title: L('امسح كود البصمة', 'Scan the attendance code'), sticky: true, footer: `<button type="button" class="btn" data-action="closemodal">${esc(L('إلغاء', 'Cancel'))}</button>`,
+      body: `<div class="okqr-scan"><video id="okqr-v" autoplay muted playsinline></video><div class="okqr-frame"></div><div class="okqr-hint" id="okqr-hint">${esc(L('وجّه الكاميرا على الكود اللي على شاشة الكمبيوتر', 'Point the camera at the code on the computer screen'))}</div></div>` });
+    const v = document.getElementById('okqr-v'); const hint = document.getElementById('okqr-hint');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }); v.srcObject = stream; await v.play();
+      let det = null; if ('BarcodeDetector' in window) { try { det = new BarcodeDetector({ formats: ['qr_code'] }); } catch (e) { det = null; } }
+      if (!det) await loadScript(BASE + 'vendor/jsQR.js');
+      const cv = document.createElement('canvas'); const cx = cv.getContext('2d', { willReadFrequently: true }); let busy = false; let last = 0;
+      scan = { stream, raf: 0 };
+      const loop = async () => { if (!scan) return; scan.raf = requestAnimationFrame(loop); if (busy || !v.videoWidth || Date.now() - last < 120) return; last = Date.now(); busy = true;
+        try { let text = '';
+          if (det) { const codes = await det.detect(v); if (codes && codes[0]) text = codes[0].rawValue || ''; }
+          else { cv.width = v.videoWidth; cv.height = v.videoHeight; cx.drawImage(v, 0, 0); const img = cx.getImageData(0, 0, cv.width, cv.height); const r = window.jsQR && window.jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' }); if (r && r.data) text = r.data; }
+          if (text && /^OKQ\./.test(text)) { stopScan(); hint.textContent = L('بيتأكد من الكود…', 'Checking the code…'); await punchWith(text, w); }
+          else if (text) { hint.textContent = L('ده مش كود بصمة أوكوبلان', 'That is not an Ökoplan attendance code'); }
+        } catch (e) { /* keep scanning */ } busy = false; };
+      loop();
+    } catch (e) { console.warn('qr cam', e); closeModal(); toast(L('مقدرتش أفتح الكاميرا — اسمح للتطبيق باستخدامها', 'Could not open the camera — allow the app to use it'), 'err'); }
+  };
+  async function punchWith(token, w) {
+    try { const r = await fn({ a: 'verify', token }); if (!r.ok) { closeModal(); toast(r.why === 'expired' ? L('الكود انتهى — امسح الكود الجديد على الشاشة', 'The code expired — scan the new one on the screen') : L('كود غير صالح', 'Invalid code'), 'err'); return; }
+      closeModal(); const res = await kioskPunch(w, { method: 'qr', verify: { qr: r.station, qrAge: r.age, device: w.deviceCred ? 'qr' : undefined } }); if (res && res.blocked) toast(res.msg, 'err');
+    } catch (e) { closeModal(); toast(L('معرفتش أتأكد من الكود — اتأكد من الإنترنت', 'Could not check the code — check the internet'), 'err'); }
+  }
+  document.addEventListener('nf:modal-close', stopScan); const _mo = new MutationObserver(() => { if (scan && !document.getElementById('okqr-v')) stopScan(); }); setTimeout(() => { const r = document.getElementById('modalroot'); if (r) _mo.observe(r, { childList: true, subtree: true }); }, 1500);
+
+  /* ---------------- QR-only people: the normal punch refuses, the scan is offered instead ---------------- */
+  const qrOnly = w => !!(w && w.punchQrOnly);
+  if (typeof ACTIONS.selfPunch === 'function') { const orig = ACTIONS.selfPunch; ACTIONS.selfPunch = async (arg, btn) => { const w = me(); if (qrOnly(w)) { toast(L('بصمتك بالكود بس — امسح الكود اللي على شاشة المكتب', 'You punch by QR only — scan the code on the office screen'), 'err'); return ACTIONS.okQrScan(); } return orig(arg, btn); }; }
+  if (typeof ACTIONS.okPunchQuick === 'function') { const origQ = ACTIONS.okPunchQuick; ACTIONS.okPunchQuick = async (arg, btn) => { const w = me(); if (qrOnly(w)) return ACTIONS.okQrScan(); return origQ(arg, btn); }; }
+
+  /* ---------------- wiring: page, menu, + dial ---------------- */
+  if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.okqr = () => stationPage();
+  if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okqr')) { const i = NAV.findIndex(n => n && n.id === 'attendance'); NAV.splice(i >= 0 ? i + 1 : NAV.length, 0, { id: 'okqr', label: 'محطة بصمة QR', short: 'QR', icon: 'clock', roles: ['admin', 'manager', 'hr', 'vice', 'head'] }); }
+  if (typeof ROLE_VIEWS === 'object') ['admin', 'manager', 'hr', 'vice', 'head'].forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okqr')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okqr']); });
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => {
+    const w = me(); let b = document.querySelector('.qrscanfab'); const want = !!(w && !w.noPunch && S.sb);
+    if (!want) { if (b) b.remove(); return; }
+    if (!b) document.body.insertAdjacentHTML('beforeend', `<button type="button" class="qrscanfab" data-action="okQrScan" title="${esc(L('امسح كود البصمة', 'Scan the QR'))}" aria-label="${esc(L('امسح كود البصمة', 'Scan the QR'))}">${icon('clock')}</button>`);
+    /* a QR-only person sees the scan, not the plain «Punch» */
+    const pf = document.querySelector('.punchfab'); if (pf && qrOnly(w)) pf.remove();
+    if (S.route && S.route.view === 'me' && qrOnly(w)) { const mb = document.querySelector('[data-action="selfPunch"]'); if (mb && !mb.dataset.qr) { mb.dataset.qr = '1'; mb.innerHTML = `${icon('clock')} ${esc(L('امسح كود البصمة', 'Scan the attendance QR'))}`; } }
+  });
+  document.head.insertAdjacentHTML('beforeend', `<style id="ok-qr-css">
+.qrscanfab{position:fixed;left:18px;bottom:calc(426px + env(safe-area-inset-bottom,0px));width:54px;height:54px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;z-index:60;cursor:pointer}body.printing .qrscanfab,body.fab-hide .qrscanfab,body.nf-typing .qrscanfab,body.nf-chatpage .qrscanfab,body.stuboard .qrscanfab,body:has(.side.open) .qrscanfab{display:none!important}
+.okqr-wrap{min-height:calc(100vh - 120px);display:grid;place-items:center;padding:10px;background:var(--surface-2,#f4f6f7)}.okqr-wrap:fullscreen{background:#fff;padding:24px}
+.okqr-card{background:#fff;color:#111;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.12);padding:28px 30px;width:min(640px,96vw);text-align:center}
+.okqr-h{display:flex;align-items:center;gap:16px;text-align:start;margin-bottom:18px}.okqr-logo{width:92px;height:auto}.okqr-t{font-size:18px;font-weight:700}.okqr-s{color:#6b7480;font-size:13px;margin-top:3px}
+.okqr-q{width:min(420px,80vw);aspect-ratio:1;margin:0 auto;display:grid;place-items:center;background:#fff;border:1px solid #e3e7ea;border-radius:12px;padding:10px}.okqr-q svg{width:100%;height:100%}.okqr-wait{color:#6b7480;font-size:14px}
+.okqr-f{display:flex;align-items:center;gap:12px;justify-content:center;margin-top:14px;font-variant-numeric:tabular-nums}.okqr-f #okqr-clock{font-size:22px;font-weight:700;color:#00aeef;min-width:92px}.okqr-bar{flex:0 0 160px;height:6px;background:#e9eef2;border-radius:3px;overflow:hidden}.okqr-bar i{display:block;height:100%;width:100%;background:#00aeef;transition:width 1s linear}
+.okqr-how{margin-top:16px;font-size:14px;color:#374151;background:#f1fafe;border:1px solid #cdeefb;border-radius:10px;padding:10px 14px;text-align:start}
+.okqr-scan{position:relative;width:100%;aspect-ratio:3/4;max-height:70vh;background:#000;border-radius:12px;overflow:hidden}.okqr-scan video{width:100%;height:100%;object-fit:cover}.okqr-frame{position:absolute;inset:14% 12%;border:3px solid rgba(255,255,255,.9);border-radius:14px;box-shadow:0 0 0 2000px rgba(0,0,0,.35)}.okqr-hint{position:absolute;left:0;right:0;bottom:12px;text-align:center;color:#fff;font-size:14px;text-shadow:0 1px 3px rgba(0,0,0,.7);padding:0 12px}
+</style>`);
+})();
