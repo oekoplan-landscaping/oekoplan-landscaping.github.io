@@ -2873,7 +2873,7 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
    Everything shown (text, tooltips, placeholders, page title, notifications) is rewritten to Ökoplan Landscaping.
    The project «One Ninety» is a real project name and stays. What people type is never touched. */
 (() => { try {
-  const HIT = /ninety|نينتي|factory|مصنع|your advances|سلفك/i;
+  const HIT = /ninety|نينتي|factory|مصنع|your advances|سلفك|^\s*Owner\s*$/i;
   const fix = t => String(t)
     .replace(/One Ninety/g, 'One\u0001N').replace(/ون نينتي/g, 'ون\u0001ن')
     .replace(/NINETY\s+FACTORY\s+MANAGEMENT/g, 'ÖKOPLAN LANDSCAPING')
@@ -2881,6 +2881,7 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
     .replace(/نينتي\s+(ستوديوز|ستديوز|ستوديو|فابريكيشن|للتصنيع)/g, 'أوكوبلان لاندسكيب')
     .replace(/NINETY/g, 'ÖKOPLAN').replace(/Ninety/g, 'Ökoplan').replace(/ninety/g, 'ökoplan').replace(/نينتي/g, 'أوكوبلان')
     /* an office, not a factory: the shared engine's wording, in both languages */
+    .replace(/^(\s*)Owner(\s*)$/, '$1Project Owner$2')
     .replace(/your advances · /g, '').replace(/سلفك · /g, '')
     .replace(/the factory floor/g, 'the office').replace(/factory manager/g, 'office manager').replace(/Factory manager/g, 'Office manager').replace(/Factory & office/g, 'Office').replace(/FACTORY/g, 'OFFICE').replace(/Factory/g, 'Office').replace(/factory/g, 'office')
     .replace(/مدير المصنع/g, 'مدير المكتب').replace(/أرضية المصنع/g, 'المكتب').replace(/المصنع والمكتب/g, 'المكتب').replace(/المصنع/g, 'المكتب').replace(/للمصنع/g, 'للمكتب').replace(/بالمصنع/g, 'بالمكتب').replace(/مصنع/g, 'مكتب')
