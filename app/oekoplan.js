@@ -204,12 +204,13 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
   /* ---------------------------------------------------------------- office structure */
   const DEPTS = [
     { id: 'tech', name: 'المكتب الفني', en: 'Technical Office' },
-    { id: 'ds1', name: 'استوديو التصميم 1', en: 'Design Studio 1' },
-    { id: 'ds2', name: 'استوديو التصميم 2', en: 'Design Studio 2' },
+    { id: 'ds1', name: 'البحث والتطوير (R&D)', en: 'R&D' },
+    { id: 'ds2', name: 'فريق التصميم', en: 'Design Team' },
     { id: 'coord', name: 'تنسيق أعمال اللاند سكيب', en: 'Landscape Coordination' },
     { id: 'pmo', name: 'إدارة المشروعات (PMO)', en: 'PMO' },
     { id: 'bd', name: 'تطوير الأعمال', en: 'Business Development' },
-    { id: 'super', name: 'الإشراف على التنفيذ', en: 'Site Supervision' },
+    { id: 'agri', name: 'الزراعة والري', en: 'Agriculture & Irrigation' },
+    { id: 'super', name: 'دعم المواقع', en: 'Site Support' },
     { id: 'mgmt', name: 'إدارة المكتب', en: 'Office Management', admin: true },
     { id: 'acct', name: 'الحسابات والموارد البشرية', en: 'Accounts & HR', admin: true },
   ];
@@ -712,7 +713,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
     'مدير التصميم: يتابع كل مشاريع التصميم ومراحلها والمهام والفريق والحضور — بدون أرقام مالية.': 'Design manager: follows every design project and stage, tasks, team and attendance — no financial figures.',
     'مدير المكتب: الفريق والحضور والجزاءات والإجازات والمرتبات والمصروفات والشؤون الإدارية.': 'Office manager: team, attendance, penalties, leave, payroll, expenses and administration.',
     'المهندس: مشاريعه ومهامه وبوردات التصميم وبصمته وطلباته.': 'Engineer: own projects, tasks, design boards, punches and requests.', 'موظف: يبصم ويقدّم طلباته من موبايله فقط.': 'Employee: punches and sends requests from the phone only.',
-    'المكتب الفني': 'Technical Office', 'استوديو التصميم 1': 'Design Studio 1', 'استوديو التصميم 2': 'Design Studio 2', 'تنسيق أعمال اللاند سكيب': 'Landscape Coordination', 'إدارة المشروعات (PMO)': 'PMO', 'تطوير الأعمال': 'Business Development', 'الإشراف على التنفيذ': 'Site Supervision', 'إدارة المكتب': 'Office Management', 'الحسابات والموارد البشرية': 'Accounts & HR',
+    'المكتب الفني': 'Technical Office', 'استوديو التصميم 1': 'Design Studio 1', 'استوديو التصميم 2': 'Design Studio 2', 'البحث والتطوير (R&D)': 'R&D', 'فريق التصميم': 'Design Team', 'الزراعة والري': 'Agriculture & Irrigation', 'دعم المواقع': 'Site Support', 'تنسيق أعمال اللاند سكيب': 'Landscape Coordination', 'إدارة المشروعات (PMO)': 'PMO', 'تطوير الأعمال': 'Business Development', 'الإشراف على التنفيذ': 'Site Supervision', 'إدارة المكتب': 'Office Management', 'الحسابات والموارد البشرية': 'Accounts & HR',
     'المشاريع ومراحلها': 'Projects & stages', 'فريق المكتب': 'Office team', 'مواقع البصمة (المكتب والمشاريع)': 'Punch locations (office & sites)', 'التقييم ربع السنوي': 'Quarterly appraisal', 'الهيكل التنظيمي': 'Org chart', 'مواقع البصمة': 'Punch locations',
     'راتب شهري': 'Monthly salary', 'يومية': 'Daily wage', 'بارت تايم': 'Part time',
     'تلقائي — المكتب، ومواقع المشاريع لمهندسي الإشراف': 'Automatic — the office, and project sites for supervision engineers', 'المكتب فقط (QR)': 'Office only (QR)', 'مواقع المشاريع المخصصة له فقط (الإشراف على التنفيذ)': 'Assigned project sites only (site supervision)', 'المكتب أو مواقع المشاريع': 'Office or project sites', 'بدون قيد موقع (من البيت)': 'No location limit (from home)',
