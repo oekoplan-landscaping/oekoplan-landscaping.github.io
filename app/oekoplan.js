@@ -204,10 +204,10 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
   /* ---------------------------------------------------------------- office structure */
   const DEPTS = [
     { id: 'tech', name: 'المكتب الفني', en: 'Technical Office' },
-    { id: 'ds1', name: 'البحث والتطوير (R&D)', en: 'R&D' },
+    { id: 'ds1', name: 'البحث والتطوير', en: 'R&D' },
     { id: 'ds2', name: 'فريق التصميم', en: 'Design Team' },
     { id: 'coord', name: 'تنسيق أعمال اللاند سكيب', en: 'Landscape Coordination' },
-    { id: 'pmo', name: 'إدارة المشروعات (PMO)', en: 'PMO' },
+    { id: 'pmo', name: 'إدارة المشروعات', en: 'PMO' },
     { id: 'bd', name: 'تطوير الأعمال', en: 'Business Development' },
     { id: 'agri', name: 'الزراعة والري', en: 'Agriculture & Irrigation' },
     { id: 'super', name: 'دعم المواقع', en: 'Site Support' },
@@ -713,7 +713,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
     'مدير التصميم: يتابع كل مشاريع التصميم ومراحلها والمهام والفريق والحضور — بدون أرقام مالية.': 'Design manager: follows every design project and stage, tasks, team and attendance — no financial figures.',
     'مدير المكتب: الفريق والحضور والجزاءات والإجازات والمرتبات والمصروفات والشؤون الإدارية.': 'Office manager: team, attendance, penalties, leave, payroll, expenses and administration.',
     'المهندس: مشاريعه ومهامه وبوردات التصميم وبصمته وطلباته.': 'Engineer: own projects, tasks, design boards, punches and requests.', 'موظف: يبصم ويقدّم طلباته من موبايله فقط.': 'Employee: punches and sends requests from the phone only.',
-    'المكتب الفني': 'Technical Office', 'استوديو التصميم 1': 'Design Studio 1', 'استوديو التصميم 2': 'Design Studio 2', 'البحث والتطوير (R&D)': 'R&D', 'فريق التصميم': 'Design Team', 'الزراعة والري': 'Agriculture & Irrigation', 'دعم المواقع': 'Site Support', 'تنسيق أعمال اللاند سكيب': 'Landscape Coordination', 'إدارة المشروعات (PMO)': 'PMO', 'تطوير الأعمال': 'Business Development', 'الإشراف على التنفيذ': 'Site Supervision', 'إدارة المكتب': 'Office Management', 'الحسابات والموارد البشرية': 'Accounts & HR',
+    'المكتب الفني': 'Technical Office', 'استوديو التصميم 1': 'Design Studio 1', 'استوديو التصميم 2': 'Design Studio 2', 'البحث والتطوير (R&D)': 'R&D', 'البحث والتطوير': 'R&D', 'إدارة المشروعات': 'PMO', 'فريق التصميم': 'Design Team', 'الزراعة والري': 'Agriculture & Irrigation', 'دعم المواقع': 'Site Support', 'تنسيق أعمال اللاند سكيب': 'Landscape Coordination', 'إدارة المشروعات (PMO)': 'PMO', 'تطوير الأعمال': 'Business Development', 'الإشراف على التنفيذ': 'Site Supervision', 'إدارة المكتب': 'Office Management', 'الحسابات والموارد البشرية': 'Accounts & HR',
     'المشاريع ومراحلها': 'Projects & stages', 'فريق المكتب': 'Office team', 'مواقع البصمة (المكتب والمشاريع)': 'Punch locations (office & sites)', 'التقييم ربع السنوي': 'Quarterly appraisal', 'الهيكل التنظيمي': 'Org chart', 'مواقع البصمة': 'Punch locations',
     'راتب شهري': 'Monthly salary', 'يومية': 'Daily wage', 'بارت تايم': 'Part time',
     'تلقائي — المكتب، ومواقع المشاريع لمهندسي الإشراف': 'Automatic — the office, and project sites for supervision engineers', 'المكتب فقط (QR)': 'Office only (QR)', 'مواقع المشاريع المخصصة له فقط (الإشراف على التنفيذ)': 'Assigned project sites only (site supervision)', 'المكتب أو مواقع المشاريع': 'Office or project sites', 'بدون قيد موقع (من البيت)': 'No location limit (from home)',
@@ -2888,8 +2888,10 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
   window.okBrandFix = fix;
   const ATTRS = ['title', 'placeholder', 'aria-label', 'alt', 'data-tip'];
   const skip = n => { const e = n.nodeType === 1 ? n : n.parentElement; return !e || !!e.closest('script,style,textarea,[contenteditable=""],[contenteditable="true"],.oknw,.okn-panel,[data-nofix]'); };
-  const textNode = n => { const v = n.nodeValue; if (v && HIT.test(v) && !skip(n)) { const f = fix(v); if (f !== v) n.nodeValue = f; } };
-  const el = e => { if (e.nodeType !== 1 || skip(e)) return; for (const a of ATTRS) { const v = e.getAttribute && e.getAttribute(a); if (v && HIT.test(v)) { const f = fix(v); if (f !== v) e.setAttribute(a, f); } } };
+  /* in English the engine's own translator works first on the Arabic text (its keys are the original words) — only what is already English is reworded here */
+  const enMode = () => typeof I18N !== 'undefined' && I18N.lang === 'en'; const AR = /[\u0600-\u06FF]/;
+  const textNode = n => { const v = n.nodeValue; if (v && HIT.test(v) && !skip(n) && !(enMode() && AR.test(v))) { const f = fix(v); if (f !== v) n.nodeValue = f; } };
+  const el = e => { if (e.nodeType !== 1 || skip(e)) return; for (const a of ATTRS) { const v = e.getAttribute && e.getAttribute(a); if (v && HIT.test(v) && !(enMode() && AR.test(v))) { const f = fix(v); if (f !== v) e.setAttribute(a, f); } } };
   const sweep = root => { if (!root) return; if (root.nodeType === 3) return textNode(root); if (root.nodeType !== 1) return; el(root);
     const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT); let n; while ((n = w.nextNode())) { if (n.nodeType === 3) textNode(n); else el(n); } };
   const start = () => { sweep(document.body);
