@@ -3157,3 +3157,66 @@ html[data-theme="dark"] .okp.g{color:#86efac!important}html[data-theme="dark"] .
     pushSend(ids.concat(ids.map(i => 'w:' + i)), started ? L(`${w.name} أخد بريك`, `${w.name} started a break`) : L(`${w.name} رجع من البريك`, `${w.name} is back from the break`), hm, '#/okteam', 'ok-brk-' + w.id).catch(() => { });
   } catch (e) { /* ignore */ } });
 })();
+
+/* =====================================================================
+   Ökoplan — first sign-in: change the starter password (Mahmoud, 12 Nov 2026)
+   Everyone was activated with one starter password. After signing in and accepting the regulation, the person
+   must choose his own password before anything else opens (workers.mustChangePw). Nothing can be skipped.
+   ===================================================================== */
+(() => {
+  if (window.__OK_PWGATE__) return; window.__OK_PWGATE__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const meRec = () => (S.session && S.session.workerId ? byId('workers', S.session.workerId) : null);
+  const WEAK = ['123456', '1234567', '12345678', '123456789', '000000', '111111', 'password', 'qwerty', '654321'];
+  document.head.insertAdjacentHTML('beforeend', `<style>
+#okpwgate{position:fixed;inset:0;z-index:99990;background:#f3f6f1;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;font-family:var(--font,system-ui)}
+#okpwgate .okpwc{width:100%;max-width:420px;background:#fff;border-radius:22px;padding:28px 22px 22px;box-shadow:0 18px 50px rgba(0,0,0,.12);color:#1d2a24}
+#okpwgate .okpwlogo{display:block;height:54px;margin:0 auto 16px}
+#okpwgate h2{margin:0 0 6px;font-size:21px;text-align:center}
+#okpwgate p{margin:0 0 16px;font-size:14px;line-height:1.55;color:#5b6b63;text-align:center}
+#okpwgate label{display:block;font-size:12.5px;font-weight:600;margin:12px 0 6px;color:#33443c}
+#okpwgate .okpwf{position:relative}
+#okpwgate input{width:100%;box-sizing:border-box;height:50px;border-radius:14px;border:1.5px solid #d9ded9;padding:0 46px 0 14px;font-size:17px;background:#fafbf9;color:#1d2a24;outline:none;direction:ltr;text-align:left}
+#okpwgate input:focus{border-color:#3ca13c;background:#fff}
+#okpwgate .okpweye{position:absolute;top:0;right:0;width:46px;height:50px;border:0;background:none;cursor:pointer;color:#6b7a72;font-size:12px;font-weight:600}
+#okpwgate ul{list-style:none;margin:14px 0 0;padding:0;font-size:13px;color:#6b7a72}
+#okpwgate li{display:flex;gap:8px;align-items:center;padding:3px 0}#okpwgate li i{width:16px;height:16px;border-radius:50%;border:1.5px solid #c9d1cb;flex:none;box-sizing:border-box}
+#okpwgate li.ok{color:#2c8a2c}#okpwgate li.ok i{background:#3ca13c;border-color:#3ca13c;box-shadow:inset 0 0 0 3px #fff}
+#okpwgate .okpwerr{min-height:20px;margin-top:10px;color:#b42318;font-size:13px;text-align:center}
+#okpwgate .okpwbtn{width:100%;height:52px;border:0;border-radius:14px;background:#3ca13c;color:#fff;font-size:16.5px;font-weight:700;cursor:pointer;margin-top:6px}
+#okpwgate .okpwbtn:disabled{opacity:.45;cursor:default}
+#okpwgate .okpwout{display:block;margin:14px auto 0;border:0;background:none;color:#6b7a72;font-size:13px;text-decoration:underline;cursor:pointer}
+</style>`);
+  const checks = (a, b) => ({ len: a.length >= 8, mix: /[A-Za-z]/.test(a) && /\d/.test(a), fresh: !!a && !WEAK.includes(a.toLowerCase()), same: !!a && a === b });
+  const open = w => {
+    if (document.getElementById('okpwgate')) return;
+    let logo = '_src/brand/lockup.png'; try { logo = new URL('_src/brand/lockup.png', document.baseURI).href; } catch (e) { /* keep the relative path */ }
+    document.body.insertAdjacentHTML('beforeend', `<div id="okpwgate" dir="${en() ? 'ltr' : 'rtl'}"><form class="okpwc" autocomplete="off" novalidate>
+      <img class="okpwlogo" src="${esc(logo)}" alt="Ökoplan Landscaping" onerror="this.style.display='none'">
+      <h2>${esc(L('اختار كلمة سر جديدة', 'Choose your new password'))}</h2>
+      <p>${esc(L(`أهلاً ${w.name || ''} — دخلت بكلمة السر المبدئية. لازم تغيّرها دلوقتي عشان حسابك يبقى بتاعك لوحدك.`, `Welcome ${w.name || ''} — you signed in with the starter password. Change it now so the account is yours alone.`))}</p>
+      <label>${esc(L('كلمة السر الجديدة', 'New password'))}</label><div class="okpwf"><input type="password" name="a" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"><button type="button" class="okpweye" data-eye>${esc(L('إظهار', 'Show'))}</button></div>
+      <label>${esc(L('اكتبها تاني', 'Type it again'))}</label><div class="okpwf"><input type="password" name="b" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+      <ul><li data-k="len"><i></i>${esc(L('8 حروف أو أكتر', '8 characters or more'))}</li><li data-k="mix"><i></i>${esc(L('فيها حروف إنجليزي وأرقام', 'Has letters and numbers'))}</li><li data-k="fresh"><i></i>${esc(L('مش كلمة السر المبدئية', 'Not the starter password'))}</li><li data-k="same"><i></i>${esc(L('الخانتين زي بعض', 'Both boxes match'))}</li></ul>
+      <div class="okpwerr"></div><button type="submit" class="okpwbtn" disabled>${esc(L('حفظ والدخول', 'Save and continue'))}</button>
+      <button type="button" class="okpwout" data-out>${esc(L('تسجيل خروج', 'Sign out'))}</button></form></div>`);
+    const g = document.getElementById('okpwgate'), f = g.querySelector('form'), a = f.querySelector('[name=a]'), b = f.querySelector('[name=b]'), btn = f.querySelector('.okpwbtn'), err = f.querySelector('.okpwerr');
+    const upd = () => { const c = checks(a.value, b.value); Object.keys(c).forEach(k => f.querySelector(`[data-k=${k}]`).classList.toggle('ok', c[k])); btn.disabled = !(c.len && c.mix && c.fresh && c.same); err.textContent = ''; };
+    a.addEventListener('input', upd); b.addEventListener('input', upd);
+    f.querySelector('[data-eye]').addEventListener('click', ev => { const on = a.type === 'password'; a.type = b.type = on ? 'text' : 'password'; ev.currentTarget.textContent = on ? L('إخفاء', 'Hide') : L('إظهار', 'Show'); });
+    f.querySelector('[data-out]').addEventListener('click', () => { g.remove(); const o = document.querySelector('[data-action="logout"]'); if (o) o.click(); else if (ACTIONS.logout) ACTIONS.logout(); });
+    f.addEventListener('submit', async ev => { ev.preventDefault(); const c = checks(a.value, b.value); if (!(c.len && c.mix && c.fresh && c.same)) return; btn.disabled = true; btn.textContent = L('جارٍ الحفظ…', 'Saving…');
+      try { const r = await S.sb.auth.updateUser({ password: a.value }); if (r.error) throw r.error;
+        await Store.update('workers', w.id, { mustChangePw: false, passSetAt: nowISO(), pwChangedAt: nowISO() }); g.remove(); toast(L('كلمة السر اتغيّرت', 'Password changed'));
+      } catch (e) { err.textContent = (e && e.message) || L('ماتغيّرتش — جرّب تاني', 'Not changed — try again'); btn.disabled = false; btn.textContent = L('حفظ والدخول', 'Save and continue'); } });
+    setTimeout(() => { try { a.focus(); } catch (e) { /* */ } }, 60);
+  };
+  window.okPwGatePreview = w => open(w || { id: 'x', name: 'Hayam Soliman' });
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    const w = meRec(); const g = document.getElementById('okpwgate');
+    if (!w || !w.mustChangePw || !(S.sb && S.sb.auth)) { if (g && !g.dataset.preview) g.remove(); return; }
+    if (typeof needsAck === 'function' && needsAck()) return; /* the regulation comes first */
+    open(w);
+  } catch (e) { /* ignore */ } });
+})();
