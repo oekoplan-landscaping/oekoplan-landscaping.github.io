@@ -1,10 +1,10 @@
 /* Ninety Fabrication — service worker (app shell cache). Data never lives here: it is on the server. */
-const BUILD = '20261112-2330-oeko37';
+const BUILD = '20261112-2345-oeko38';
 /* v4.17: several Ninety apps share one origin (/ = factory, /studioz/ = office) — each service worker keeps to its own scope and its own cache prefix */
 const SCOPE = new URL(self.registration.scope).pathname;
 const TAG = SCOPE.replace(/^\/|\/$/g, '').replace(/\//g, '-');
 const CACHE = 'nf-shell-' + (TAG ? TAG + '-' : '') + BUILD;
-const SHELL = ["./app.js?v=20261112-2330-oeko37", "./index.html", "./config.js", "./manifest.json", "./vendor/supabase.js", "./vendor/three.bundle.js", "./vendor/pdf.min.js", "./vendor/pdf.worker.min.js", "./vendor/leaflet.js", "./icons/icon-192.png", "./icons/icon-512.png", "./en.json", "./oekoplan.js", "./oeko-home.js", "./qrp-v1.js"];
+const SHELL = ["./app.js?v=20261112-2345-oeko38", "./index.html", "./config.js", "./manifest.json", "./vendor/supabase.js", "./vendor/three.bundle.js", "./vendor/pdf.min.js", "./vendor/pdf.worker.min.js", "./vendor/leaflet.js", "./icons/icon-192.png", "./icons/icon-512.png", "./en.json", "./oekoplan.js", "./oeko-home.js", "./qrp-v1.js"];
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' }))).catch(() => { })));
@@ -108,7 +108,9 @@ self.addEventListener('push', e => {
   const title = String(d.title || 'Ökoplan Landscaping').replace(/Ninety\s+(Studioz|Fabrication|Construction)/gi, 'Ökoplan Landscaping').replace(/(One )?Ninety/g, (m, o) => o ? m : 'Ökoplan'); const body = String(d.body || '').replace(/Ninety\s+(Studioz|Fabrication|Construction)/gi, 'Ökoplan Landscaping').replace(/(One )?Ninety/g, (m, o) => o ? m : 'Ökoplan'); const tag = String(d.tag || 'nf-' + Date.now()); const url = d.url || './';
   if (d.call) { e.waitUntil(callPush(d, title, body, url)); return; }
   // iOS Safari: keep the options minimal (renotify / vibrate are not supported there and can make the whole call fail → generic "Notification")
-  const show = self.registration.showNotification(title, { body, tag, icon: './icons/icon-192.png', badge: './icons/icon-192.png', data: { url } })
+  /* the CEO's day: stays on the locked screen until he touches it (Android); iOS keeps the minimal form */
+  const ceo = /^okceo/.test(tag) && !/iP(hone|ad|od)/.test(self.navigator.userAgent || '');
+  const show = self.registration.showNotification(title, ceo ? { body, tag, renotify: true, requireInteraction: true, silent: false, vibrate: [600, 250, 600, 250, 600], icon: './icons/icon-192.png', badge: './icons/icon-192.png', data: { url } } : { body, tag, icon: './icons/icon-192.png', badge: './icons/icon-192.png', data: { url } })
     .catch(() => self.registration.showNotification(title, { body }));
   const badge = (async () => { try { if (!('setAppBadge' in navigator)) return; const c = await caches.open('nf-badge'); const r = await c.match('count'); let n = r ? parseInt(await r.text(), 10) || 0 : 0; n++; await c.put('count', new Response(String(n))); await navigator.setAppBadge(n); } catch (x) { /* ignore */ } })();
   e.waitUntil(Promise.all([show, badge]).catch(() => { }));

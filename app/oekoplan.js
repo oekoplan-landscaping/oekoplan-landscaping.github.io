@@ -3244,3 +3244,179 @@ html[data-theme="dark"] .okp.g{color:#86efac!important}html[data-theme="dark"] .
     if (S.route && (S.route.view === 'me' || S.route.view === 'okabout')) document.querySelectorAll('#view .card').forEach(c => { if (c.dataset.okadv) return; c.dataset.okadv = '1'; const h = c.querySelector('h3,b,.title'); const t = (h ? h.textContent : c.textContent.slice(0, 40)) || ''; if (/^\s*(سلفتي|My advance)/.test(t) || /New request → Advance|طلب جديد ← سلفة/.test(c.textContent)) c.style.display = 'none'; });
   } catch (e) { /* ignore */ } });
 })();
+
+/* =====================================================================
+   CEO's day + BOQ requests (12 Nov 2026 — approved by PIN)
+   · The CEO opens the system on one clear page: today's tasks numbered 1, 2, 3 … in the order
+     his assistant set, today's and tomorrow's meetings (confirmed / cancelled) and the emails
+     waiting for his answer. Big type, three colours, one button per line.
+   · The assistant (settings.okCeoAssist) arranges that day for him: adds, re-orders, marks urgent,
+     cancels and confirms meetings, and says who carries a thing out. Every change reaches the
+     CEO's phone as a notification that stays on the locked screen. The assistant gets none of
+     the CEO's own powers — salaries, contracts and payments stay closed to him.
+   · Collection «okceo» is readable only by the CEO and the assistant (server: nf_ceo_vis).
+   · BOQ: a Project Owner asks the BOQ person (settings.okBoqId) for a project's BOQ from the
+     project page; the request is an ordinary task tied to the project, with the Project Owner's name on it.
+   · No money anywhere.
+   ===================================================================== */
+(() => {
+  if (window.__OK_CEO__) return; window.__OK_CEO__ = 1;
+  const COL = 'okceo';
+  if (typeof COLS !== 'undefined' && !COLS.includes(COL)) COLS.push(COL); S.data[COL] = S.data[COL] || new Map();
+  if (typeof Store === 'object' && Store.subscribeAll) Store.subscribeAll = (base => function () { base.call(this); const db = S.db; if (!db) return; try { S.unsub.push(db.collection(COL).onSnapshot(snap => { S.data[COL] = new Map(snap.docs.map(d => [d.id, d.data()])); S.loaded[COL] = true; rerender(); }, e => console.warn('snapshot', COL, e))); } catch (e) { /* local */ } })(Store.subscribeAll);
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const set = () => S.settings || {};
+  const CL = (a, b) => ((set().okCeoLang || 'ar') === 'en' ? b : a);   /* the language of what reaches the CEO's phone */
+  const me = () => (typeof stuMe === 'function' ? stuMe() : '') || '';
+  const myName = () => (S.session && S.session.name) || '';
+  const W = id => (id ? byId('workers', id) : null);
+  const nm = id => { const w = W(id); return (w && w.name) || ''; };
+  const assist = () => set().okCeoAssist || [];
+  const isCeo = () => !!S.session && isAdmin();
+  const isAsst = () => !!S.session && !!me() && assist().includes(me());
+  const vis = () => isCeo() || isAsst();
+  const boqId = () => set().okBoqId || '';
+  const today = () => todayISO();
+  const plus = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+  const items = () => list(COL).filter(x => x && !x.deleted);
+  const tm = (s, ar) => { const m = /^(\d{1,2}):(\d{2})/.exec(String(s || '')); if (!m) return ''; let h = +m[1]; const pm = h >= 12; h = h % 12 || 12; return `${h}:${m[2]} ${ar ? (pm ? 'م' : 'ص') : (pm ? 'PM' : 'AM')}`; };
+  const dayName = (iso, ar) => { try { return new Date(iso + 'T12:00:00').toLocaleDateString(ar ? 'ar-EG' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }); } catch (e) { return iso; } };
+  const rel = (iso, a) => (iso === today() ? (a ? 'النهارده' : 'today') : iso === plus(today(), 1) ? (a ? 'بكره' : 'tomorrow') : dayName(iso, a));
+  /* what a day holds */
+  const tasksOf = d => items().filter(x => x.kind === 'task' && x.state !== 'done' && (d === today() ? (x.date || d) <= d : x.date === d)).sort((a, b) => (a.ord || 0) - (b.ord || 0) || String(a.createdAt).localeCompare(String(b.createdAt)));
+  const doneOf = d => items().filter(x => (x.kind === 'task' || x.kind === 'mail') && x.state === 'done' && String(x.doneAt || '').slice(0, 10) === d);
+  const meetsOf = d => items().filter(x => x.kind === 'meet' && x.date === d).sort((a, b) => String(a.time || '').localeCompare(String(b.time || '')));
+  const mailsOf = d => items().filter(x => x.kind === 'mail' && x.state !== 'done' && (d === today() ? (x.date || d) <= d : x.date === d)).sort((a, b) => (a.ord || 0) - (b.ord || 0) || String(a.createdAt).localeCompare(String(b.createdAt)));
+  /* notifications */
+  const ceoIds = () => { const u = set().okCeoUid; return ['owner', 'role:admin'].concat(u ? ['sb:' + u, u] : []); };
+  const ping = (title, body, tag) => { if (isCeo()) return; try { if (typeof pushSend === 'function') { const r = pushSend(ceoIds(), String(title).slice(0, 110), String(body || '').slice(0, 300), './#/okday', 'okceo-' + (tag || 'day')); if (r && r.catch) r.catch(() => { }); } } catch (e) { /* best effort */ } };
+  const tellAsst = (title, body) => { const ids = assist().filter(id => id !== me()); if (!ids.length) return; try { const r = pushSend(ids.concat(ids.map(i => 'w:' + i)), title, body || '', './#/okday', 'okceo-back'); if (r && r.catch) r.catch(() => { }); } catch (e) { /* */ } };
+  const tellDoer = (id, title, body) => { if (!id || id === me()) return; try { Store.save('tasks', { id: 'okn_' + uid(), title, desc: body || '', assigneeId: id, deptId: null, status: 'open', kind: 'notice', source: 'okceo', priority: 'urgent', createdBy: (S.session && S.session.id) || null, createdByName: myName(), createdAt: nowISO(), link: '#/tasks' }, { silent: true }); } catch (e) { /* */ }
+    try { const r = pushSend([id, 'w:' + id], title, body || '', './#/tasks', 'okceo-do'); if (r && r.catch) r.catch(() => { }); } catch (e) { /* */ } };
+  const orderText = () => tasksOf(today()).slice(0, 8).map((t, i) => `${i + 1}. ${t.urgent ? CL('عاجل — ', 'URGENT — ') : ''}${t.title}`).join('\n');
+  let ordTimer = null;
+  const pingOrder = () => { clearTimeout(ordTimer); ordTimer = setTimeout(() => { const n = tasksOf(today()).length; if (n) ping(CL(`ترتيب مهامك النهارده (${n})`, `Your tasks today, in order (${n})`), orderText(), 'order'); }, 6000); };
+  const save = async doc => { doc.updatedAt = nowISO(); doc.updatedBy = myName(); await Store.save(COL, doc); if (typeof rerender === 'function') rerender(); };
+  const nextOrd = () => items().reduce((m, x) => Math.max(m, x.ord || 0), 0) + 10;
+  const firstOrd = () => items().filter(x => x.state !== 'done').reduce((m, x) => Math.min(m, x.ord || 0), 10) - 10;
+
+  /* ---------- the page ---------- */
+  let viewDay = '', manage = false;
+  const CSS = `<style>.okday{max-width:860px;margin:0 auto;font-size:17px;line-height:1.55}.okday .okdh{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}.okday .okdh h1{margin:0;font-size:30px;font-weight:800}.okday .okdh .d{font-size:18px;color:var(--muted)}
+.okday .okdt{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}.okday .okdt a{display:block;text-decoration:none;color:inherit;border-radius:18px;padding:16px 14px;text-align:center;border:2px solid transparent}.okday .okdt b{display:block;font-size:44px;line-height:1.05;font-weight:800}.okday .okdt span{font-size:17px;font-weight:700}
+.okday .t-task{background:rgba(37,99,235,.12);border-color:rgba(37,99,235,.35)!important;color:#1d4ed8}.okday .t-meet{background:rgba(22,163,74,.12);border-color:rgba(22,163,74,.35)!important;color:#15803d}.okday .t-mail{background:rgba(217,119,6,.13);border-color:rgba(217,119,6,.4)!important;color:#b45309}
+.okday .okds{border:1px solid var(--line);border-radius:18px;background:var(--surface);margin-bottom:18px;overflow:hidden}.okday .okds>h2{margin:0;padding:13px 18px;font-size:22px;font-weight:800;display:flex;align-items:center;gap:10px}.okday .okds>h2 .grow{flex:1}.okday .okds>h2 small{font-size:15px;font-weight:600;opacity:.8}
+.okday .okdi{display:flex;gap:14px;align-items:flex-start;padding:15px 18px;border-top:1px solid var(--line)}.okday .okdi .n{flex:none;width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:27px;font-weight:800;background:#1d4ed8;color:#fff}.okday .okdi.urg .n{background:#dc2626}.okday .okdi .tm{flex:none;min-width:104px;text-align:center;font-size:22px;font-weight:800;color:#15803d;padding-top:4px}.okday .okdi .ml{flex:none;width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;background:#d97706;color:#fff}
+.okday .okdi .b{flex:1;min-width:0}.okday .okdi .b h3{margin:0;font-size:21px;font-weight:700;line-height:1.35;word-break:break-word}.okday .okdi .b p{margin:4px 0 0;font-size:16px;color:var(--muted);white-space:pre-wrap;word-break:break-word}.okday .okdi.off .b h3{text-decoration:line-through;opacity:.55}.okday .okdi.off .tm{color:var(--muted);text-decoration:line-through}
+.okday .chip{display:inline-block;border-radius:999px;padding:3px 12px;font-size:15px;font-weight:700;margin-inline-end:6px;margin-top:6px}.okday .chip.r{background:#dc2626;color:#fff}.okday .chip.g{background:rgba(22,163,74,.15);color:#15803d}.okday .chip.y{background:rgba(217,119,6,.16);color:#b45309}.okday .chip.x{background:rgba(220,38,38,.13);color:#b91c1c}.okday .chip.m{background:var(--surface-2);color:var(--muted)}
+.okday .okdb{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.okday .okdb button{font-size:15px}.okday .big{font-size:18px!important;padding:11px 20px!important;border-radius:14px!important;font-weight:700}.okday .okde{padding:18px;font-size:18px;color:var(--muted);border-top:1px solid var(--line)}
+.okday .okdbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.okday .okdbar .btn{font-size:16px;padding:9px 15px}.okday details.okdd{margin-bottom:18px}.okday details.okdd summary{cursor:pointer;font-size:17px;color:var(--muted);padding:6px 2px}
+@media(max-width:640px){.okday{font-size:16px}.okday .okdh h1{font-size:25px}.okday .okdt{gap:8px}.okday .okdt b{font-size:36px}.okday .okdt span{font-size:14px}.okday .okdi{padding:13px 12px;gap:10px}.okday .okdi .n,.okday .okdi .ml{width:44px;height:44px;font-size:23px}.okday .okdi .tm{min-width:78px;font-size:18px}.okday .okdi .b h3{font-size:19px}.okday .okds>h2{font-size:20px;padding:12px}}</style>`;
+  const btn = (act, label, cls) => `<button type="button" class="btn sm ${cls || 'ghost'}" data-okceo="${act}">${esc(label)}</button>`;
+  const ctl = x => { if (!(isAsst() || (isCeo() && manage))) return ''; const k = x.kind; return `<div class="okdb">${k !== 'meet' ? btn('up:' + x.id, '▲') + btn('down:' + x.id, '▼') : ''}${k === 'task' ? btn('urg:' + x.id, x.urgent ? L('شيل العاجل', 'Not urgent') : L('عاجل — أول حاجة', 'Urgent — first')) : ''}${k === 'meet' && x.state !== 'cancelled' ? btn('cancel:' + x.id, L('الغِ الاجتماع', 'Cancel meeting')) : ''}${k === 'meet' && x.state !== 'confirmed' ? btn('confirm:' + x.id, L('أكّد الاجتماع', 'Confirm meeting')) : ''}${btn('edit:' + x.id, L('تعديل', 'Edit'))}${btn('del:' + x.id, L('مسح', 'Delete'))}</div>`; };
+  const doer = x => (x.doerId && nm(x.doerId) ? `<span class="chip m">${esc(L('بينفذ: ', 'Handled by: '))}${esc(nm(x.doerId))}</span>` : '');
+  const late = (x, d) => (d === today() && x.date && x.date < d ? `<span class="chip y">${esc(L('من ', 'From '))}${esc(rel(x.date, !en()))}</span>` : '');
+  const taskRow = (x, i, d) => `<div class="okdi ${x.urgent ? 'urg' : ''}"><div class="n">${i + 1}</div><div class="b"><h3>${esc(x.title)}</h3>${x.note ? `<p>${esc(x.note)}</p>` : ''}${x.urgent ? `<span class="chip r">${esc(L('عاجل', 'Urgent'))}</span>` : ''}${late(x, d)}${doer(x)}<div class="okdb"><button type="button" class="btn p big" data-okceo="done:${x.id}">✓ ${esc(L('خلصت', 'Done'))}</button></div>${ctl(x)}</div></div>`;
+  const meetChip = x => (x.state === 'cancelled' ? `<span class="chip x">${esc(L('اتلغى', 'Cancelled'))}</span>` : x.state === 'confirmed' ? `<span class="chip g">${esc(L('مؤكد', 'Confirmed'))}</span>` : `<span class="chip y">${esc(L('لسه ما اتأكدش', 'Not confirmed yet'))}</span>`);
+  const meetRow = x => `<div class="okdi ${x.state === 'cancelled' ? 'off' : ''}"><div class="tm">${esc(tm(x.time, !en()) || '—')}</div><div class="b"><h3>${esc(x.title)}</h3>${[x.withWho, x.place].filter(Boolean).length ? `<p>${esc([x.withWho, x.place].filter(Boolean).join(' · '))}</p>` : ''}${x.note ? `<p>${esc(x.note)}</p>` : ''}${meetChip(x)}${ctl(x)}</div></div>`;
+  const mailRow = (x, d) => `<div class="okdi"><div class="ml">✉</div><div class="b"><h3>${esc(x.title)}</h3>${x.note ? `<p>${esc(x.note)}</p>` : ''}${late(x, d)}${doer(x)}<div class="okdb"><button type="button" class="btn p big" data-okceo="done:${x.id}">✓ ${esc(L('اترد عليه', 'Answered'))}</button></div>${ctl(x)}</div></div>`;
+  const sec = (id, cls, title, sub, rows, empty, add) => `<div class="okds" id="okd-${id}"><h2 class="${cls}"><span>${esc(title)}</span>${sub ? `<small>${esc(sub)}</small>` : ''}<span class="grow"></span>${add || ''}</h2>${rows || `<div class="okde">${esc(empty)}</div>`}</div>`;
+  const boqRows = () => { if (!(me() && me() === boqId())) return ''; const ts = list('tasks').filter(t => t && t.okBoq && t.assigneeId === boqId() && !['done', 'closed', 'cancelled'].includes(t.status)).sort((a, b) => String(a.dueDate || '9').localeCompare(String(b.dueDate || '9')));
+    const row = t => { const p = byId('projects', t.projectId) || {}; const own = [p.leadId].concat(p.coOwnerIds || []).filter(Boolean).map(nm).filter(Boolean).join(' & '); return `<div class="okdi"><div class="ml" style="background:#475569;font-size:15px;font-weight:800">BOQ</div><div class="b"><h3><a href="#/tasks/${esc(t.id)}">${esc(p.name || t.title)}</a></h3><p>${esc(L('الـ Project Owner: ', 'Project Owner: '))}${esc(own || '—')}${t.createdByName ? ' · ' + esc(L('طلبها: ', 'Asked by: ')) + esc(t.createdByName) : ''}${t.dueDate ? ' · ' + esc(L('مطلوبة: ', 'Due: ')) + esc(fmtDate(t.dueDate)) : ''}</p>${t.desc ? `<p>${esc(t.desc)}</p>` : ''}</div></div>`; };
+    return sec('boq', 't-mail', L('طلبات الـ BOQ عندي', 'BOQ requests for me'), String(ts.length || ''), ts.map(row).join(''), L('مفيش طلبات BOQ مفتوحة', 'No open BOQ requests')); };
+  const page = () => {
+    if (!vis()) return `<div class="banner warn">${esc(L('الصفحة دي للـ CEO ومساعده', 'This page is for the CEO and his assistant'))}</div>`;
+    const d = viewDay && viewDay >= today() ? viewDay : today(); const edit = isAsst() || (isCeo() && manage); const ar = !en();
+    const ts = tasksOf(d), ms = meetsOf(d), ml = mailsOf(d), tom = d === today() ? meetsOf(plus(d, 1)) : [], dn = doneOf(d);
+    const live = ms.filter(x => x.state !== 'cancelled').length;
+    const add = k => (edit ? `<button type="button" class="btn sm p" data-okceo="add:${k}">+ ${esc(L('إضافة', 'Add'))}</button>` : '');
+    const head = `<div class="okdh"><h1>${esc(isCeo() ? L('يومك', 'Your day') : L('يوم الـ CEO', 'CEO’s day'))}</h1><span class="d">${esc(dayName(d, ar))}${d !== today() ? '' : ' · ' + esc(L('النهارده', 'today'))}</span></div>`;
+    const perm = isCeo() && typeof Notification !== 'undefined' && Notification.permission === 'default' ? `<div class="banner info" style="margin-bottom:14px;font-size:17px"><span>${esc(L('فعّل الإشعارات عشان يوصلك أي تغيير في يومك والموبايل مقفول.', 'Turn on notifications so every change to your day reaches you on the locked phone.'))}</span><button class="btn p big" data-action="pushEnable">${esc(L('تفعيل الإشعارات', 'Turn on notifications'))}</button></div>` : '';
+    const bar = `<div class="okdbar">${[0, 1, 2].map(i => { const x = plus(today(), i); return `<button type="button" class="btn ${x === d ? 'p' : 'ghost'}" data-okceo="day:${x}">${esc(i === 0 ? L('النهارده', 'Today') : i === 1 ? L('بكره', 'Tomorrow') : dayName(x, ar))}</button>`; }).join('')}${edit ? `<input type="date" id="okdpick" value="${d}" min="${today()}" style="font-size:16px;padding:7px 10px;border-radius:10px;border:1px solid var(--line)">` : ''}<span style="flex:1"></span>${isAsst() ? btn('brief:x', L('ابعت ملخص اليوم للـ CEO', 'Send the day summary to the CEO'), 'ghost') : ''}${isCeo() ? btn('manage:x', manage ? L('اقفل التعديل', 'Close editing') : L('تعديل', 'Edit'), 'ghost') : ''}</div>`;
+    const tiles = `<div class="okdt"><a class="t-task" href="#/okday" data-okceo="go:tasks"><b>${ts.length}</b><span>${esc(L('مهام', 'Tasks'))}</span></a><a class="t-meet" href="#/okday" data-okceo="go:meets"><b>${live}</b><span>${esc(L('اجتماعات', 'Meetings'))}</span></a><a class="t-mail" href="#/okday" data-okceo="go:mails"><b>${ml.length}</b><span>${esc(L('إيميلات', 'Emails'))}</span></a></div>`;
+    const done = dn.length ? `<details class="okdd"><summary>${esc(L('اللي خلص النهارده', 'Finished today'))} · ${dn.length}</summary>${dn.map(x => `<div class="okdi off"><div class="b"><h3>${esc(x.title)}</h3><div class="okdb">${btn('undo:' + x.id, L('رجّعها', 'Bring it back'))}</div></div></div>`).join('')}</details>` : '';
+    return `${CSS}<div class="okday">${head}${perm}${bar}${tiles}
+${sec('tasks', 't-task', L('المهام بالترتيب', 'Tasks, in order'), '', ts.map((x, i) => taskRow(x, i, d)).join(''), L('مفيش مهام', 'No tasks'), add('task'))}
+${sec('meets', 't-meet', L('الاجتماعات', 'Meetings'), '', ms.map(meetRow).join(''), L('مفيش اجتماعات', 'No meetings'), add('meet'))}
+${tom.length ? sec('tom', 't-meet', L('اجتماعات بكره', 'Tomorrow’s meetings'), dayName(plus(d, 1), ar), tom.map(meetRow).join(''), '') : ''}
+${sec('mails', 't-mail', L('إيميلات مستنية ردك', 'Emails waiting for your answer'), '', ml.map(x => mailRow(x, d)).join(''), L('مفيش إيميلات مستنية', 'No emails waiting'), add('mail'))}
+${done}${boqRows()}</div>`;
+  };
+  if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.okday = () => page();
+  if (typeof VIEW_TITLES === 'object') VIEW_TITLES.okday = 'يوم الـ CEO';
+  if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okday')) NAV.splice(Math.min(1, NAV.length), 0, { id: 'okday', label: 'يوم الـ CEO', short: 'اليوم', icon: 'calendar' });
+  if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okday')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okday']); });
+  if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okday') return vis(); return base.apply(this, arguments); })(canSee);
+  /* the CEO lands on his day once per visit (the logo still opens the usual home) */
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try { if (window.__okDayLanded || !isCeo() || S.mode === 'memory' || S.viewOrig) return; const r = S.route || {}; if (r.id || r.view !== (typeof homeView === 'function' ? homeView() : 'dashboard')) { if (r.view) window.__okDayLanded = 1; return; } window.__okDayLanded = 1; location.hash = '#/okday'; } catch (e) { /* */ } });
+
+  /* ---------- forms ---------- */
+  const ppl = () => list('workers').filter(w => w.status !== 'inactive' && w.status !== 'left').sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  const F = (label, html, full) => `<div class="field ${full ? 'full' : ''}"><label>${esc(label)}</label>${html}</div>`;
+  const I = (name, val, extra) => `<input name="${name}" value="${esc(val || '')}" ${extra || ''}>`;
+  const doerSel = x => F(L('مين ينفذ / يتبلّغ؟ (اختياري)', 'Who handles it / gets alerted? (optional)'), `<select name="doerId"><option value="">—</option>${ppl().map(w => `<option value="${w.id}" ${w.id === x.doerId ? 'selected' : ''}>${esc(w.name)}${w.title ? ' — ' + esc(w.title) : ''}</option>`).join('')}</select>`, true);
+  const form = (k, x, d) => `<div class="form">${k === 'task' ? F(L('المهمة', 'Task'), I('title', x.title, 'required maxlength="140"'), true) + F(L('تفاصيل (اختياري)', 'Details (optional)'), `<textarea name="note" rows="2">${esc(x.note || '')}</textarea>`, true) + F(L('اليوم', 'Day'), I('date', x.date || d, 'type="date" required')) + F(L('الأولوية', 'Priority'), `<select name="urgent"><option value="">${esc(L('عادي — في آخر الترتيب', 'Normal — end of the list'))}</option><option value="1" ${x.urgent ? 'selected' : ''}>${esc(L('عاجل — أول حاجة', 'Urgent — first thing'))}</option></select>`) + doerSel(x)
+    : k === 'meet' ? F(L('الاجتماع', 'Meeting'), I('title', x.title, 'required maxlength="140"'), true) + F(L('مع مين', 'With'), I('withWho', x.withWho)) + F(L('المكان', 'Place'), I('place', x.place)) + F(L('اليوم', 'Day'), I('date', x.date || d, 'type="date" required')) + F(L('الساعة', 'Time'), I('time', x.time, 'type="time" required')) + F(L('الحالة', 'Status'), `<select name="state"><option value="pending" ${x.state === 'pending' ? 'selected' : ''}>${esc(L('لسه ما اتأكدش', 'Not confirmed yet'))}</option><option value="confirmed" ${x.state === 'confirmed' ? 'selected' : ''}>${esc(L('مؤكد', 'Confirmed'))}</option></select>`) + F(L('ملاحظات (اختياري)', 'Notes (optional)'), `<textarea name="note" rows="2">${esc(x.note || '')}</textarea>`, true)
+    : F(L('الإيميل — من مين وعن إيه', 'Email — from whom and about what'), I('title', x.title, 'required maxlength="140"'), true) + F(L('المطلوب (اختياري)', 'What is needed (optional)'), `<textarea name="note" rows="2">${esc(x.note || '')}</textarea>`, true) + F(L('اليوم', 'Day'), I('date', x.date || d, 'type="date" required')) + doerSel(x)}</div>`;
+  const KN = { task: ['مهمة', 'task'], meet: ['اجتماع', 'meeting'], mail: ['إيميل', 'email'] };
+  const meetLine = x => `${rel(x.date, (set().okCeoLang || 'ar') !== 'en')} ${tm(x.time, (set().okCeoLang || 'ar') !== 'en')} — ${x.title}${x.withWho ? ' · ' + x.withWho : ''}${x.place ? ' · ' + x.place : ''}`;
+  const edit = (k, x) => { const isNew = !x; x = x || {}; const d = viewDay && viewDay >= today() ? viewDay : today();
+    openModal({ title: isNew ? L(`إضافة ${KN[k][0]} للـ CEO`, `Add a ${KN[k][1]} for the CEO`) : L('تعديل', 'Edit'), submitLabel: L('احفظ', 'Save'), body: form(k, x, d),
+      onSubmit: async f => { const v = formData(f); if (!String(v.title || '').trim()) { toast(L('اكتب العنوان', 'Write the title'), 'err'); return false; }
+        const doc = Object.assign({}, x, { kind: k, title: String(v.title).trim(), note: String(v.note || '').trim(), date: v.date || d });
+        if (k === 'task') { doc.urgent = !!v.urgent; doc.doerId = v.doerId || null; } if (k === 'mail') doc.doerId = v.doerId || null;
+        if (k === 'meet') { doc.withWho = String(v.withWho || '').trim(); doc.place = String(v.place || '').trim(); doc.time = v.time || ''; if (doc.state !== 'cancelled') doc.state = v.state || 'pending'; }
+        const moved = !isNew && k === 'meet' && (x.date !== doc.date || x.time !== doc.time);
+        if (isNew) { doc.id = uid(); doc.state = doc.state || 'open'; doc.createdAt = nowISO(); doc.createdBy = myName(); doc.createdById = me() || (S.session && S.session.id) || ''; doc.ord = k === 'task' && doc.urgent ? firstOrd() : nextOrd(); }
+        else if (k === 'task' && doc.urgent && !x.urgent) doc.ord = firstOrd();
+        await save(doc);
+        if (k === 'task') { if (isNew) { const pos = tasksOf(today()).findIndex(t => t.id === doc.id) + 1; ping(doc.urgent ? CL('مهمة عاجلة — أول حاجة', 'Urgent task — do this first') : CL('مهمة جديدة ليك', 'New task for you'), `${doc.date > today() ? rel(doc.date, (set().okCeoLang || 'ar') !== 'en') + ' — ' : pos ? pos + '. ' : ''}${doc.title}`, 't' + doc.id); } else ping(CL('مهمة اتعدّلت', 'A task was updated'), doc.title, 't' + doc.id); }
+        if (k === 'meet') ping(isNew ? CL('اجتماع جديد', 'New meeting') : moved ? CL('ميعاد اجتماع اتغيّر', 'A meeting was moved') : CL('اجتماع اتعدّل', 'A meeting was updated'), meetLine(doc) + (doc.state === 'confirmed' ? CL(' · مؤكد', ' · confirmed') : ''), 'm' + doc.id);
+        if (k === 'mail' && isNew) ping(CL('إيميل مستني ردك', 'An email is waiting for your answer'), doc.title, 'e' + doc.id);
+        if (doc.doerId && doc.doerId !== x.doerId) tellDoer(doc.doerId, L(`مطلوب للـ CEO: ${doc.title}`, `Needed for the CEO: ${doc.title}`), doc.note || '');
+        toast(L('اتحفظ', 'Saved')); return true; } }); };
+  const swap = async (x, dir) => { const pool = (x.kind === 'task' ? tasksOf(today()) : mailsOf(today())); const src = pool.some(t => t.id === x.id) ? pool : items().filter(t => t.kind === x.kind && t.state !== 'done' && t.date === x.date).sort((a, b) => (a.ord || 0) - (b.ord || 0)); const i = src.findIndex(t => t.id === x.id), j = i + dir; if (i < 0 || j < 0 || j >= src.length) return;
+    const arr = src.slice(); arr.splice(j, 0, arr.splice(i, 1)[0]); for (let n = 0; n < arr.length; n++) { const o = (n + 1) * 10; if ((arr[n].ord || 0) !== o) await Store.save(COL, Object.assign({}, arr[n], { ord: o, updatedAt: nowISO() })); } if (typeof rerender === 'function') rerender(); if (x.kind === 'task') pingOrder(); };
+  document.addEventListener('click', async ev => {
+    const t = ev.target.closest && ev.target.closest('[data-okceo]'); if (!t) return; ev.preventDefault();
+    const s = t.dataset.okceo, c = s.indexOf(':'), act = s.slice(0, c), arg = s.slice(c + 1);
+    if (act === 'boq') { boqAsk(arg); return; }
+    if (!vis()) return;
+    if (act === 'go') { const el = document.getElementById('okd-' + arg); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+    if (act === 'day') { viewDay = arg; rerender(); return; }
+    if (act === 'manage') { manage = !manage; rerender(); return; }
+    if (act === 'add') { edit(arg, null); return; }
+    if (act === 'brief') { const d = today(); const ts = tasksOf(d), ms = meetsOf(d).filter(x => x.state !== 'cancelled'), ml = mailsOf(d); if (!(ts.length + ms.length + ml.length)) { toast(L('اليوم فاضي', 'The day is empty'), 'err'); return; }
+      const ar = (set().okCeoLang || 'ar') !== 'en'; ping(CL(`يومك: ${ts.length} مهام · ${ms.length} اجتماعات · ${ml.length} إيميلات`, `Your day: ${ts.length} tasks · ${ms.length} meetings · ${ml.length} emails`), [orderText(), ms.map(x => `${tm(x.time, ar)} — ${x.title}`).join('\n')].filter(Boolean).join('\n'), 'brief'); toast(L('الملخص اتبعت', 'Summary sent')); return; }
+    const x = byId(COL, arg); if (!x) return;
+    if (act === 'done') { await save(Object.assign({}, x, { state: 'done', doneAt: nowISO(), doneBy: myName() })); if (isCeo()) tellAsst(L(`الـ CEO خلّص: ${x.title}`, `The CEO finished: ${x.title}`), ''); else pingOrder(); toast(L('تمام ✓', 'Done ✓')); return; }
+    if (act === 'undo') { await save(Object.assign({}, x, { state: 'open', doneAt: null, doneBy: null })); return; }
+    if (!(isAsst() || (isCeo() && manage))) return;
+    if (act === 'edit') { edit(x.kind, x); return; }
+    if (act === 'up' || act === 'down') { await swap(x, act === 'up' ? -1 : 1); return; }
+    if (act === 'urg') { const on = !x.urgent; await save(Object.assign({}, x, { urgent: on, ord: on ? firstOrd() : x.ord })); if (on) ping(CL('عاجل — أول حاجة', 'Urgent — do this first'), x.title, 't' + x.id); else pingOrder(); return; }
+    if (act === 'cancel') { if (!(await confirmDlg(L(`تأكيد إلغاء اجتماع «${x.title}»؟`, `Cancel the meeting «${x.title}»?`), L('الغِ الاجتماع', 'Cancel meeting'), true))) return; await save(Object.assign({}, x, { state: 'cancelled' })); ping(CL('اجتماع اتلغى', 'Meeting cancelled'), meetLine(x), 'm' + x.id); return; }
+    if (act === 'confirm') { await save(Object.assign({}, x, { state: 'confirmed' })); ping(CL('اجتماع اتأكد', 'Meeting confirmed'), meetLine(x), 'm' + x.id); return; }
+    if (act === 'del') { if (!(await confirmDlg(L(`مسح «${x.title}»؟`, `Delete «${x.title}»?`), L('مسح', 'Delete'), true))) return; await save(Object.assign({}, x, { deleted: true })); if (x.kind === 'meet' && x.state !== 'cancelled' && x.date >= today()) ping(CL('اجتماع اتشال من يومك', 'A meeting was removed'), meetLine(x), 'm' + x.id); return; }
+  });
+  document.addEventListener('change', ev => { const t = ev.target; if (t && t.id === 'okdpick' && t.value) { viewDay = t.value; rerender(); } });
+
+  /* ---------- BOQ request from the project page ---------- */
+  const owners = p => [p.leadId].concat(p.coOwnerIds || []).filter(Boolean);
+  const canBoq = p => !!p && !!boqId() && !!S.session && (isAdmin() || owners(p).includes(me()) || (window.okAccess && window.okAccess.isPMO && window.okAccess.isPMO()));
+  const boqOpen = pid => list('tasks').filter(t => t && t.okBoq && t.projectId === pid && !['done', 'closed', 'cancelled'].includes(t.status));
+  const boqAsk = pid => { const p = byId('projects', pid); if (!canBoq(p)) return;
+    openModal({ title: L(`اطلب BOQ — ${p.name}`, `Ask for a BOQ — ${p.name}`), submitLabel: L('ابعت الطلب', 'Send the request'),
+      body: `<div class="form">${F(L('المطلوب بالظبط (المرحلة / النطاق)', 'What exactly is needed (stage / scope)'), `<textarea name="note" rows="3" required></textarea>`, true)}${F(L('مطلوبة يوم', 'Needed by'), I('due', '', `type="date" min="${today()}"`))}</div><div class="tiny muted" style="margin-top:8px">${esc(L('الطلب هيروح لـ ', 'The request goes to '))}${esc(nm(boqId()))}${esc(L(' — من غير أي أرقام مالية.', ' — no money figures.'))}</div>`,
+      onSubmit: async f => { const v = formData(f); if (!String(v.note || '').trim()) { toast(L('اكتب المطلوب', 'Write what is needed'), 'err'); return false; }
+        const t = { id: uid(), title: `BOQ — ${p.name}`, desc: String(v.note).trim(), deptId: null, assigneeId: boqId(), projectId: pid, okBoq: true, dueDate: v.due || null, priority: 'normal', status: 'open', kind: 'task', source: 'okboq', createdBy: (S.session && S.session.id) || null, createdByName: myName(), createdAt: nowISO(), updatedAt: nowISO(), assignedAt: nowISO(), link: '#/projects/' + pid };
+        await Store.save('tasks', t, { silent: true });
+        try { const r = pushSend([boqId(), 'w:' + boqId()], L(`طلب BOQ — ${p.name}`, `BOQ request — ${p.name}`), `${myName()}: ${t.desc}`.slice(0, 280), './#/tasks/' + t.id, 'okboq-' + pid); if (r && r.catch) r.catch(() => { }); } catch (e) { /* */ }
+        toast(L('الطلب اتبعت', 'Request sent')); if (typeof rerender === 'function') rerender(); return true; } }); };
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    document.querySelectorAll('.okpo[data-pid]').forEach(card => { if (card.querySelector('.okboq')) return; const pid = card.dataset.pid, p = byId('projects', pid); const open = boqOpen(pid); if (!canBoq(p) && !(open.length && (me() === boqId() || isAdmin()))) return;
+      card.insertAdjacentHTML('beforeend', `<div class="okboq" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:12px;padding-top:12px"><b>BOQ</b><span class="small muted">${open.length ? esc(L(`طلب مفتوح عند ${nm(boqId())}`, `Open request with ${nm(boqId())}`)) + (open[0].dueDate ? ' · ' + esc(fmtDate(open[0].dueDate)) : '') : esc(L(`اطلب الـ BOQ من ${nm(boqId())}`, `Ask ${nm(boqId())} for the BOQ`))}</span><span style="flex:1"></span>${open.length ? `<a class="btn sm ghost" href="#/tasks/${esc(open[0].id)}">${esc(L('افتح الطلب', 'Open the request'))}</a>` : ''}${canBoq(p) ? `<button type="button" class="btn sm p" data-okceo="boq:${pid}">${esc(L('اطلب BOQ', 'Ask for a BOQ'))}</button>` : ''}</div>`); });
+  } catch (e) { /* ignore */ } });
+  window.okCeoDay = { page, vis };
+})();
