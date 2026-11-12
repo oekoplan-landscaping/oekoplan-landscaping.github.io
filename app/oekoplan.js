@@ -2919,3 +2919,147 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
     return `<div class="card okmyday" style="max-width:860px;margin-bottom:14px"><div class="cardhead"><h3 style="margin:0">${esc(L('يومك وتصاريحك', 'Your day and allowances'))} — ${esc(w.name || '')}</h3><div class="grow"></div><span class="tiny muted">${esc(w.title || '')}</span></div><div class="tablewrap"><table><tbody>${rows.map(r => `<tr><td style="width:38%"><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td></tr>`).join('')}</tbody></table></div></div>`; };
   if (typeof vRegulation === 'function') vRegulation = (base => function (gate) { const html = base.apply(this, arguments); try { if ((S.ui.tab.regulation || 'text') === 'params' && !gate) return html; return card() + html; } catch (e) { return html; } })(vRegulation);
 } catch (e) { console.warn('oeko day', e); } })();
+
+/* =====================================================================
+   Ökoplan — Project Owners, teams and client claims (Mahmoud, 12 Nov 2026)
+   · Every project has its Project Owner(s) (leadId + coOwnerIds), its team (people under the owner in the
+     organisation chart) and a «client finance» person (financeId): the owner himself, or the senior owner he reports to.
+   · Claim per stage, NO amounts anywhere:
+       owner: «stage delivered — client approved»  →  the finance person is notified
+       finance person: «claim sent to the client»  →  the Financial Manager is notified (and the owner)
+       Financial Manager: «collected»              →  the owner and the finance person are notified
+   · Borrowing someone from another team: an owner asks for a person on his project → the request goes to that
+     person's own owner (the first owner / head above him in the chart) → approve (joins the team) or decline.
+   Stored on the project: okClaims {stageId: {...}}, okJoin [{...}]. Notices are «notice» tasks + a push.
+   ===================================================================== */
+(() => {
+  if (window.__OK_OWN__) return; window.__OK_OWN__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const me = () => (typeof stuMe === 'function' ? stuMe() : '');
+  const myName = () => (S.session && S.session.name) || '';
+  const W = id => (id ? byId('workers', id) : null);
+  const nm = id => { const w = W(id); return (w && w.name) || ''; };
+  const PIPE = () => window.OEKO_PIPELINE || [];
+  const live = () => list('projects').filter(p => p.status !== 'archived');
+  const boss = () => isAdmin() || role() === 'manager';
+  const owners = p => [p.leadId].concat(p.coOwnerIds || []).filter(Boolean);
+  const isOwner = p => !!p && (owners(p).includes(me()) || boss());
+  const finId = p => (p && (p.financeId || p.leadId)) || '';
+  const isFin = p => !!p && (finId(p) === me() || isAdmin());
+  const finMgrs = () => list('workers').filter(w => w.status !== 'inactive' && w.status !== 'left' && /financial manager/i.test(w.title || ''));
+  const isFinMgr = () => isAdmin() || finMgrs().some(w => w.id === me());
+  const d10 = iso => (iso ? fmtDate(String(iso).slice(0, 10)) : '');
+  const stName = (sid) => { const s = PIPE().find(x => x.id === sid); return s ? L(s.ar, s.name) : sid; };
+  const tell = (ids, title, body, pid) => { ids = Array.from(new Set((ids || []).filter(id => id && id !== me()))); if (!ids.length) return;
+    ids.forEach(id => { try { Store.save('tasks', { id: 'okn_' + uid(), title, desc: body || '', assigneeId: id, deptId: null, status: 'open', kind: 'notice', source: 'okown', priority: 'normal', createdBy: (S.session && S.session.id) || null, createdByName: myName(), createdAt: nowISO(), link: '#/projects/' + pid }, { silent: true }); } catch (e) { /* best effort */ } });
+    try { if (typeof pushSend === 'function') pushSend(ids.concat(ids.map(i => 'w:' + i)), title, body || '', '#/projects/' + pid, 'ok-own').catch(() => { }); } catch (e) { /* best effort */ } };
+  const up = async (pid, patch) => { await Store.update('projects', pid, patch); if (typeof rerender === 'function') rerender(); };
+  /* the owner a person belongs to: the first project owner / finance person / head above him in the chart */
+  const ownerSet = () => { const s = new Set(); live().forEach(p => { owners(p).forEach(i => s.add(i)); if (p.financeId) s.add(p.financeId); }); return s; };
+  const homeOwner = wid => { const os = ownerSet(); let x = W(wid), hops = 0; while (x && hops++ < 12) { const m = W(x.managerId); if (!m) return ''; if (m.status !== 'inactive' && (os.has(m.id) || ['head', 'manager'].includes(m.role))) return m.id; x = m; } return ''; };
+
+  document.head.insertAdjacentHTML('beforeend', `<style>
+.okown{margin-top:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden}
+.okown .okoh{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}.okown .okoh b{font-size:14px}
+.okown .okob{padding:12px;display:flex;flex-direction:column;gap:12px}
+.okown .okkv{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}
+.okown .okkv>div{border:1px solid var(--line);border-radius:12px;padding:9px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}.okown .okkv small{color:var(--muted);font-size:11.5px}.okown .okkv b{font-size:13.5px;overflow-wrap:anywhere}
+.okown h4{margin:0 0 6px;font-size:13px;display:flex;align-items:center;gap:8px}.okown h4 .grow{flex:1}
+.okown .okchips{display:flex;gap:6px;flex-wrap:wrap}.okown .okchip{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12.5px;background:var(--surface-2)}.okown .okchip.o{border-color:var(--accent);color:var(--accent);font-weight:600}
+.okown .okrow,.okownbar .okrow{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:13px;flex-wrap:wrap}.okown .okrow:first-of-type,.okownbar .okrow:first-of-type{border-top:0}.okown .okrow .grow,.okownbar .okrow .grow{flex:1;min-width:120px}.okown .okrow .muted,.okownbar .okrow .muted{color:var(--muted)}
+.okown .okp,.okownbar .okp{display:inline-flex;align-items:center;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:600;border:1px solid var(--line);background:var(--surface-2);white-space:nowrap}
+.okown .okp.g,.okownbar .okp.g{background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.4);color:#15803d}.okown .okp.y,.okownbar .okp.y{background:rgba(245,179,1,.14);border-color:rgba(245,179,1,.45);color:#9a6700}.okown .okp.b,.okownbar .okp.b{background:rgba(80,177,231,.14);border-color:rgba(80,177,231,.45);color:#0c6aa0}.okown .okp.r,.okownbar .okp.r{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);color:#b91c1c}
+html[data-theme="dark"] .okp.g{color:#86efac!important}html[data-theme="dark"] .okp.y{color:#fcd34d!important}html[data-theme="dark"] .okp.b{color:#8ad6f7!important}html[data-theme="dark"] .okp.r{color:#fca5a5!important}
+.okownbar{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:10px 14px;margin-bottom:14px}.okownbar h4{margin:0 0 4px;font-size:13.5px}
+</style>`);
+
+  /* ---------------- claims ---------------- */
+  const claimState = c => (!c || !c.deliveredAt ? 'none' : c.collectedAt ? 'coll' : c.sentAt ? 'sent' : 'deliv');
+  const CL = { none: ['لسه', 'Not yet', ''], deliv: ['اتسلّمت والعميل وافق — مستنية المطالبة', 'Delivered, client approved — claim due', 'y'], sent: ['المطالبة اتبعتت للعميل', 'Claim sent to the client', 'b'], coll: ['اتحصّلت', 'Collected', 'g'] };
+  const claimBtn = (p, sid, st) => {
+    if (st === 'none' && isOwner(p)) return `<button type="button" class="btn sm ghost" data-okown="deliv:${p.id}:${sid}">${icon('check')}<span>${esc(L('اتسلّمت والعميل وافق', 'Delivered — client approved'))}</span></button>`;
+    if (st === 'deliv' && isFin(p)) return `<button type="button" class="btn sm p" data-okown="sent:${p.id}:${sid}">${icon('check')}<span>${esc(L('المطالبة اتبعتت للعميل', 'Claim sent to the client'))}</span></button>`;
+    if (st === 'sent' && isFinMgr()) return `<button type="button" class="btn sm p" data-okown="coll:${p.id}:${sid}">${icon('check')}<span>${esc(L('اتحصّلت', 'Collected'))}</span></button>`;
+    return '';
+  };
+  const claimRow = (p, s) => { const c = (p.okClaims || {})[s.id]; const st = claimState(c); const info = st === 'none' ? '' : [c.deliveredAt ? `${L('سُلّمت', 'Delivered')} ${d10(c.deliveredAt)} · ${c.deliveredBy || ''}` : '', c.sentAt ? `${L('المطالبة', 'Claim')} ${d10(c.sentAt)} · ${c.sentBy || ''}` : '', c.collectedAt ? `${L('التحصيل', 'Collected')} ${d10(c.collectedAt)} · ${c.collectedBy || ''}` : ''].filter(Boolean).join(' — ');
+    return `<div class="okrow"><b>${esc(L(s.ar, s.name))}</b><span class="okp ${CL[st][2]}">${esc(L(CL[st][0], CL[st][1]))}</span><span class="grow muted tiny">${esc(info)}</span>${claimBtn(p, s.id, st)}</div>`; };
+
+  /* ---------------- team + borrow requests ---------------- */
+  const JS = { pending: ['مستني الرد', 'Waiting', 'y'], approved: ['اتوافق عليه', 'Approved', 'g'], rejected: ['اترفض', 'Declined', 'r'] };
+  const canDecide = j => j.status === 'pending' && (j.to === me() || (!j.to && isAdmin()) || isAdmin());
+  const joinRow = (p, j, withProject) => `<div class="okrow"><b>${esc(nm(j.wid) || '—')}</b>${withProject ? `<a href="#/projects/${p.id}">${esc(p.name || '')}</a>` : ''}<span class="okp ${JS[j.status][2]}">${esc(L(JS[j.status][0], JS[j.status][1]))}</span><span class="grow muted tiny">${esc(L('طلبه ', 'Asked by '))}${esc(j.byName || '')} · ${d10(j.at)}${j.to ? ` · ${esc(L('عند ', 'with '))}${esc(nm(j.to))}` : ` · ${esc(L('عند الإدارة', 'with management'))}`}${j.note ? ' — ' + esc(j.note) : ''}${j.reason ? ' — ' + esc(j.reason) : ''}</span>${canDecide(j) ? `<button type="button" class="btn sm p" data-okown="jok:${p.id}:${j.id}">${esc(L('موافق', 'Approve'))}</button><button type="button" class="btn sm ghost" data-okown="jno:${p.id}:${j.id}">${esc(L('رفض', 'Decline'))}</button>` : ''}</div>`;
+
+  const cardHTML = p => {
+    const os = owners(p); const team = (p.team || []).filter(id => !os.includes(id)); const fin = finId(p);
+    const joins = (p.okJoin || []).slice().reverse().filter(j => j.status === 'pending' || isOwner(p) || j.by === me() || j.to === me()).slice(0, 8);
+    return `<div class="okown" data-pid="${p.id}"><div class="okoh"><b>${esc(L('مالك المشروع والفريق والمطالبات', 'Project owner, team and claims'))}</b>${p.okState === 'hold' ? `<span class="okp y">On hold</span>` : ''}</div><div class="okob">
+      <div class="okkv"><div><small>${esc(L('مالك المشروع (Project Owner)', 'Project Owner'))}</small><b>${esc(os.map(nm).filter(Boolean).join(' & ') || p.leadName || '—')}</b></div>
+        <div><small>${esc(L('المسؤول المالي مع العميل', 'Client finance'))}</small><b>${esc(nm(fin) || p.financeName || '—')}</b></div>
+        <div><small>${esc(L('مدير الحسابات (التحصيل)', 'Financial Manager (collection)'))}</small><b>${esc(finMgrs().map(w => w.name).join(', ') || '—')}</b></div></div>
+      <div><h4><span>${esc(L('الفريق', 'Team'))} · ${team.length}</span><span class="grow"></span>${isOwner(p) ? `<button type="button" class="btn sm ghost" data-okown="join:${p.id}">${icon('plus')}<span>${esc(L('اطلب حد من تيم تاني', 'Ask for someone from another team'))}</span></button>` : ''}</h4>
+        <div class="okchips">${os.map(id => `<span class="okchip o">${esc(nm(id))}</span>`).join('')}${team.map(id => `<span class="okchip">${esc(nm(id) || '—')}</span>`).join('')}</div>
+        ${joins.length ? `<div style="margin-top:8px">${joins.map(j => joinRow(p, j, false)).join('')}</div>` : ''}</div>
+      <div><h4><span>${esc(L('مطالبات المراحل (من غير مبالغ)', 'Stage claims (no amounts)'))}</span></h4>${PIPE().map(s => claimRow(p, s)).join('')}</div>
+    </div></div>`;
+  };
+
+  /* ---------------- what waits for me, on the home pages ---------------- */
+  const barHTML = () => {
+    const rows = [];
+    live().forEach(p => {
+      (p.okJoin || []).forEach(j => { if (j.status === 'pending' && (j.to === me() || (!j.to && isAdmin()))) rows.push(joinRow(p, j, true)); });
+      Object.keys(p.okClaims || {}).forEach(sid => { const st = claimState(p.okClaims[sid]); const mine = (st === 'deliv' && finId(p) === me()) || (st === 'sent' && finMgrs().some(w => w.id === me()));
+        if (mine) rows.push(`<div class="okrow"><a href="#/projects/${p.id}"><b>${esc(p.name || '')}</b></a><span>${esc(stName(sid))}</span><span class="okp ${CL[st][2]}">${esc(L(CL[st][0], CL[st][1]))}</span><span class="grow"></span>${claimBtn(p, sid, st)}</div>`); });
+    });
+    return rows.length ? `<div class="okownbar" id="okownbar"><h4>${esc(L('مستنيك في المشاريع', 'Waiting for you on projects'))} · ${rows.length}</h4>${rows.join('')}</div>` : '';
+  };
+
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    const v = S.route && S.route.view; const view = document.getElementById('view'); if (!view || !S.session) return;
+    if (v === 'projects' && S.route.id) { const p = byId('projects', S.route.id); const anchor = view.querySelector('.okflow') || view.querySelector('.okpipe'); const old = view.querySelector('.okown');
+      if (!p || !anchor) return; const html = cardHTML(p); const sig = html.length + ':' + (p.updatedAt || '');
+      if (!old) anchor.insertAdjacentHTML('afterend', html); else if (old.dataset.sig !== sig) old.outerHTML = html; const el = view.querySelector('.okown'); if (el) el.dataset.sig = sig; return; }
+    const old = document.getElementById('okownbar');
+    if (!['me', 'dashboard', 'projects', 'home', 'tasks'].includes(v)) { if (old) old.remove(); return; }
+    const html = barHTML(); if (!html) { if (old) old.remove(); return; }
+    if (!old) view.insertAdjacentHTML('afterbegin', html); else if (old.dataset.sig !== String(html.length)) old.outerHTML = html; const el = document.getElementById('okownbar'); if (el) el.dataset.sig = String(html.length);
+  } catch (e) { console.warn('okown', e); } });
+
+  document.addEventListener('click', async ev => {
+    const t = ev.target.closest && ev.target.closest('[data-okown]'); if (!t) return; ev.preventDefault();
+    const [act, pid, x] = t.dataset.okown.split(':'); const p = byId('projects', pid); if (!p) return;
+    const claims = () => Object.assign({}, p.okClaims || {}); const cur = () => Object.assign({}, (p.okClaims || {})[x] || {});
+    if (act === 'deliv') { if (!isOwner(p)) return; if (!(await confirmDlg(L(`تأكيد: مرحلة «${stName(x)}» اتسلّمت للعميل والعميل وافق عليها؟`, `Confirm: the «${stName(x)}» stage was delivered and the client approved it?`), L('تأكيد', 'Confirm'), false))) return;
+      const c = claims(); c[x] = Object.assign(cur(), { deliveredAt: nowISO(), deliveredBy: myName(), deliveredById: me() }); await up(pid, { okClaims: c });
+      tell([finId(p)], L(`${p.name}: مرحلة «${stName(x)}» جاهزة للمطالبة`, `${p.name}: «${stName(x)}» is ready for the claim`), L(`${myName()} سلّم المرحلة والعميل وافق — ابعت المطالبة للعميل وعلّم عليها في السيستم.`, `${myName()} delivered the stage and the client approved — send the claim to the client and mark it in the system.`), pid);
+      toast(L('اتسجّل — المسؤول المالي اتبلّغ', 'Saved — the finance person was notified')); return; }
+    if (act === 'sent') { if (!isFin(p)) return; if (!(await confirmDlg(L(`تأكيد: مطالبة مرحلة «${stName(x)}» اتبعتت للعميل والعميل موافق عليها؟`, `Confirm: the claim for «${stName(x)}» was sent to the client and the client agreed?`), L('تأكيد', 'Confirm'), false))) return;
+      const c = claims(); c[x] = Object.assign(cur(), { sentAt: nowISO(), sentBy: myName(), sentById: me() }); await up(pid, { okClaims: c });
+      tell(finMgrs().map(w => w.id), L(`${p.name}: مطالبة «${stName(x)}» اتبعتت للعميل`, `${p.name}: the «${stName(x)}» claim was sent to the client`), L(`العميل موافق على المطالبة — تابع التحصيل مع حسابات العميل. (${myName()})`, `The client agreed to the claim — follow up collection with the client's accounts. (${myName()})`), pid);
+      tell(owners(p), L(`${p.name}: مطالبة «${stName(x)}» اتبعتت للعميل`, `${p.name}: the «${stName(x)}» claim was sent to the client`), L(`بعتها ${myName()} — الحسابات بتتابع التحصيل.`, `Sent by ${myName()} — accounts are following up collection.`), pid);
+      toast(L('اتسجّل — مدير الحسابات اتبلّغ', 'Saved — the Financial Manager was notified')); return; }
+    if (act === 'coll') { if (!isFinMgr()) return; if (!(await confirmDlg(L(`تأكيد: مطالبة مرحلة «${stName(x)}» اتحصّلت؟`, `Confirm: the «${stName(x)}» claim was collected?`), L('تأكيد', 'Confirm'), false))) return;
+      const c = claims(); c[x] = Object.assign(cur(), { collectedAt: nowISO(), collectedBy: myName(), collectedById: me() }); await up(pid, { okClaims: c });
+      tell(owners(p).concat([finId(p)]), L(`${p.name}: مطالبة «${stName(x)}» اتحصّلت`, `${p.name}: the «${stName(x)}» claim was collected`), L(`سجّلها ${myName()}.`, `Recorded by ${myName()}.`), pid);
+      toast(L('اتسجّل', 'Saved')); return; }
+    if (act === 'join') { if (!isOwner(p)) return; const inTeam = new Set((p.team || []).concat(owners(p))); const pend = new Set((p.okJoin || []).filter(j => j.status === 'pending').map(j => j.wid));
+      const ppl = list('workers').filter(w => w.status !== 'inactive' && w.status !== 'left' && !inTeam.has(w.id) && !pend.has(w.id)).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+      openModal({ title: L('اطلب حد من تيم تاني', 'Ask for someone from another team'), submitLabel: L('ابعت الطلب', 'Send the request'),
+        body: `<div class="form"><div class="field full"><label>${esc(L('مين؟', 'Who?'))}</label><select name="wid" required><option value="">—</option>${ppl.map(w => `<option value="${w.id}">${esc(w.name)} — ${esc(w.title || '')}${homeOwner(w.id) ? ' · ' + esc(nm(homeOwner(w.id))) : ''}</option>`).join('')}</select></div><div class="field full"><label>${esc(L('من إمتى ولحد إمتى، وهيعمل إيه', 'From when to when, and for what'))}</label><textarea name="note" rows="3" maxlength="400" dir="auto" required></textarea></div><div class="full small muted">${esc(L('الطلب بيروح لمالك المشروع اللي الشخص ده تابع له — يوافق أو يرفض، وتتفقوا على التوقيت.', 'The request goes to the owner this person belongs to — he approves or declines, and you agree the timing together.'))}</div></div>`,
+        onSubmit: async f => { const d = formData(f); if (!d.wid || !d.note) { toast(L('اختار الشخص واكتب التفاصيل', 'Choose the person and write the details'), 'err'); return false; }
+          const to = homeOwner(d.wid); const j = { id: uid(), wid: d.wid, by: me(), byName: myName(), at: nowISO(), note: d.note, to: to && to !== me() ? to : '', status: 'pending' };
+          if (to && to === me()) { j.status = 'approved'; j.decAt = nowISO(); j.decBy = myName(); await up(pid, { okJoin: (p.okJoin || []).concat([j]), team: Array.from(new Set((p.team || []).concat([d.wid]))) }); toast(L('اتضاف — هو من فريقك', 'Added — he is on your own team')); return; }
+          await up(pid, { okJoin: (p.okJoin || []).concat([j]) });
+          const title = L(`طلب ضم ${nm(d.wid)} لمشروع ${p.name}`, `Request: ${nm(d.wid)} on ${p.name}`); const body = L(`${myName()} عايز ${nm(d.wid)} يشتغل معاه في المشروع: ${d.note}`, `${myName()} asks for ${nm(d.wid)} on the project: ${d.note}`);
+          if (j.to) tell([j.to], title, body, pid); else if (typeof notifyRole === 'function') { try { notifyRole('admin', title, body, { id: 'okj_' + j.id }); } catch (e) { /* */ } }
+          toast(L('الطلب اتبعت', 'Request sent')); } }); return; }
+    if (act === 'jok' || act === 'jno') { const j = (p.okJoin || []).find(q => q.id === x); if (!j || !canDecide(j)) return;
+      const done = async reason => { const okJoin = (p.okJoin || []).map(q => (q.id === x ? Object.assign({}, q, { status: act === 'jok' ? 'approved' : 'rejected', decAt: nowISO(), decBy: myName(), reason: reason || '' }) : q)); const patch = { okJoin }; if (act === 'jok') patch.team = Array.from(new Set((p.team || []).concat([j.wid]))); await up(pid, patch);
+        tell([j.by, act === 'jok' ? j.wid : ''], act === 'jok' ? L(`${nm(j.wid)} اتضاف لمشروع ${p.name}`, `${nm(j.wid)} joined ${p.name}`) : L(`طلب ضم ${nm(j.wid)} لمشروع ${p.name} اترفض`, `Request for ${nm(j.wid)} on ${p.name} was declined`), `${myName()}${reason ? ' — ' + reason : ''}`, pid); toast(L('اتسجّل', 'Saved')); };
+      openModal({ title: act === 'jok' ? L(`موافقة: ${nm(j.wid)} ← ${p.name}`, `Approve: ${nm(j.wid)} → ${p.name}`) : L(`رفض: ${nm(j.wid)} ← ${p.name}`, `Decline: ${nm(j.wid)} → ${p.name}`), submitLabel: act === 'jok' ? L('موافق', 'Approve') : L('رفض', 'Decline'),
+        body: `<div class="form"><div class="full small muted">${esc(j.byName || '')}: ${esc(j.note || '')}</div><div class="field full"><label>${esc(act === 'jok' ? L('ملاحظة (التوقيت المتفق عليه)', 'Note (the agreed timing)') : L('سبب الرفض', 'Reason'))}</label><input name="reason" maxlength="200" dir="auto" ${act === 'jno' ? 'required' : ''}></div></div>`,
+        onSubmit: async f => { const r = f.querySelector('[name=reason]').value.trim(); if (act === 'jno' && !r) { toast(L('اكتب السبب', 'Write the reason'), 'err'); return false; } await done(r); } }); return; }
+  });
+})();
