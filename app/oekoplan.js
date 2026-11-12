@@ -3786,3 +3786,60 @@ ${done}${office}${boqRows()}</div>`;
   } catch (e) { /* ignore */ } });
   window.okCrm = { page };
 })();
+
+/* =====================================================================
+   System look: «Light blue» (12 Nov 2026, Mahmoud) — the CEO's colours across the whole system.
+   · The light blue of the identity (#50b1e7) leads: buttons, the active menu item, links, the big round button,
+     the sign-in button; the blue → teal gradient (#50b1e7 → #38a599) replaces the green → teal one.
+   · Status colours stay what they mean (green = done / present, amber = late, red = urgent).
+   · The previous look is kept whole as «classic» (green): settings.okTheme = 'classic' brings it back at once,
+     for everyone, with no new build. Code snapshot of the classic look: git tag ui-classic-20261112.
+   · Settings → «System look» (CEO only) switches between the two.
+   ===================================================================== */
+(() => {
+  if (window.__OK_SKIN__) return; window.__OK_SKIN__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const cached = () => { try { return localStorage.getItem('ok.skin') || ''; } catch (e) { return ''; } };
+  const apply = t => document.documentElement.classList.toggle('okblue', t !== 'classic');
+  apply(cached() || 'blue');
+  const B = '#50b1e7', T = '#38a599', SKY = '#9cdff7', INK = '#17191c', G = `linear-gradient(135deg,${B},${T})`;
+  const H = 'html.okblue.okblue.okblue';
+  document.head.insertAdjacentHTML('beforeend', `<style id="oeko-skin-blue">
+${H},${H}[data-theme="light"],${H}.apple[data-theme="light"]{--accent:${B};--accent-ink:#fff;--accent-soft:rgba(80,177,231,.14);--accent-2:${T};--primary:${B};--primary-ink:#fff;--side-bg:#0a1b28;--side-on-bg:${G};--alu:${T};--elm:${B}}
+${H}[data-theme="dark"],${H}.apple[data-theme="dark"]{--accent:${B};--accent-ink:#04121c;--accent-soft:rgba(80,177,231,.16);--accent-2:${T};--primary:${B};--primary-ink:#04121c;--side-on-bg:${G}}
+@media (prefers-color-scheme: dark){${H}:not([data-theme="light"]){--accent:${B};--accent-ink:#04121c;--accent-soft:rgba(80,177,231,.16);--primary:${B};--primary-ink:#04121c;--side-on-bg:${G}}}
+${H} .btn.p,${H}.apple .btn.p{background:${B}!important;border-color:${B}!important;color:var(--primary-ink)!important;font-weight:600}
+${H}[data-theme="light"] .btn.p,${H}.apple[data-theme="light"] .btn.p{box-shadow:0 6px 14px -8px rgba(80,177,231,.7)!important}
+${H}.apple[data-theme="light"] .side .nav a.on,${H}.apple[data-theme="light"] .side .nav .ngrp.open > .ngh.on,${H}[data-theme="light"] .side .nav a.on{background:${G}!important;color:#fff!important;box-shadow:0 6px 16px -8px rgba(80,177,231,.65)!important}
+${H}.apple[data-theme="dark"] .side .nav a.on,${H}[data-theme="dark"] .side .nav a.on,${H}.apple:not([data-theme="light"]) .side .nav a.on{background:${G}!important;color:#fff!important}
+${H}.apple[data-theme="light"] .side .nav .ngh,${H}.apple[data-theme="light"] .side .nav a,${H}.apple[data-theme="light"] .side .userchip .n{color:${INK}!important}
+${H}.apple[data-theme="light"] .side .nav a.on,${H}.apple[data-theme="light"] .side .nav a.on svg{color:#fff!important}
+${H}.apple[data-theme="light"] .side .nav .ngc{background:rgba(80,177,231,.16)!important;color:${INK}!important}
+${H}.apple[data-theme="light"] .side .nav .ngh:hover,${H}.apple[data-theme="light"] .side .nav a:hover{background:rgba(80,177,231,.08)!important}
+${H}.apple[data-theme="light"] .side .nav .ngrp.open > .ngh,${H}.apple[data-theme="light"] .side .nav .ngrp.fly > .ngh{background:rgba(80,177,231,.07)!important}
+${H} .side .avatar,${H}.apple[data-theme="light"] .side .avatar{background:${G}!important;color:#fff!important}
+${H} body .nfd-main,${H} body .fab,${H} body .nq-fab,${H}.apple .nfd-main,${H}.apple .fab,${H}.apple .nq-fab{background:${G}!important;color:#fff!important;box-shadow:0 10px 26px -8px rgba(80,177,231,.55)!important}
+${H} .okcard .slbtn{background:${G}!important}
+${H} .okcard h2{color:${INK}!important}
+${H} .okn.root{background:${G}!important}
+${H} .okst b{background:linear-gradient(135deg,${B},${T})!important;-webkit-background-clip:text!important;background-clip:text!important}
+${H} #okpwgate input:focus{border-color:${B}!important}
+${H} #okpwgate li.ok i{background:${T}!important;border-color:${T}!important}
+${H} #okpwgate .okpwbtn{background:${B}!important}
+${H} ::selection{background:rgba(80,177,231,.28)}
+${H} input:focus,${H} select:focus,${H} textarea:focus{border-color:${B}!important;outline-color:${B}}
+${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
+</style>`);
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    const t = (S.settings && S.settings.okTheme) || 'blue'; if (t !== cached()) { try { localStorage.setItem('ok.skin', t); } catch (e) { /* */ } } apply(t);
+    if (!S.session || !isAdmin() || !S.route || S.route.view !== 'settings') return; const v = document.getElementById('view'); if (!v || v.querySelector('#okskin')) return;
+    v.insertAdjacentHTML('afterbegin', `<div class="card" id="okskin" style="margin-bottom:14px"><div class="cardhead"><h3>${esc(L('شكل السيستم', 'System look'))}</h3></div><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <button type="button" class="btn ${t !== 'classic' ? 'p' : ''}" data-okskin="blue"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${G};vertical-align:-2px;margin-inline-end:6px"></span>${esc(L('اللبني (الجديد)', 'Light blue (new)'))}</button>
+      <button type="button" class="btn ${t === 'classic' ? 'p' : ''}" data-okskin="classic"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:linear-gradient(135deg,#70b62e,#38a599 60%,#50b1e7);vertical-align:-2px;margin-inline-end:6px"></span>${esc(L('الأخضر (القديم)', 'Green (classic)'))}</button>
+      <span class="small muted">${esc(L('بيتغير عند كل الناس على طول.', 'Changes for everyone at once.'))}</span></div></div>`); } catch (e) { /* ignore */ } });
+  document.addEventListener('click', async ev => { const b = ev.target.closest && ev.target.closest('[data-okskin]'); if (!b || !S.session || !isAdmin()) return; ev.preventDefault();
+    const t = b.dataset.okskin; try { await Store.saveSettings({ okTheme: t }); } catch (e) { toast(L('ما اتحفظش — جرّب تاني', 'Not saved — try again'), 'err'); return; }
+    try { localStorage.setItem('ok.skin', t); } catch (e) { /* */ } apply(t); const c = document.getElementById('okskin'); if (c) c.remove(); if (typeof rerender === 'function') rerender(); toast(L('اتغيّر', 'Changed')); });
+  window.okSkin = { apply };
+})();
