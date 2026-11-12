@@ -364,11 +364,11 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
 
   /* roles of the office (the studio keys stay; the names change) */
   if (typeof ROLES === 'object') Object.assign(ROLES, {
-    admin: 'صاحب المكتب', manager: 'مدير التصميم — Landscape Design Manager', hr: 'مدير المكتب — الشؤون الإدارية والموارد البشرية', acc: 'الحسابات',
+    admin: 'CEO', manager: 'مدير التصميم — Landscape Design Manager', hr: 'مدير المكتب — الشؤون الإدارية والموارد البشرية', acc: 'الحسابات',
     head: 'شريك / رئيس قسم — Associate Partner', office: 'مهندس — Landscape Architect', employee: 'موظف — بوابة الموبايل', viewer: 'مشاهد',
   });
   if (typeof ROLE_HINTS === 'object') Object.assign(ROLE_HINTS, {
-    admin: 'صاحب المكتب (د. طارق صبحي): يرى كل شيء ويعتمد نهائيًا — المشاريع، الفريق، الحضور، الإجازات، المرتبات، العملاء وعروض الأسعار.',
+    admin: 'CEO (د. طارق صبحي): يرى كل شيء ويعتمد نهائيًا — المشاريع، الفريق، الحضور، الإجازات، المرتبات، العملاء وعروض الأسعار.',
     head: 'الشريك / رئيس القسم: يدير قسمه وفرقه — يوزّع المهام ويتابع المشاريع ويعتمد إجازات وأذونات وبصمات فريقه (الاعتماد النهائي).',
     manager: 'مدير التصميم: يتابع كل مشاريع التصميم ومراحلها والمهام والفريق والحضور — بدون أرقام مالية.',
     hr: 'مدير المكتب: الفريق والحضور والجزاءات والإجازات والمرتبات والمصروفات والشؤون الإدارية.',
@@ -683,7 +683,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
       </div></div>
       <div class="card"><h3>${L('الأقسام والأدوار', 'Departments and roles')}</h3>
       <div class="oko-team">${DEPTS.map(d => `<div class="p"><i>${esc(L(d.name, d.en)).slice(0, 2)}</i><div><b>${esc(L(d.name, d.en))}</b><small>${w.filter(x => x.deptId === d.id).length} ${L('شخص', 'people')}</small></div></div>`).join('')}</div>
-      <p class="small muted" style="margin-top:10px">${L('الشريك / رئيس القسم يعتمد إجازات وأذونات فريقه نهائيًا؛ السلف: رئيس القسم ثم مدير المكتب. صاحب المكتب يرى كل شيء.', 'The partner / department head gives the final approval on the team\'s leave and permissions; advances: head then office manager. The owner sees everything.')}</p></div>
+      <p class="small muted" style="margin-top:10px">${L('الشريك / رئيس القسم يعتمد إجازات وأذونات فريقه نهائيًا؛ السلف: رئيس القسم ثم مدير المكتب. CEO يرى كل شيء.', 'The partner / department head gives the final approval on the team\'s leave and permissions; advances: head then office manager. The owner sees everything.')}</p></div>
       <div class="card"><h3>${L('فريق أوكوبلان', 'The Ökoplan team')}</h3>
       <p class="small">${L(`ملف الفريق فيه ${TEAM.length} شخص — ${missing ? `${missing} لسه ماتضافوش` : 'كلهم متضافين'}${pend ? ` · ${pend} قسمهم مستني تأكيد` : ''}.`, `The team file has ${TEAM.length} people — ${missing ? `${missing} not added yet` : 'all added'}${pend ? ` · ${pend} with the department to confirm` : ''}.`)}</p>
       ${missing ? `<button type="button" class="btn" data-action="oekoImportTeam">${icon('plus')} ${L('إضافة الفريق من الملف', 'Add the team from the file')}</button>` : ''}
@@ -706,9 +706,9 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
   /* ---------------------------------------------------------------- language: the add-on's Arabic ↔ English (the page pack covers the engine) */
   const OEKO_I18N = {
     'معرض المشاريع': 'Projects Gallery', 'المعرض': 'Gallery', 'من معرض المشاريع': 'From the projects gallery', 'عن المكتب': 'About the office', 'البروفايل': 'The profile', 'مشاريع المكتب': 'The office\'s projects', 'إضافة مشروع': 'Add project',
-    'صاحب المكتب': 'Office owner', 'مدير التصميم — Landscape Design Manager': 'Landscape Design Manager', 'مدير المكتب — الشؤون الإدارية والموارد البشرية': 'Office Manager — Admin & HR', 'الحسابات': 'Accounts',
+    'CEO': 'CEO', 'مدير التصميم — Landscape Design Manager': 'Landscape Design Manager', 'مدير المكتب — الشؤون الإدارية والموارد البشرية': 'Office Manager — Admin & HR', 'الحسابات': 'Accounts',
     'شريك / رئيس قسم — Associate Partner': 'Associate Partner — Head of Department', 'مهندس — Landscape Architect': 'Landscape Architect', 'موظف — بوابة الموبايل': 'Employee — mobile portal', 'مشاهد': 'Viewer', 'كشك الحضور': 'Attendance kiosk',
-    'صاحب المكتب (د. طارق صبحي): يرى كل شيء ويعتمد نهائيًا — المشاريع، الفريق، الحضور، الإجازات، المرتبات، العملاء وعروض الأسعار.': 'Office owner (Dr. Tarek Sobhy): sees everything and gives the final approval — projects, team, attendance, leave, payroll, clients and fee proposals.',
+    'CEO (د. طارق صبحي): يرى كل شيء ويعتمد نهائيًا — المشاريع، الفريق، الحضور، الإجازات، المرتبات، العملاء وعروض الأسعار.': 'CEO (Dr. Tarek Sobhy): sees everything and gives the final approval — projects, team, attendance, leave, payroll, clients and fee proposals.',
     'الشريك / رئيس القسم: يدير قسمه وفرقه — يوزّع المهام ويتابع المشاريع ويعتمد إجازات وأذونات وبصمات فريقه (الاعتماد النهائي).': 'Associate partner / head of department: runs the department and its teams — assigns tasks, follows projects and gives the final approval on the team\'s leave, permissions and punches.',
     'مدير التصميم: يتابع كل مشاريع التصميم ومراحلها والمهام والفريق والحضور — بدون أرقام مالية.': 'Design manager: follows every design project and stage, tasks, team and attendance — no financial figures.',
     'مدير المكتب: الفريق والحضور والجزاءات والإجازات والمرتبات والمصروفات والشؤون الإدارية.': 'Office manager: team, attendance, penalties, leave, payroll, expenses and administration.',
@@ -957,7 +957,7 @@ html[data-theme="dark"] .okn{background:var(--surface-2)}
     const card = (w, depth) => { const ph = okOrgPhoto(w); const n = (kids.get(w.id) || []).length; return `<div class="okn" draggable="${can ? 'true' : 'false'}" data-okp="${w.id}">${can ? `<span class="okx" data-okout="${w.id}" title="${L('شيله من تحت مديره', 'Take out from under this manager')}">✕</span>` : ''}${ph ? `<img class="okav" src="${esc(ph)}" alt="">` : `<span class="okav">${esc(okIni(w.name))}</span>`}<a class="okm" href="#/workers/${w.id}">${esc(w.name)}</a><span class="okt">${esc(w.trade || w.title || '')}${w.deptId ? `<br>${esc(okDept(w.deptId))}` : ''}</span>${n ? `<span class="okc">${n}</span>` : ''}</div>`; };
     const tree = (id, depth) => { if (seen.has(id)) return ''; seen.add(id); const ks = sortK(kids.get(id) || []); if (!ks.length) return ''; if (depth >= 4) return `<ul><li><div class="okn dept"><span class="okt">${ks.length} ${L('أشخاص', 'people')}</span></div></li></ul>`; return `<ul>${ks.map(k => `<li>${card(k, depth)}${tree(k.id, depth + 1)}</li>`).join('')}</ul>`; };
     const ownerName = (S.settings && S.settings.ownerName) || 'د. طارق صبحي'; const ownerPh = typeof nfPhoto === 'function' ? nfPhoto('owner') : null;
-    const root = `<div class="okn root" data-okp="owner">${ownerPh ? `<img class="okav" src="${esc(ownerPh)}" alt="">` : `<span class="okav">${esc(okIni(ownerName))}</span>`}<span class="okm">${esc(ownerName)}</span><span class="okt">${L('صاحب المكتب', 'Office owner')}</span></div>`;
+    const root = `<div class="okn root" data-okp="owner">${ownerPh ? `<img class="okav" src="${esc(ownerPh)}" alt="">` : `<span class="okav">${esc(okIni(ownerName))}</span>`}<span class="okm">${esc(ownerName)}</span><span class="okt">${L('CEO', 'CEO')}</span></div>`;
     const pool = ws.filter(w => !w.managerId && !['manager', 'head', 'admin', 'hr'].includes(w.role) && (kids.get(w.id) || []).length === 0);
     return `<div class="card"><div class="cardhead"><h3>${L('هيكل Ökoplan Landscaping', 'Ökoplan Landscaping structure')}</h3><span class="muted small">${can ? L('اسحب أي شخص وحطه على مديره الجديد · ✕ تشيله من تحت مديره · الحفظ تلقائي', 'Drag anyone onto their new manager · ✕ takes them out from under their manager · saves automatically') : L('الهيكل حسب المدير المباشر في ملف كل موظف', "The structure follows each person's direct manager")}</span></div>
       ${can && pool.length ? `<div class="okorg-bar"><span class="small muted">${L('من غير مدير مباشر:', 'No direct manager yet:')}</span><div class="okpool">${pool.map(w => `<div class="okn" draggable="true" data-okp="${w.id}">${okOrgPhoto(w) ? `<img class="okav" src="${esc(okOrgPhoto(w))}" alt="">` : `<span class="okav">${esc(okIni(w.name))}</span>`}<a class="okm" href="#/workers/${w.id}">${esc(w.name)}</a></div>`).join('')}</div></div>` : ''}
@@ -977,7 +977,7 @@ html[data-theme="dark"] .okn{background:var(--surface-2)}
     const m = toId === 'owner' ? null : byId('workers', toId);
     const patch = { managerId: m ? m.id : null }; if (m && m.deptId && m.deptId !== w.deptId && !['mgmt', 'acct'].includes(m.deptId)) patch.deptId = m.deptId;
     await Store.update('workers', pid, patch);
-    toast(m ? L(`${w.name} بقى تحت ${m.name}`, `${w.name} now reports to ${m.name}`) : L(`${w.name} بقى تحت صاحب المكتب مباشرة`, `${w.name} now reports to the owner`)); render();
+    toast(m ? L(`${w.name} بقى تحت ${m.name}`, `${w.name} now reports to ${m.name}`) : L(`${w.name} بقى تحت CEO مباشرة`, `${w.name} now reports to the owner`)); render();
   };
   let okDragId = null;
   document.addEventListener('dragstart', e => { const n = e.target.closest && e.target.closest('.okn[draggable="true"]'); if (!n) return; okDragId = n.dataset.okp; n.classList.add('drag'); try { e.dataTransfer.setData('text/plain', okDragId); e.dataTransfer.effectAllowed = 'move'; } catch (x) { /* ignore */ } });
@@ -988,9 +988,9 @@ html[data-theme="dark"] .okn{background:var(--surface-2)}
   /* phones: tap a person, then tap the new manager */
   let okPick = null;
   document.addEventListener('click', e => { if (!('ontouchstart' in window)) return; const n = e.target.closest && e.target.closest('.okorg .okn[data-okp]'); if (!n || e.target.closest('a,[data-okout]') || !okOrgCan()) return; if (!okPick) { if (n.dataset.okp === 'owner') return; okPick = n.dataset.okp; n.classList.add('drag'); toast(L('دلوقتي دوس على المدير الجديد', 'Now tap the new manager')); } else { const from = okPick; okPick = null; document.querySelectorAll('.okn.drag').forEach(x => x.classList.remove('drag')); if (n.dataset.okp !== from) okMove(from, n.dataset.okp); } });
-  Object.assign(OEKO_I18N, { 'هيكل Ökoplan Landscaping': 'Ökoplan Landscaping structure', 'صاحب المكتب': 'Office owner', 'من غير مدير مباشر:': 'No direct manager yet:' });
+  Object.assign(OEKO_I18N, { 'هيكل Ökoplan Landscaping': 'Ökoplan Landscaping structure', 'CEO': 'CEO', 'من غير مدير مباشر:': 'No direct manager yet:' });
 
-  /* the sidebar chip: the person's own job title (from their file) instead of the access role; the owner keeps «Office owner» */
+  /* the sidebar chip: the person's own job title (from their file) instead of the access role; the owner keeps «CEO» */
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => {
     try {
       const r = typeof myRecordRef === 'function' ? myRecordRef() : null; const w = r && r.col === 'workers' ? r.rec : null; if (!w) return;
@@ -2960,26 +2960,26 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
   const homeOwner = wid => { const os = ownerSet(); let x = W(wid), hops = 0; while (x && hops++ < 12) { const m = W(x.managerId); if (!m) return ''; if (m.status !== 'inactive' && (os.has(m.id) || ['head', 'manager'].includes(m.role))) return m.id; x = m; } return ''; };
 
   document.head.insertAdjacentHTML('beforeend', `<style>
-.okown{margin-top:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden}
-.okown .okoh{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}.okown .okoh b{font-size:14px}
-.okown .okob{padding:12px;display:flex;flex-direction:column;gap:12px}
-.okown .okkv{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}
-.okown .okkv>div{border:1px solid var(--line);border-radius:12px;padding:9px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}.okown .okkv small{color:var(--muted);font-size:11.5px}.okown .okkv b{font-size:13.5px;overflow-wrap:anywhere}
-.okown h4{margin:0 0 6px;font-size:13px;display:flex;align-items:center;gap:8px}.okown h4 .grow{flex:1}
-.okown .okchips{display:flex;gap:6px;flex-wrap:wrap}.okown .okchip{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12.5px;background:var(--surface-2)}.okown .okchip.o{border-color:var(--accent);color:var(--accent);font-weight:600}
-.okown .okrow,.okownbar .okrow{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:13px;flex-wrap:wrap}.okown .okrow:first-of-type,.okownbar .okrow:first-of-type{border-top:0}.okown .okrow .grow,.okownbar .okrow .grow{flex:1;min-width:120px}.okown .okrow .muted,.okownbar .okrow .muted{color:var(--muted)}
-.okown .okp,.okownbar .okp{display:inline-flex;align-items:center;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:600;border:1px solid var(--line);background:var(--surface-2);white-space:nowrap}
-.okown .okp.g,.okownbar .okp.g{background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.4);color:#15803d}.okown .okp.y,.okownbar .okp.y{background:rgba(245,179,1,.14);border-color:rgba(245,179,1,.45);color:#9a6700}.okown .okp.b,.okownbar .okp.b{background:rgba(80,177,231,.14);border-color:rgba(80,177,231,.45);color:#0c6aa0}.okown .okp.r,.okownbar .okp.r{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);color:#b91c1c}
+.okpo{margin-top:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden}
+.okpo .okoh{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}.okpo .okoh b{font-size:14px}
+.okpo .okob{padding:12px;display:flex;flex-direction:column;gap:12px}
+.okpo .okkv{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}
+.okpo .okkv>div{border:1px solid var(--line);border-radius:12px;padding:9px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}.okpo .okkv small{color:var(--muted);font-size:11.5px}.okpo .okkv b{font-size:13.5px;overflow-wrap:anywhere}
+.okpo h4{margin:0 0 6px;font-size:13px;display:flex;align-items:center;gap:8px}.okpo h4 .grow{flex:1}
+.okpo .okchips{display:flex;gap:6px;flex-wrap:wrap}.okpo .okchip{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12.5px;background:var(--surface-2)}.okpo .okchip.o{border-color:var(--accent);color:var(--accent);font-weight:600}
+.okpo .okrow,.okpobar .okrow{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:13px;flex-wrap:wrap}.okpo .okrow:first-of-type,.okpobar .okrow:first-of-type{border-top:0}.okpo .okrow .grow,.okpobar .okrow .grow{flex:1;min-width:120px}.okpo .okrow .muted,.okpobar .okrow .muted{color:var(--muted)}
+.okpo .okp,.okpobar .okp{display:inline-flex;align-items:center;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:600;border:1px solid var(--line);background:var(--surface-2);white-space:nowrap}
+.okpo .okp.g,.okpobar .okp.g{background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.4);color:#15803d}.okpo .okp.y,.okpobar .okp.y{background:rgba(245,179,1,.14);border-color:rgba(245,179,1,.45);color:#9a6700}.okpo .okp.b,.okpobar .okp.b{background:rgba(80,177,231,.14);border-color:rgba(80,177,231,.45);color:#0c6aa0}.okpo .okp.r,.okpobar .okp.r{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);color:#b91c1c}
 html[data-theme="dark"] .okp.g{color:#86efac!important}html[data-theme="dark"] .okp.y{color:#fcd34d!important}html[data-theme="dark"] .okp.b{color:#8ad6f7!important}html[data-theme="dark"] .okp.r{color:#fca5a5!important}
-.okownbar{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:10px 14px;margin-bottom:14px}.okownbar h4{margin:0 0 4px;font-size:13.5px}
+.okpobar{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:10px 14px;margin-bottom:14px}.okpobar h4{margin:0 0 4px;font-size:13.5px}
 </style>`);
 
   /* ---------------- claims ---------------- */
   const claimState = c => (!c || !c.deliveredAt ? 'none' : c.collectedAt ? 'coll' : c.sentAt ? 'sent' : 'deliv');
-  const CL = { none: ['لسه', 'Not yet', ''], deliv: ['اتسلّمت والعميل وافق — مستنية المطالبة', 'Delivered, client approved — claim due', 'y'], sent: ['المطالبة اتبعتت للعميل', 'Claim sent to the client', 'b'], coll: ['اتحصّلت', 'Collected', 'g'] };
+  const CL = { none: ['لسه', 'Not yet', ''], deliv: ['اتسلّمت والـ Client وافق — مستنية المطالبة', 'Delivered, Client approved — claim due', 'y'], sent: ['المطالبة اتبعتت للـ Client', 'Claim sent to the Client', 'b'], coll: ['اتحصّلت', 'Collected', 'g'] };
   const claimBtn = (p, sid, st) => {
-    if (st === 'none' && isOwner(p)) return `<button type="button" class="btn sm ghost" data-okown="deliv:${p.id}:${sid}">${icon('check')}<span>${esc(L('اتسلّمت والعميل وافق', 'Delivered — client approved'))}</span></button>`;
-    if (st === 'deliv' && isFin(p)) return `<button type="button" class="btn sm p" data-okown="sent:${p.id}:${sid}">${icon('check')}<span>${esc(L('المطالبة اتبعتت للعميل', 'Claim sent to the client'))}</span></button>`;
+    if (st === 'none' && isOwner(p)) return `<button type="button" class="btn sm ghost" data-okown="deliv:${p.id}:${sid}">${icon('check')}<span>${esc(L('اتسلّمت والـ Client وافق', 'Delivered — Client approved'))}</span></button>`;
+    if (st === 'deliv' && isFin(p)) return `<button type="button" class="btn sm p" data-okown="sent:${p.id}:${sid}">${icon('check')}<span>${esc(L('المطالبة اتبعتت للـ Client', 'Claim sent to the Client'))}</span></button>`;
     if (st === 'sent' && isFinMgr()) return `<button type="button" class="btn sm p" data-okown="coll:${p.id}:${sid}">${icon('check')}<span>${esc(L('اتحصّلت', 'Collected'))}</span></button>`;
     return '';
   };
@@ -2989,14 +2989,14 @@ html[data-theme="dark"] .okp.g{color:#86efac!important}html[data-theme="dark"] .
   /* ---------------- team + borrow requests ---------------- */
   const JS = { pending: ['مستني الرد', 'Waiting', 'y'], approved: ['اتوافق عليه', 'Approved', 'g'], rejected: ['اترفض', 'Declined', 'r'] };
   const canDecide = j => j.status === 'pending' && (j.to === me() || (!j.to && isAdmin()) || isAdmin());
-  const joinRow = (p, j, withProject) => `<div class="okrow"><b>${esc(nm(j.wid) || '—')}</b>${withProject ? `<a href="#/projects/${p.id}">${esc(p.name || '')}</a>` : ''}<span class="okp ${JS[j.status][2]}">${esc(L(JS[j.status][0], JS[j.status][1]))}</span><span class="grow muted tiny">${esc(L('طلبه ', 'Asked by '))}${esc(j.byName || '')} · ${d10(j.at)}${j.to ? ` · ${esc(L('عند ', 'with '))}${esc(nm(j.to))}` : ` · ${esc(L('عند الإدارة', 'with management'))}`}${j.note ? ' — ' + esc(j.note) : ''}${j.reason ? ' — ' + esc(j.reason) : ''}</span>${canDecide(j) ? `<button type="button" class="btn sm p" data-okown="jok:${p.id}:${j.id}">${esc(L('موافق', 'Approve'))}</button><button type="button" class="btn sm ghost" data-okown="jno:${p.id}:${j.id}">${esc(L('رفض', 'Decline'))}</button>` : ''}</div>`;
+  const joinRow = (p, j, withProject) => `<div class="okrow"><b>${esc(nm(j.wid) || '—')}</b>${withProject ? `<a href="#/projects/${p.id}">${esc(p.name || '')}</a>` : ''}<span class="okp ${JS[j.status][2]}">${esc(L(JS[j.status][0], JS[j.status][1]))}</span><span class="grow muted tiny">${esc(L('طلبه ', 'Asked by '))}${esc(j.byName || '')} · ${d10(j.at)}${j.to ? ` · ${esc(L('عند ', 'with '))}${esc(nm(j.to))}` : ` · ${esc(L('عند الـ CEO', 'with the CEO'))}`}${j.note ? ' — ' + esc(j.note) : ''}${j.reason ? ' — ' + esc(j.reason) : ''}</span>${canDecide(j) ? `<button type="button" class="btn sm p" data-okown="jok:${p.id}:${j.id}">${esc(L('موافق', 'Approve'))}</button><button type="button" class="btn sm ghost" data-okown="jno:${p.id}:${j.id}">${esc(L('رفض', 'Decline'))}</button>` : ''}</div>`;
 
   const cardHTML = p => {
     const os = owners(p); const team = (p.team || []).filter(id => !os.includes(id)); const fin = finId(p);
     const joins = (p.okJoin || []).slice().reverse().filter(j => j.status === 'pending' || isOwner(p) || j.by === me() || j.to === me()).slice(0, 8);
-    return `<div class="okown" data-pid="${p.id}"><div class="okoh"><b>${esc(L('مالك المشروع والفريق والمطالبات', 'Project owner, team and claims'))}</b>${p.okState === 'hold' ? `<span class="okp y">On hold</span>` : ''}</div><div class="okob">
-      <div class="okkv"><div><small>${esc(L('مالك المشروع (Project Owner)', 'Project Owner'))}</small><b>${esc(os.map(nm).filter(Boolean).join(' & ') || p.leadName || '—')}</b></div>
-        <div><small>${esc(L('المسؤول المالي مع العميل', 'Client finance'))}</small><b>${esc(nm(fin) || p.financeName || '—')}</b></div>
+    return `<div class="okpo" data-pid="${p.id}"><div class="okoh"><b>${esc(L('الـ Project Owner والفريق والمطالبات', 'Project Owner, team and claims'))}</b>${p.okState === 'hold' ? `<span class="okp y">On hold</span>` : ''}</div><div class="okob">
+      <div class="okkv"><div><small>${esc('Project Owner')}</small><b>${esc(os.map(nm).filter(Boolean).join(' & ') || p.leadName || '—')}</b></div>
+        <div><small>${esc('Client Financial Reporting Responsible')}</small><b>${esc(nm(fin) || p.financeName || '—')}</b></div>
         <div><small>${esc(L('مدير الحسابات (التحصيل)', 'Financial Manager (collection)'))}</small><b>${esc(finMgrs().map(w => w.name).join(', ') || '—')}</b></div></div>
       <div><h4><span>${esc(L('الفريق', 'Team'))} · ${team.length}</span><span class="grow"></span>${isOwner(p) ? `<button type="button" class="btn sm ghost" data-okown="join:${p.id}">${icon('plus')}<span>${esc(L('اطلب حد من تيم تاني', 'Ask for someone from another team'))}</span></button>` : ''}</h4>
         <div class="okchips">${os.map(id => `<span class="okchip o">${esc(nm(id))}</span>`).join('')}${team.map(id => `<span class="okchip">${esc(nm(id) || '—')}</span>`).join('')}</div>
@@ -3013,32 +3013,32 @@ html[data-theme="dark"] .okp.g{color:#86efac!important}html[data-theme="dark"] .
       Object.keys(p.okClaims || {}).forEach(sid => { const st = claimState(p.okClaims[sid]); const mine = (st === 'deliv' && finId(p) === me()) || (st === 'sent' && finMgrs().some(w => w.id === me()));
         if (mine) rows.push(`<div class="okrow"><a href="#/projects/${p.id}"><b>${esc(p.name || '')}</b></a><span>${esc(stName(sid))}</span><span class="okp ${CL[st][2]}">${esc(L(CL[st][0], CL[st][1]))}</span><span class="grow"></span>${claimBtn(p, sid, st)}</div>`); });
     });
-    return rows.length ? `<div class="okownbar" id="okownbar"><h4>${esc(L('مستنيك في المشاريع', 'Waiting for you on projects'))} · ${rows.length}</h4>${rows.join('')}</div>` : '';
+    return rows.length ? `<div class="okpobar" id="okpobar"><h4>${esc(L('مستنيك في المشاريع', 'Waiting for you on projects'))} · ${rows.length}</h4>${rows.join('')}</div>` : '';
   };
 
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
     const v = S.route && S.route.view; const view = document.getElementById('view'); if (!view || !S.session) return;
-    if (v === 'projects' && S.route.id) { const p = byId('projects', S.route.id); const anchor = view.querySelector('.okflow') || view.querySelector('.okpipe'); const old = view.querySelector('.okown');
+    if (v === 'projects' && S.route.id) { const p = byId('projects', S.route.id); const anchor = view.querySelector('.okflow') || view.querySelector('.okpipe'); const old = view.querySelector('.okpo');
       if (!p || !anchor) return; const html = cardHTML(p); const sig = html.length + ':' + (p.updatedAt || '');
-      if (!old) anchor.insertAdjacentHTML('afterend', html); else if (old.dataset.sig !== sig) old.outerHTML = html; const el = view.querySelector('.okown'); if (el) el.dataset.sig = sig; return; }
-    const old = document.getElementById('okownbar');
+      if (!old) anchor.insertAdjacentHTML('afterend', html); else if (old.dataset.sig !== sig) old.outerHTML = html; const el = view.querySelector('.okpo'); if (el) el.dataset.sig = sig; return; }
+    const old = document.getElementById('okpobar');
     if (!['me', 'dashboard', 'projects', 'home', 'tasks'].includes(v)) { if (old) old.remove(); return; }
     const html = barHTML(); if (!html) { if (old) old.remove(); return; }
-    if (!old) view.insertAdjacentHTML('afterbegin', html); else if (old.dataset.sig !== String(html.length)) old.outerHTML = html; const el = document.getElementById('okownbar'); if (el) el.dataset.sig = String(html.length);
+    if (!old) view.insertAdjacentHTML('afterbegin', html); else if (old.dataset.sig !== String(html.length)) old.outerHTML = html; const el = document.getElementById('okpobar'); if (el) el.dataset.sig = String(html.length);
   } catch (e) { console.warn('okown', e); } });
 
   document.addEventListener('click', async ev => {
     const t = ev.target.closest && ev.target.closest('[data-okown]'); if (!t) return; ev.preventDefault();
     const [act, pid, x] = t.dataset.okown.split(':'); const p = byId('projects', pid); if (!p) return;
     const claims = () => Object.assign({}, p.okClaims || {}); const cur = () => Object.assign({}, (p.okClaims || {})[x] || {});
-    if (act === 'deliv') { if (!isOwner(p)) return; if (!(await confirmDlg(L(`تأكيد: مرحلة «${stName(x)}» اتسلّمت للعميل والعميل وافق عليها؟`, `Confirm: the «${stName(x)}» stage was delivered and the client approved it?`), L('تأكيد', 'Confirm'), false))) return;
+    if (act === 'deliv') { if (!isOwner(p)) return; if (!(await confirmDlg(L(`تأكيد: مرحلة «${stName(x)}» اتسلّمت للـ Client والـ Client وافق عليها؟`, `Confirm: the «${stName(x)}» stage was delivered and the Client approved it?`), L('تأكيد', 'Confirm'), false))) return;
       const c = claims(); c[x] = Object.assign(cur(), { deliveredAt: nowISO(), deliveredBy: myName(), deliveredById: me() }); await up(pid, { okClaims: c });
-      tell([finId(p)], L(`${p.name}: مرحلة «${stName(x)}» جاهزة للمطالبة`, `${p.name}: «${stName(x)}» is ready for the claim`), L(`${myName()} سلّم المرحلة والعميل وافق — ابعت المطالبة للعميل وعلّم عليها في السيستم.`, `${myName()} delivered the stage and the client approved — send the claim to the client and mark it in the system.`), pid);
-      toast(L('اتسجّل — المسؤول المالي اتبلّغ', 'Saved — the finance person was notified')); return; }
-    if (act === 'sent') { if (!isFin(p)) return; if (!(await confirmDlg(L(`تأكيد: مطالبة مرحلة «${stName(x)}» اتبعتت للعميل والعميل موافق عليها؟`, `Confirm: the claim for «${stName(x)}» was sent to the client and the client agreed?`), L('تأكيد', 'Confirm'), false))) return;
+      tell([finId(p)], L(`${p.name}: مرحلة «${stName(x)}» جاهزة للمطالبة`, `${p.name}: «${stName(x)}» is ready for the claim`), L(`${myName()} سلّم المرحلة والـ Client وافق — ابعت المطالبة للـ Client وعلّم عليها في السيستم.`, `${myName()} delivered the stage and the Client approved — send the claim to the Client and mark it in the system.`), pid);
+      toast(L('اتسجّل — الـ Project Owner المسؤول عن المطالبة اتبلّغ', 'Saved — the Project Owner responsible for the claim was notified')); return; }
+    if (act === 'sent') { if (!isFin(p)) return; if (!(await confirmDlg(L(`تأكيد: مطالبة مرحلة «${stName(x)}» اتبعتت للـ Client والـ Client موافق عليها؟`, `Confirm: the claim for «${stName(x)}» was sent to the Client and the Client agreed?`), L('تأكيد', 'Confirm'), false))) return;
       const c = claims(); c[x] = Object.assign(cur(), { sentAt: nowISO(), sentBy: myName(), sentById: me() }); await up(pid, { okClaims: c });
-      tell(finMgrs().map(w => w.id), L(`${p.name}: مطالبة «${stName(x)}» اتبعتت للعميل`, `${p.name}: the «${stName(x)}» claim was sent to the client`), L(`العميل موافق على المطالبة — تابع التحصيل مع حسابات العميل. (${myName()})`, `The client agreed to the claim — follow up collection with the client's accounts. (${myName()})`), pid);
-      tell(owners(p), L(`${p.name}: مطالبة «${stName(x)}» اتبعتت للعميل`, `${p.name}: the «${stName(x)}» claim was sent to the client`), L(`بعتها ${myName()} — الحسابات بتتابع التحصيل.`, `Sent by ${myName()} — accounts are following up collection.`), pid);
+      tell(finMgrs().map(w => w.id), L(`${p.name}: مطالبة «${stName(x)}» اتبعتت للـ Client`, `${p.name}: the «${stName(x)}» claim was sent to the Client`), L(`الـ Client موافق على المطالبة — تابع التحصيل مع حسابات الـ Client. (${myName()})`, `The Client agreed to the claim — follow up collection with the Client's accounts. (${myName()})`), pid);
+      tell(owners(p), L(`${p.name}: مطالبة «${stName(x)}» اتبعتت للـ Client`, `${p.name}: the «${stName(x)}» claim was sent to the Client`), L(`بعتها ${myName()} — الحسابات بتتابع التحصيل.`, `Sent by ${myName()} — accounts are following up collection.`), pid);
       toast(L('اتسجّل — مدير الحسابات اتبلّغ', 'Saved — the Financial Manager was notified')); return; }
     if (act === 'coll') { if (!isFinMgr()) return; if (!(await confirmDlg(L(`تأكيد: مطالبة مرحلة «${stName(x)}» اتحصّلت؟`, `Confirm: the «${stName(x)}» claim was collected?`), L('تأكيد', 'Confirm'), false))) return;
       const c = claims(); c[x] = Object.assign(cur(), { collectedAt: nowISO(), collectedBy: myName(), collectedById: me() }); await up(pid, { okClaims: c });
@@ -3047,7 +3047,7 @@ html[data-theme="dark"] .okp.g{color:#86efac!important}html[data-theme="dark"] .
     if (act === 'join') { if (!isOwner(p)) return; const inTeam = new Set((p.team || []).concat(owners(p))); const pend = new Set((p.okJoin || []).filter(j => j.status === 'pending').map(j => j.wid));
       const ppl = list('workers').filter(w => w.status !== 'inactive' && w.status !== 'left' && !inTeam.has(w.id) && !pend.has(w.id)).sort((a, b) => String(a.name).localeCompare(String(b.name)));
       openModal({ title: L('اطلب حد من تيم تاني', 'Ask for someone from another team'), submitLabel: L('ابعت الطلب', 'Send the request'),
-        body: `<div class="form"><div class="field full"><label>${esc(L('مين؟', 'Who?'))}</label><select name="wid" required><option value="">—</option>${ppl.map(w => `<option value="${w.id}">${esc(w.name)} — ${esc(w.title || '')}${homeOwner(w.id) ? ' · ' + esc(nm(homeOwner(w.id))) : ''}</option>`).join('')}</select></div><div class="field full"><label>${esc(L('من إمتى ولحد إمتى، وهيعمل إيه', 'From when to when, and for what'))}</label><textarea name="note" rows="3" maxlength="400" dir="auto" required></textarea></div><div class="full small muted">${esc(L('الطلب بيروح لمالك المشروع اللي الشخص ده تابع له — يوافق أو يرفض، وتتفقوا على التوقيت.', 'The request goes to the owner this person belongs to — he approves or declines, and you agree the timing together.'))}</div></div>`,
+        body: `<div class="form"><div class="field full"><label>${esc(L('مين؟', 'Who?'))}</label><select name="wid" required><option value="">—</option>${ppl.map(w => `<option value="${w.id}">${esc(w.name)} — ${esc(w.title || '')}${homeOwner(w.id) ? ' · ' + esc(nm(homeOwner(w.id))) : ''}</option>`).join('')}</select></div><div class="field full"><label>${esc(L('من إمتى ولحد إمتى، وهيعمل إيه', 'From when to when, and for what'))}</label><textarea name="note" rows="3" maxlength="400" dir="auto" required></textarea></div><div class="full small muted">${esc(L('الطلب بيروح للـ Project Owner اللي الشخص ده تابع له — يوافق أو يرفض، وتتفقوا على التوقيت.', 'The request goes to the Project Owner this person belongs to — he approves or declines, and you agree the timing together.'))}</div></div>`,
         onSubmit: async f => { const d = formData(f); if (!d.wid || !d.note) { toast(L('اختار الشخص واكتب التفاصيل', 'Choose the person and write the details'), 'err'); return false; }
           const to = homeOwner(d.wid); const j = { id: uid(), wid: d.wid, by: me(), byName: myName(), at: nowISO(), note: d.note, to: to && to !== me() ? to : '', status: 'pending' };
           if (to && to === me()) { j.status = 'approved'; j.decAt = nowISO(); j.decBy = myName(); await up(pid, { okJoin: (p.okJoin || []).concat([j]), team: Array.from(new Set((p.team || []).concat([d.wid]))) }); toast(L('اتضاف — هو من فريقك', 'Added — he is on your own team')); return; }
