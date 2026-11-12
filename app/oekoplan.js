@@ -2850,3 +2850,18 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
 .okqr-scan{position:relative;width:100%;aspect-ratio:3/4;max-height:70vh;background:#000;border-radius:12px;overflow:hidden}.okqr-scan video{width:100%;height:100%;object-fit:cover}.okqr-frame{position:absolute;inset:14% 12%;border:3px solid rgba(255,255,255,.9);border-radius:14px;box-shadow:0 0 0 2000px rgba(0,0,0,.35)}.okqr-hint{position:absolute;left:0;right:0;bottom:12px;text-align:center;color:#fff;font-size:14px;text-shadow:0 1px 3px rgba(0,0,0,.7);padding:0 12px}
 </style>`);
 })();
+
+
+/* ============ Ökoplan: salary advances are switched off (Nov 2026) ============
+   No «Advance» request, no advances tab, no «new advance» anywhere. */
+(() => { try {
+  if (typeof REQ_TYPES === 'object') delete REQ_TYPES.advance;
+  const off = () => { toast(L('السلف غير مفعّلة في أوكوبلان', 'Advances are not used at Ökoplan'), 'err'); };
+  if (typeof ACTIONS === 'object') { ACTIONS.advNew = off; ACTIONS.advEdit = off; }
+  if (typeof advanceValidate === 'function') advanceValidate = async () => { off(); return false; };
+  if (typeof ASK_CHIPS !== 'undefined' && Array.isArray(ASK_CHIPS)) for (let i = ASK_CHIPS.length - 1; i >= 0; i--) if (/سلف/.test(ASK_CHIPS[i])) ASK_CHIPS.splice(i, 1);
+  if (Array.isArray(NAV)) NAV.forEach(n => { if (n && n.id === 'penalties') n.label = 'الجزاءات'; });
+  if (typeof VIEW_TITLES === 'object' && VIEW_TITLES.penalties) VIEW_TITLES.penalties = 'الجزاءات';
+  const st = document.createElement('style'); st.textContent = '[data-arg="penalties:adv"],[data-arg="penalties:advAll"],[data-action="advNew"],[data-rq="advance"]{display:none!important}'; document.head.appendChild(st);
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try { if (S.route && S.route.view === 'penalties' && S.ui && S.ui.tab && /^adv/.test(S.ui.tab.penalties || '')) { S.ui.tab.penalties = 'pen'; rerender(); } } catch (e) { } });
+} catch (e) { console.warn('oeko no-advance', e); } })();

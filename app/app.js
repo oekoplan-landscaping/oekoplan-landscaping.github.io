@@ -37100,7 +37100,7 @@ html body .fmd-l2{display:flex;flex-wrap:wrap;gap:1px 8px;font-size:12px;line-he
     supPay: () => ({ l: L('دفعة لمورد', 'Supplier payment'), ic: 'money', a: 'supPayAdd', pick: 'supplier', ok: W() && (admin() || ['hr', 'acc', 'purch'].includes(R())) }),
     worker: () => ({ l: L('موظف جديد', 'New employee'), ic: 'workers', a: 'workerNew', ok: W() && typeof canEditHr === 'function' && canEditHr() }),
     pen: () => ({ l: L('جزاء / إنذار', 'Penalty / warning'), ic: 'penalty', a: 'penNew', ok: W() && (admin() || ['hr', 'manager', 'head'].includes(R())) }),
-    adv: () => ({ l: L('سلفة', 'Advance'), ic: 'money', a: 'advNew', ok: W() && (admin() || R() === 'hr') }),
+    adv: () => ({ l: L('سلفة', 'Advance'), ic: 'money', a: 'advNew', ok: false }),
     product: () => ({ l: L('منتج جديد', 'New product'), ic: 'cube', a: 'productNew', ok: W() && typeof seesProducts === 'function' && seesProducts() }),
     lead: () => ({ l: L('عميل محتمل', 'New lead'), ic: 'user', a: 'leadNew', ok: typeof canCrm === 'function' && canCrm() }),
     quote: () => ({ l: L('عرض سعر', 'Quotation'), ic: 'quote', a: 'quoteNew', ok: W() && can('sales') }),
@@ -40851,7 +40851,7 @@ html.apple .side .nftogs>.nfst{border:0;background:rgba(255,255,255,.07);color:#
   window.nfTileSelect = tileSelect;
 
   /* ---------- 2) «new request» in two steps ---------- */
-  const RQ_KINDS = ['leave', 'permission', 'punch', 'advance'];
+  const RQ_KINDS = ['leave', 'permission', 'punch']; /* Ökoplan: no salary advances */
   const RQ_IC = { leave: ['#0a84ff', 'calendar'], permission: ['#ff9f0a', 'clock'], punch: ['#bf5af2', 'finger'], advance: ['#30d158', 'money'] };
   const SVG = {
     calendar: '<path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V9h14z"/>',
