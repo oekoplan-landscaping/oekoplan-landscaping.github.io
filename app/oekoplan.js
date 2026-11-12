@@ -2906,7 +2906,7 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
    · The regulation page (and the first sign-in gate) opens with the person's own day and allowances. */
 (() => { try {
   const TEN = /^(junior\s+)?landscape\s+architect$/i;
-  const latestMin = w => TEN.test(String((w && w.title) || '').trim()) ? 600 : 660;
+  const latestMin = w => { const own = w && w.latestArrival ? tmToMin(w.latestArrival) : null; /* a person's own latest arrival (workers.latestArrival 'HH:MM') wins over the grade rule */ return own != null ? own : (TEN.test(String((w && w.title) || '').trim()) ? 600 : 660); };
   window.okLatestArrival = latestMin;
   if (typeof shiftFor === 'function') shiftFor = (base => function (w) { const s = base(w); if (!s || !s.flexEnd || !w) return s; const ss = tmToMin(s.start); return Object.assign({}, s, { graceMinutes: Math.max(0, latestMin(w) - (ss == null ? 480 : ss)) }); })(shiftFor);
   if (typeof computeAttRow === 'function') computeAttRow = (base => function (row, w) { const r = base(row, w); try { const sh = shiftFor(w); if (r && sh && sh.flexEnd) { const a = tmToMin(r.in); let b = tmToMin(r.out); if (a != null && b != null) { if (b < a) b += 1440; const need = (+(S.settings.policy && S.settings.policy.flexHours) || 8) * 60 + (+sh.breakMinutes || 0); r.early = Math.max(0, a + need - b); } } } catch (e) { } return r; })(computeAttRow);
