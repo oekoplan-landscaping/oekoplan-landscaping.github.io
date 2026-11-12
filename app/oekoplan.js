@@ -2865,3 +2865,34 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
   const st = document.createElement('style'); st.textContent = '[data-arg="penalties:adv"],[data-arg="penalties:advAll"],[data-action="advNew"],[data-rq="advance"]{display:none!important}'; document.head.appendChild(st);
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try { if (S.route && S.route.view === 'penalties' && S.ui && S.ui.tab && /^adv/.test(S.ui.tab.penalties || '')) { S.ui.tab.penalties = 'pen'; rerender(); } } catch (e) { } });
 } catch (e) { console.warn('oeko no-advance', e); } })();
+
+
+/* ============ Ökoplan: no «Ninety» wording anywhere on screen (Nov 2026) ============
+   The engine is shared, so its texts still say Ninety / Ninety Studioz / Ninety Fabrication in places.
+   Everything shown (text, tooltips, placeholders, page title, notifications) is rewritten to Ökoplan Landscaping.
+   The project «One Ninety» is a real project name and stays. What people type is never touched. */
+(() => { try {
+  const HIT = /ninety|نينتي/i;
+  const fix = t => String(t)
+    .replace(/One Ninety/g, 'One\u0001N').replace(/ون نينتي/g, 'ون\u0001ن')
+    .replace(/NINETY\s+FACTORY\s+MANAGEMENT/g, 'ÖKOPLAN LANDSCAPING')
+    .replace(/Ninety\s+(Studioz|Fabrication|Construction|Degree)(\s+factory)?/gi, 'Ökoplan Landscaping')
+    .replace(/نينتي\s+(ستوديوز|ستديوز|ستوديو|فابريكيشن|للتصنيع)/g, 'أوكوبلان لاندسكيب')
+    .replace(/NINETY/g, 'ÖKOPLAN').replace(/Ninety/g, 'Ökoplan').replace(/ninety/g, 'ökoplan').replace(/نينتي/g, 'أوكوبلان')
+    .replace(/One\u0001N/g, 'One Ninety').replace(/ون\u0001ن/g, 'ون نينتي');
+  window.okBrandFix = fix;
+  const ATTRS = ['title', 'placeholder', 'aria-label', 'alt', 'data-tip'];
+  const skip = n => { const e = n.nodeType === 1 ? n : n.parentElement; return !e || !!e.closest('script,style,textarea,[contenteditable=""],[contenteditable="true"],.oknw,.okn-panel,[data-nofix]'); };
+  const textNode = n => { const v = n.nodeValue; if (v && HIT.test(v) && !skip(n)) { const f = fix(v); if (f !== v) n.nodeValue = f; } };
+  const el = e => { if (e.nodeType !== 1 || skip(e)) return; for (const a of ATTRS) { const v = e.getAttribute && e.getAttribute(a); if (v && HIT.test(v)) { const f = fix(v); if (f !== v) e.setAttribute(a, f); } } };
+  const sweep = root => { if (!root) return; if (root.nodeType === 3) return textNode(root); if (root.nodeType !== 1) return; el(root);
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT); let n; while ((n = w.nextNode())) { if (n.nodeType === 3) textNode(n); else el(n); } };
+  const start = () => { sweep(document.body);
+    new MutationObserver(ms => { for (const m of ms) { if (m.type === 'characterData') textNode(m.target); else if (m.type === 'attributes') el(m.target); else m.addedNodes.forEach(sweep); } })
+      .observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
+    const t = document.querySelector('title'); const ft = () => { if (HIT.test(document.title)) document.title = fix(document.title); }; ft(); if (t) new MutationObserver(ft).observe(t, { childList: true, characterData: true, subtree: true }); };
+  if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
+  /* notifications shown by the page itself */
+  try { const N = window.Notification; if (N && !N.__ok) { const W = function (title, o) { if (o && o.body) o = Object.assign({}, o, { body: fix(o.body) }); return new N(fix(title), o); }; W.prototype = N.prototype; Object.defineProperty(W, 'permission', { get: () => N.permission }); W.requestPermission = N.requestPermission.bind(N); W.__ok = 1; window.Notification = W; } } catch (e) { }
+  try { const P = ServiceWorkerRegistration.prototype; const o = P.showNotification; if (o && !o.__ok) { P.showNotification = function (title, opt) { if (opt && opt.body) opt = Object.assign({}, opt, { body: fix(opt.body) }); return o.call(this, fix(title), opt); }; P.showNotification.__ok = 1; } } catch (e) { }
+} catch (e) { console.warn('oeko brand fix', e); } })();

@@ -1,10 +1,10 @@
 /* Ninety Fabrication — service worker (app shell cache). Data never lives here: it is on the server. */
-const BUILD = '20261112-1430-oeko24';
+const BUILD = '20261112-1500-oeko25';
 /* v4.17: several Ninety apps share one origin (/ = factory, /studioz/ = office) — each service worker keeps to its own scope and its own cache prefix */
 const SCOPE = new URL(self.registration.scope).pathname;
 const TAG = SCOPE.replace(/^\/|\/$/g, '').replace(/\//g, '-');
 const CACHE = 'nf-shell-' + (TAG ? TAG + '-' : '') + BUILD;
-const SHELL = ["./app.js?v=20261112-1430-oeko24", "./index.html", "./config.js", "./manifest.json", "./vendor/supabase.js", "./vendor/three.bundle.js", "./vendor/pdf.min.js", "./vendor/pdf.worker.min.js", "./vendor/leaflet.js", "./icons/icon-192.png", "./icons/icon-512.png", "./en.json", "./oekoplan.js", "./oeko-home.js", "./qrp-v1.js"];
+const SHELL = ["./app.js?v=20261112-1500-oeko25", "./index.html", "./config.js", "./manifest.json", "./vendor/supabase.js", "./vendor/three.bundle.js", "./vendor/pdf.min.js", "./vendor/pdf.worker.min.js", "./vendor/leaflet.js", "./icons/icon-192.png", "./icons/icon-512.png", "./en.json", "./oekoplan.js", "./oeko-home.js", "./qrp-v1.js"];
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' }))).catch(() => { })));
@@ -18,7 +18,7 @@ const IOS = /iPhone|iPad|iPod/.test((self.navigator && self.navigator.userAgent)
 async function callPush(d, title, body, url) {
   const raw = String(d.call); const m = /^(stop|end):(.+)$/.exec(raw); const id = m ? m[2] : raw; const pre = 'call-' + id;
   const old = await self.registration.getNotifications().catch(() => []); old.forEach(n => { if (String(n.tag || '').startsWith(pre)) n.close(); });
-  if (m && m[1] === 'stop') { try { await self.registration.showNotification('Ninety', { body: 'المكالمة خلصت', tag: 'callstop-' + id, silent: true }); (await self.registration.getNotifications({ tag: 'callstop-' + id })).forEach(n => n.close()); } catch (x) { /* ignore */ } return; }   // a push must show something (iOS / Chrome) → show + close at once
+  if (m && m[1] === 'stop') { try { await self.registration.showNotification('Ökoplan', { body: 'المكالمة خلصت', tag: 'callstop-' + id, silent: true }); (await self.registration.getNotifications({ tag: 'callstop-' + id })).forEach(n => n.close()); } catch (x) { /* ignore */ } return; }   // a push must show something (iOS / Chrome) → show + close at once
   if (m && m[1] === 'end') return self.registration.showNotification(title, { body, tag: 'missed-' + id, icon: './icons/icon-192.png', badge: './icons/icon-192.png', data: { url: './#/calls' } }).catch(() => { });
   const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true }).catch(() => []);
   if (wins.some(c => c.visibilityState === 'visible' && c.focused)) { try { await self.registration.showNotification(title, { body, tag: pre, silent: true, data: { url, call: id } }); } catch (x) { /* ignore */ } return; }   // app open in front → it rings on its own screen (quiet notification only)
@@ -105,7 +105,7 @@ self.addEventListener('fetch', e => {
 /* ---------- Web Push (chat messages, approvals, alerts) ---------- */
 self.addEventListener('push', e => {
   let d = {}; try { d = e.data ? e.data.json() : {}; } catch (x) { d = { body: e.data ? e.data.text() : '' }; }
-  const title = String(d.title || 'Ninety Fabrication'); const body = String(d.body || ''); const tag = String(d.tag || 'nf-' + Date.now()); const url = d.url || './';
+  const title = String(d.title || 'Ökoplan Landscaping').replace(/Ninety\s+(Studioz|Fabrication|Construction)/gi, 'Ökoplan Landscaping').replace(/(One )?Ninety/g, (m, o) => o ? m : 'Ökoplan'); const body = String(d.body || '').replace(/Ninety\s+(Studioz|Fabrication|Construction)/gi, 'Ökoplan Landscaping').replace(/(One )?Ninety/g, (m, o) => o ? m : 'Ökoplan'); const tag = String(d.tag || 'nf-' + Date.now()); const url = d.url || './';
   if (d.call) { e.waitUntil(callPush(d, title, body, url)); return; }
   // iOS Safari: keep the options minimal (renotify / vibrate are not supported there and can make the whole call fail → generic "Notification")
   const show = self.registration.showNotification(title, { body, tag, icon: './icons/icon-192.png', badge: './icons/icon-192.png', data: { url } })
