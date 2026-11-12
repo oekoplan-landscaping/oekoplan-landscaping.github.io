@@ -218,7 +218,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
   /* shifts = the regulation: office 8 h effective + 30 min break, flexible arrival 08:00–11:00 (grace 180 min from 08:00; the day
      ends 8.5 h after the punch-in — see policy.flexEnd) · site 09:00–17:00 six days · home / hybrid punch from anywhere · part time */
   const SHIFTS = [
-    { id: 'main', name: 'دوام المكتب — حضور من 8:00 إلى 11:00، 8 ساعات فعلية + نص ساعة راحة', en: 'Office — arrive 08:00–11:00, 8 h + 30 min break', start: '08:00', end: '16:30', breakMinutes: 30, graceMinutes: 180, otAfterMinutes: 0, offDays: [5, 6], flexEnd: true },
+    { id: 'main', name: 'دوام المكتب — حضور مرن لحد 10:00 أو 11:00 حسب الدرجة، 8 ساعات فعلية + نص ساعة راحة', en: 'Office — flexible arrival up to 10:00 or 11:00 by grade, 8 h + 30 min break', start: '08:00', end: '16:30', breakMinutes: 30, graceMinutes: 180, otAfterMinutes: 0, offDays: [5, 6], flexEnd: true },
     { id: 'remote', name: 'عمل من البيت — بصمة من أي مكان', en: 'From home — punch from anywhere', start: '08:00', end: '16:30', breakMinutes: 30, graceMinutes: 180, otAfterMinutes: 0, offDays: [5, 6], remote: true, flexEnd: true },
     { id: 'hybrid', name: 'هايبرد — أيام مكتب (QR) وأيام من البيت', en: 'Hybrid — office days (QR) and home days', start: '08:00', end: '16:30', breakMinutes: 30, graceMinutes: 180, otAfterMinutes: 0, offDays: [5, 6], remote: true, flexEnd: true },
     { id: 'part', name: 'بارت تايم من المكتب — 4 ساعات', en: 'Part time at the office — 4 h', start: '09:00', end: '13:00', breakMinutes: 0, graceMinutes: 60, otAfterMinutes: 0, offDays: [5, 6], hours: 4 },
@@ -263,7 +263,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
 - علاوة دورية سنوية لا تقل عن 7% من الأجر الأساسي وفقًا للتقييم السنوي وأداء الشركة المالي.
 - تؤدى المرتبات شهريًا وتُستقطع منها الضرائب والتأمينات والالتزامات القانونية.
 ## ثالثًا: مواعيد العمل والعمل الإضافي
-- المكتب الرئيسي: الحضور من 8:00 إلى 11:00 صباحًا، والانصراف بعد 8 ساعات عمل فعلية + نصف ساعة راحة (12:30 – 1:00 ظهرًا)؛ أي من 4:30 إلى 7:30 مساءً حسب ساعة الحضور.
+- المكتب الرئيسي: الحضور مرن، والبصمة قبل الميعاد مقبولة في أي وقت. آخر ميعاد للحضور 10:00 صباحًا للـ Landscape Architect والـ Junior Landscape Architect، و11:00 صباحًا للـ Senior والـ Lead والمديرين. الانصراف بعد 8 ساعات عمل فعلية + نصف ساعة راحة (12:30 – 1:00 ظهرًا) محسوبة من وقت بصمة الحضور.
 - المواقع: من 9:00 صباحًا حتى 5:00 مساءً، 6 أيام أسبوعيًا داخل القاهرة الكبرى، أو 12 يوم عمل متواصلة مقابل 3 أيام راحة للمواقع خارج القاهرة الكبرى.
 - الأجر الإضافي: المكتب ساعة من الأجر الأساسي عن كل ساعة إضافية (ساعتان في العطلات الرسمية)؛ المواقع ساعة ونصف عن كل ساعة إضافية — بتكليف من المدير المباشر وبعد اعتماده في السيستم.
 ## رابعًا: نظام الإجازات
@@ -299,7 +299,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
 - A yearly raise of at least 7% of the basic salary per the annual appraisal and the company's results.
 - Salaries are paid monthly net of taxes, insurance and legal deductions.
 ## 3. Working hours and overtime
-- Head office: arrive between 08:00 and 11:00; leave after 8 effective hours + a 30-minute break (12:30–13:00), i.e. between 16:30 and 19:30 depending on arrival.
+- Head office: arrival is flexible and punching in early is always accepted. Latest arrival is 10:00 for Landscape Architects and Junior Landscape Architects, and 11:00 for Seniors, Leads and managers. Leave after 8 effective hours + a 30-minute break (12:30–13:00), counted from your punch-in.
 - Sites: 09:00 to 17:00, 6 days a week inside Greater Cairo, or 12 consecutive days on / 3 off for sites outside Greater Cairo.
 - Overtime: office — one hour of basic pay per extra hour (two on public holidays); sites — one and a half hours per extra hour; assigned by the direct manager and approved in the system.
 ## 4. Leave
@@ -694,7 +694,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
       <div class="oko-team" style="margin-top:12px">${Object.keys(TEAMS).map(t => `<div class="p"><i>${esc(t.replace(/^Team /, '').slice(0, 2))}</i><div><b>${esc(t)}</b><small>${TEAMS[t].length ? TEAMS[t].slice(0, 3).join(' · ') + (TEAMS[t].length > 3 ? ' …' : '') : L('الأعضاء يتحددوا من الشاشة', 'members assigned from the screen')}</small></div></div>`).join('')}</div></div>
       <div class="card"><h3>${L('الحضور حسب نمط العمل', 'Attendance by work mode')}</h3>
       <table class="tbl"><thead><tr><th>${L('النمط', 'Mode')}</th><th>${L('البصمة', 'Punch')}</th><th>${L('المواعيد', 'Hours')}</th></tr></thead><tbody>
-        <tr><td>${L('دوام كامل من المكتب', 'Full time at the office')}</td><td>${L('QR من كمبيوتر المكتب', 'QR on the office computer')}</td><td>${L('حضور 8:00–11:00، انصراف بعد 8.5 ساعة', 'Arrive 08:00–11:00, leave after 8.5 h')}</td></tr>
+        <tr><td>${L('دوام كامل من المكتب', 'Full time at the office')}</td><td>${L('QR من كمبيوتر المكتب', 'QR on the office computer')}</td><td>${L('حضور لحد 10:00 (LA / Junior) أو 11:00 (Senior وفوق)، انصراف بعد 8.5 ساعة من البصمة', 'Arrive by 10:00 (LA / Junior) or 11:00 (Senior and above), leave 8.5 h after punch-in')}</td></tr>
         <tr><td>${L('من البيت', 'From home')}</td><td>${L('من التطبيق بالموقع + سيلفي', 'From the app with location + selfie')}</td><td>${L('نفس ساعات المكتب', 'Same office hours')}</td></tr>
         <tr><td>${L('هايبرد', 'Hybrid')}</td><td>${L('QR في أيام المكتب، التطبيق في أيام البيت', 'QR on office days, the app on home days')}</td><td>${L('نفس ساعات المكتب', 'Same office hours')}</td></tr>
         <tr><td>${L('بارت تايم', 'Part time')}</td><td>${L('مكتب (QR) أو بيت (التطبيق)', 'Office (QR) or home (app)')}</td><td>${L('4 ساعات', '4 hours')}</td></tr>
@@ -2897,3 +2897,25 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
   try { const N = window.Notification; if (N && !N.__ok) { const W = function (title, o) { if (o && o.body) o = Object.assign({}, o, { body: fix(o.body) }); return new N(fix(title), o); }; W.prototype = N.prototype; Object.defineProperty(W, 'permission', { get: () => N.permission }); W.requestPermission = N.requestPermission.bind(N); W.__ok = 1; window.Notification = W; } } catch (e) { }
   try { const P = ServiceWorkerRegistration.prototype; const o = P.showNotification; if (o && !o.__ok) { P.showNotification = function (title, opt) { if (opt && opt.body) opt = Object.assign({}, opt, { body: fix(opt.body) }); return o.call(this, fix(title), opt); }; P.showNotification.__ok = 1; } } catch (e) { }
 } catch (e) { console.warn('oeko brand fix', e); } })();
+
+
+/* ============ Ökoplan working day (Nov 2026, Mahmoud) ============
+   · Flexible office day: 8 working hours + the break, counted from the punch-in. Punching in early is always fine.
+   · Latest arrival: 10:00 for Landscape Architects and Junior Landscape Architects · 11:00 for Seniors, Leads and managers.
+   · Leaving before (punch-in + 8 h + break) is an early leave; the fixed 16:30 no longer applies on flexible shifts.
+   · The regulation page (and the first sign-in gate) opens with the person's own day and allowances. */
+(() => { try {
+  const TEN = /^(junior\s+)?landscape\s+architect$/i;
+  const latestMin = w => TEN.test(String((w && w.title) || '').trim()) ? 600 : 660;
+  window.okLatestArrival = latestMin;
+  if (typeof shiftFor === 'function') shiftFor = (base => function (w) { const s = base(w); if (!s || !s.flexEnd || !w) return s; const ss = tmToMin(s.start); return Object.assign({}, s, { graceMinutes: Math.max(0, latestMin(w) - (ss == null ? 480 : ss)) }); })(shiftFor);
+  if (typeof computeAttRow === 'function') computeAttRow = (base => function (row, w) { const r = base(row, w); try { const sh = shiftFor(w); if (r && sh && sh.flexEnd) { const a = tmToMin(r.in); let b = tmToMin(r.out); if (a != null && b != null) { if (b < a) b += 1440; const need = (+(S.settings.policy && S.settings.policy.flexHours) || 8) * 60 + (+sh.breakMinutes || 0); r.early = Math.max(0, a + need - b); } } } catch (e) { } return r; })(computeAttRow);
+  const card = () => { const w = S.session && S.session.workerId ? byId('workers', S.session.workerId) : null; if (!w) return ''; const sh = shiftFor(w) || {}; const pol = S.settings.policy || {}; const rows = [];
+    if (w.noPunch) rows.push([L('الحضور', 'Attendance'), L('دورك مش محتاج بصمة', 'Your role needs no punch')]);
+    else if (sh.flexEnd) { rows.push([L('آخر ميعاد للحضور', 'Latest arrival'), `${fmtTm(minToTm(latestMin(w)))} — ${L('والبصمة قبل الميعاد مقبولة في أي وقت', 'punching in earlier is always fine')}`]); rows.push([L('يوم العمل', 'Working day'), L(`${pol.flexHours || 8} ساعات فعلية + ${sh.breakMinutes || 30} دقيقة راحة، محسوبة من وقت بصمتك`, `${pol.flexHours || 8} working hours + a ${sh.breakMinutes || 30}-minute break, counted from your punch-in`)]); }
+    else rows.push([L('مواعيدك', 'Your hours'), `${fmtTm(sh.start)} – ${fmtTm(sh.end)}`]);
+    if (pol.permissionsPerMonth) rows.push([L('الأذونات', 'Permissions'), L(`${pol.permissionsPerMonth} في الشهر، لحد ${pol.permissionMaxHours || 2} ساعة للإذن`, `${pol.permissionsPerMonth} a month, up to ${pol.permissionMaxHours || 2} hours each`)]);
+    try { const b = typeof leaveBalances === 'function' ? leaveBalances(w).find(x => x.type && x.type.id === 'annual') : null; if (b && b.remaining != null) rows.push([L('رصيد الإجازة السنوية', 'Annual leave balance'), L(`${b.remaining} يوم`, `${b.remaining} days`)]); } catch (e) { }
+    return `<div class="card okmyday" style="max-width:860px;margin-bottom:14px"><div class="cardhead"><h3 style="margin:0">${esc(L('يومك وتصاريحك', 'Your day and allowances'))} — ${esc(w.name || '')}</h3><div class="grow"></div><span class="tiny muted">${esc(w.title || '')}</span></div><div class="tablewrap"><table><tbody>${rows.map(r => `<tr><td style="width:38%"><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td></tr>`).join('')}</tbody></table></div></div>`; };
+  if (typeof vRegulation === 'function') vRegulation = (base => function (gate) { const html = base.apply(this, arguments); try { if ((S.ui.tab.regulation || 'text') === 'params' && !gate) return html; return card() + html; } catch (e) { return html; } })(vRegulation);
+} catch (e) { console.warn('oeko day', e); } })();
