@@ -2943,6 +2943,10 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
   const PIPE = () => window.OEKO_PIPELINE || [];
   const live = () => list('projects').filter(p => p.status !== 'archived');
   const boss = () => isAdmin() || role() === 'manager';
+  const isPMO = () => { const w = W(me()); return !!w && /head of pmo/i.test(w.title || ''); }; /* Rawan: every project's contracts and claims, moves people between projects, changes the Project Owner */
+  const canAsk = p => isOwner(p) || isPMO();
+  const seesClaims = p => isOwner(p) || isPMO() || finId(p) === me() || isFinMgr();
+  const canReown = () => isAdmin() || isPMO();
   const owners = p => [p.leadId].concat(p.coOwnerIds || []).filter(Boolean);
   const isOwner = p => !!p && (owners(p).includes(me()) || boss());
   const finId = p => (p && (p.financeId || p.leadId)) || '';
@@ -2993,15 +2997,15 @@ html[data-theme="dark"] .okp.g{color:#86efac!important}html[data-theme="dark"] .
 
   const cardHTML = p => {
     const os = owners(p); const team = (p.team || []).filter(id => !os.includes(id)); const fin = finId(p);
-    const joins = (p.okJoin || []).slice().reverse().filter(j => j.status === 'pending' || isOwner(p) || j.by === me() || j.to === me()).slice(0, 8);
+    const joins = (p.okJoin || []).slice().reverse().filter(j => j.status === 'pending' || canAsk(p) || j.by === me() || j.to === me()).slice(0, 8);
     return `<div class="okpo" data-pid="${p.id}"><div class="okoh"><b>${esc(L('الـ Project Owner والفريق والمطالبات', 'Project Owner, team and claims'))}</b>${p.okState === 'hold' ? `<span class="okp y">On hold</span>` : ''}</div><div class="okob">
-      <div class="okkv"><div><small>${esc('Project Owner')}</small><b>${esc(os.map(nm).filter(Boolean).join(' & ') || p.leadName || '—')}</b></div>
+      <div class="okkv"><div><small>${esc('Project Owner')}</small><b>${esc(os.map(nm).filter(Boolean).join(' & ') || p.leadName || '—')}</b>${canReown() ? `<button type="button" class="btn sm ghost" style="align-self:flex-start;margin-top:4px" data-okown="reown:${p.id}">${icon('edit')}<span>${esc(L('غيّر الـ Project Owner', 'Change Project Owner'))}</span></button>` : ''}</div>
         <div><small>${esc('Client Financial Reporting Responsible')}</small><b>${esc(nm(fin) || p.financeName || '—')}</b></div>
         <div><small>${esc(L('مدير الحسابات (التحصيل)', 'Financial Manager (collection)'))}</small><b>${esc(finMgrs().map(w => w.name).join(', ') || '—')}</b></div></div>
-      <div><h4><span>${esc(L('الفريق', 'Team'))} · ${team.length}</span><span class="grow"></span>${isOwner(p) ? `<button type="button" class="btn sm ghost" data-okown="join:${p.id}">${icon('plus')}<span>${esc(L('اطلب حد من تيم تاني', 'Ask for someone from another team'))}</span></button>` : ''}</h4>
+      <div><h4><span>${esc(L('الفريق', 'Team'))} · ${team.length}</span><span class="grow"></span>${canAsk(p) ? `<button type="button" class="btn sm ghost" data-okown="join:${p.id}">${icon('plus')}<span>${esc(L('اطلب حد من تيم تاني', 'Ask for someone from another team'))}</span></button>` : ''}</h4>
         <div class="okchips">${os.map(id => `<span class="okchip o">${esc(nm(id))}</span>`).join('')}${team.map(id => `<span class="okchip">${esc(nm(id) || '—')}</span>`).join('')}</div>
         ${joins.length ? `<div style="margin-top:8px">${joins.map(j => joinRow(p, j, false)).join('')}</div>` : ''}</div>
-      <div><h4><span>${esc(L('مطالبات المراحل (من غير مبالغ)', 'Stage claims (no amounts)'))}</span></h4>${PIPE().map(s => claimRow(p, s)).join('')}</div>
+      ${seesClaims(p) ? `<div><h4><span>${esc(L('مطالبات المراحل (من غير مبالغ)', 'Stage claims (no amounts)'))}</span></h4>${PIPE().map(s => claimRow(p, s)).join('')}</div>` : ''}
     </div></div>`;
   };
 
@@ -3044,7 +3048,7 @@ html[data-theme="dark"] .okp.g{color:#86efac!important}html[data-theme="dark"] .
       const c = claims(); c[x] = Object.assign(cur(), { collectedAt: nowISO(), collectedBy: myName(), collectedById: me() }); await up(pid, { okClaims: c });
       tell(owners(p).concat([finId(p)]), L(`${p.name}: مطالبة «${stName(x)}» اتحصّلت`, `${p.name}: the «${stName(x)}» claim was collected`), L(`سجّلها ${myName()}.`, `Recorded by ${myName()}.`), pid);
       toast(L('اتسجّل', 'Saved')); return; }
-    if (act === 'join') { if (!isOwner(p)) return; const inTeam = new Set((p.team || []).concat(owners(p))); const pend = new Set((p.okJoin || []).filter(j => j.status === 'pending').map(j => j.wid));
+    if (act === 'join') { if (!canAsk(p)) return; const inTeam = new Set((p.team || []).concat(owners(p))); const pend = new Set((p.okJoin || []).filter(j => j.status === 'pending').map(j => j.wid));
       const ppl = list('workers').filter(w => w.status !== 'inactive' && w.status !== 'left' && !inTeam.has(w.id) && !pend.has(w.id)).sort((a, b) => String(a.name).localeCompare(String(b.name)));
       openModal({ title: L('اطلب حد من تيم تاني', 'Ask for someone from another team'), submitLabel: L('ابعت الطلب', 'Send the request'),
         body: `<div class="form"><div class="field full"><label>${esc(L('مين؟', 'Who?'))}</label><select name="wid" required><option value="">—</option>${ppl.map(w => `<option value="${w.id}">${esc(w.name)} — ${esc(w.title || '')}${homeOwner(w.id) ? ' · ' + esc(nm(homeOwner(w.id))) : ''}</option>`).join('')}</select></div><div class="field full"><label>${esc(L('من إمتى ولحد إمتى، وهيعمل إيه', 'From when to when, and for what'))}</label><textarea name="note" rows="3" maxlength="400" dir="auto" required></textarea></div><div class="full small muted">${esc(L('الطلب بيروح للـ Project Owner اللي الشخص ده تابع له — يوافق أو يرفض، وتتفقوا على التوقيت.', 'The request goes to the Project Owner this person belongs to — he approves or declines, and you agree the timing together.'))}</div></div>`,
@@ -3055,6 +3059,14 @@ html[data-theme="dark"] .okp.g{color:#86efac!important}html[data-theme="dark"] .
           const title = L(`طلب ضم ${nm(d.wid)} لمشروع ${p.name}`, `Request: ${nm(d.wid)} on ${p.name}`); const body = L(`${myName()} عايز ${nm(d.wid)} يشتغل معاه في المشروع: ${d.note}`, `${myName()} asks for ${nm(d.wid)} on the project: ${d.note}`);
           if (j.to) tell([j.to], title, body, pid); else if (typeof notifyRole === 'function') { try { notifyRole('admin', title, body, { id: 'okj_' + j.id }); } catch (e) { /* */ } }
           toast(L('الطلب اتبعت', 'Request sent')); } }); return; }
+    if (act === 'reown') { if (!canReown()) return; const ppl = list('workers').filter(w => w.status !== 'inactive' && w.status !== 'left').sort((x1, x2) => String(x1.name).localeCompare(String(x2.name))); const old = owners(p);
+      const sel = (name, cur, req) => `<select name="${name}" ${req ? 'required' : ''}><option value="">—</option>${ppl.map(w => `<option value="${w.id}" ${w.id === cur ? 'selected' : ''}>${esc(w.name)} — ${esc(w.title || '')}</option>`).join('')}</select>`;
+      openModal({ title: L(`غيّر الـ Project Owner — ${p.name}`, `Change Project Owner — ${p.name}`), submitLabel: L('احفظ', 'Save'),
+        body: `<div class="form"><div class="field full"><label>Project Owner</label>${sel('lead', p.leadId, true)}</div><div class="field full"><label>${esc(L('Project Owner تاني (اختياري)', 'Second Project Owner (optional)'))}</label>${sel('co', (p.coOwnerIds || [])[0] || '', false)}</div><div class="field full"><label>Client Financial Reporting Responsible</label>${sel('fin', finId(p), true)}</div><div class="field full"><label>${esc(L('السبب', 'Reason'))}</label><input name="why" maxlength="200" dir="auto" required></div><div class="full small muted">${esc(L('فريق المشروع بيفضل زي ما هو — الـ Project Owner الجديد يعدّله.', 'The project team stays as it is — the new Project Owner can adjust it.'))}</div></div>`,
+        onSubmit: async f => { const d = formData(f); if (!d.lead || !d.fin || !d.why) { toast(L('كمّل البيانات', 'Complete the form'), 'err'); return false; } const co = d.co && d.co !== d.lead ? [d.co] : [];
+          const now = [d.lead].concat(co); const log = (p.okOwnerLog || []).concat([{ at: nowISO(), by: myName(), byId: me(), from: old, to: now, fin: d.fin, why: d.why }]);
+          await up(pid, { leadId: d.lead, ownerId: d.lead, coOwnerIds: co, leadName: now.map(nm).join(' & '), financeId: d.fin, financeName: nm(d.fin), team: Array.from(new Set(now.concat(p.team || []))), okOwnerLog: log });
+          tell(Array.from(new Set(old.concat(now, [d.fin]))), L(`${p.name}: الـ Project Owner بقى ${now.map(nm).join(' & ')}`, `${p.name}: the Project Owner is now ${now.map(nm).join(' & ')}`), `${myName()} — ${d.why}`, pid); toast(L('اتغيّر', 'Changed')); } }); return; }
     if (act === 'jok' || act === 'jno') { const j = (p.okJoin || []).find(q => q.id === x); if (!j || !canDecide(j)) return;
       const done = async reason => { const okJoin = (p.okJoin || []).map(q => (q.id === x ? Object.assign({}, q, { status: act === 'jok' ? 'approved' : 'rejected', decAt: nowISO(), decBy: myName(), reason: reason || '' }) : q)); const patch = { okJoin }; if (act === 'jok') patch.team = Array.from(new Set((p.team || []).concat([j.wid]))); await up(pid, patch);
         tell([j.by, act === 'jok' ? j.wid : ''], act === 'jok' ? L(`${nm(j.wid)} اتضاف لمشروع ${p.name}`, `${nm(j.wid)} joined ${p.name}`) : L(`طلب ضم ${nm(j.wid)} لمشروع ${p.name} اترفض`, `Request for ${nm(j.wid)} on ${p.name} was declined`), `${myName()}${reason ? ' — ' + reason : ''}`, pid); toast(L('اتسجّل', 'Saved')); };
@@ -3062,4 +3074,84 @@ html[data-theme="dark"] .okp.g{color:#86efac!important}html[data-theme="dark"] .
         body: `<div class="form"><div class="full small muted">${esc(j.byName || '')}: ${esc(j.note || '')}</div><div class="field full"><label>${esc(act === 'jok' ? L('ملاحظة (التوقيت المتفق عليه)', 'Note (the agreed timing)') : L('سبب الرفض', 'Reason'))}</label><input name="reason" maxlength="200" dir="auto" ${act === 'jno' ? 'required' : ''}></div></div>`,
         onSubmit: async f => { const r = f.querySelector('[name=reason]').value.trim(); if (act === 'jno' && !r) { toast(L('اكتب السبب', 'Write the reason'), 'err'); return false; } await done(r); } }); return; }
   });
+})();
+
+
+/* =====================================================================
+   Ökoplan — who sees what (Mahmoud, 12 Nov 2026, by PIN)
+   · Salaries: the CEO and the Financial Manager only. Nobody else — no Project Owner, no head, no office manager,
+     and no employee sees his own pay or day value on his portal.
+   · Money screens of the shared engine (quotes, invoices, accounts, expenses, purchases, suppliers, stock, orders,
+     project costs, CRM…) are closed to everyone but the CEO.
+   · Clients: the CEO, the Head of PMO and Project Owners.
+   · A Project Owner sees only the people on his projects: attendance and discipline, requests and leaves («My team»),
+     and is told when one of them starts or ends a break.
+   · The Head of PMO sees every project's contracts and claims (card above + Enquiries).
+   ===================================================================== */
+(() => {
+  if (window.__OK_ACCESS__) return; window.__OK_ACCESS__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const me = () => (typeof stuMe === 'function' ? stuMe() : '');
+  const W = id => (id ? byId('workers', id) : null);
+  const live = () => list('projects').filter(p => p.status !== 'archived');
+  const owners = p => [p.leadId].concat(p.coOwnerIds || []).filter(Boolean);
+  const isFinMgr = () => { const w = W(me()); return !!w && /financial manager/i.test(w.title || ''); };
+  const isPMO = () => { const w = W(me()); return !!w && /head of pmo/i.test(w.title || ''); };
+  const myOwned = () => live().filter(p => owners(p).includes(me()) || p.financeId === me());
+  const isPO = () => myOwned().length > 0;
+  window.okAccess = { isPO, isPMO, isFinMgr };
+  const MONEY = ['quotes', 'invoices', 'accounts', 'expenses', 'projectcosts', 'purchases', 'suppliers', 'external', 'inventory', 'orders', 'products', 'fleet', 'crm', 'boards_money'];
+  if (typeof canSee === 'function') canSee = (base => function (view) {
+    const v = String(view || ''); if (!S.session) return base.apply(this, arguments);
+    if (v === 'okteam') return isAdmin() || isPMO() || isPO();
+    if (isAdmin()) return base.apply(this, arguments);
+    if (v === 'payroll') return isFinMgr();
+    if (MONEY.includes(v) || /^crm-/.test(v)) return false;
+    if (v === 'clients') return (isPMO() || isPO()) ? true : false;
+    if (v === 'reports') return role() === 'hr' && base.apply(this, arguments);
+    return base.apply(this, arguments);
+  })(canSee);
+  /* the portal: no pay, no day value, no wallet — whatever card the shared engine adds */
+  const PAY = /ج\.م|EGP|جنيه|راتب|مرتب|يوميت|محفظ|salary|payslip|net pay|wallet|day value|daily rate/i;
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    if (!S.session || isAdmin() || isFinMgr() || !(S.route && S.route.view === 'me')) return; const view = document.getElementById('view'); if (!view) return;
+    view.querySelectorAll('.card,.kpi,.banner').forEach(c => { if (c.dataset.okpay || c.closest('.okmyday,.okpo,.okpobar')) return; c.dataset.okpay = '1'; if (c.querySelector('[data-action="kioskReq"],[data-action="selfPunch"]')) return; if (PAY.test(c.textContent || '')) c.style.display = 'none'; });
+  } catch (e) { /* ignore */ } });
+
+  /* ---------------- «My team» — the Project Owner's people ---------------- */
+  const teamIds = () => { const s = new Set(); (isAdmin() || isPMO() ? live() : myOwned()).forEach(p => (p.team || []).concat(owners(p)).forEach(i => s.add(i))); s.delete(me()); return Array.from(s); };
+  const projOf = wid => live().filter(p => (p.team || []).includes(wid) || owners(p).includes(wid));
+  const tm = iso => { try { return fmtTm(String(iso).length > 5 ? new Date(iso).toTimeString().slice(0, 5) : iso); } catch (e) { return ''; } };
+  const todayOf = w => { const r = (attendanceFor(todayISO()) || {})[w.id] || {}; const b = (r.brk || []).slice(-1)[0];
+    if (w.noPunch) return [L('من غير بصمة', 'No punch'), ''];
+    if (r.s === 'L') return [L('إجازة', 'On leave'), 'b']; if (r.out) return [L('انصرف ', 'Left ') + tm(r.out), '']; if (b && !b.e) return [L('في بريك من ', 'On break since ') + tm(b.s), 'y'];
+    if (r.in) return [L('حاضر ', 'In ') + tm(r.in) + (r.late ? ` · ${L('متأخر', 'late')} ${r.late}${L(' د', ' min')}` : ''), r.late ? 'y' : 'g']; return [L('لسه ماحضرش', 'Not in yet'), 'r']; };
+  const page = () => {
+    const ids = teamIds(); const ws = ids.map(W).filter(w => w && w.status !== 'inactive' && w.status !== 'left').sort((a, b) => String(a.name).localeCompare(String(b.name))); const ym = monthOf(todayISO());
+    if (!ws.length) return `<div class="empty"><b>${esc(L('مفيش حد على مشاريعك لسه', 'No one is on your projects yet'))}</b></div>`;
+    const rows = ws.map(w => { let s = {}; try { s = hrMonthSummary(w, ym) || {}; } catch (e) { /* */ } const t = todayOf(w); const ps = projOf(w.id); const open = list('requests').filter(x => x.workerId === w.id && (x.status === 'pending' || x.status === 'open' || !x.status)).length;
+      return `<tr><td><b>${esc(w.name || '')}</b><div class="tiny muted">${esc(w.title || '')}</div></td><td><span class="okp ${t[1]}">${esc(t[0])}</span></td><td class="num">${s.present || 0}</td><td class="num">${s.lateCount || 0}${s.late ? `<span class="tiny muted"> · ${s.late}${L(' د', ' min')}</span>` : ''}</td><td class="num">${s.absent || 0}</td><td class="num">${s.leave || 0}</td><td class="num">${open || ''}</td><td class="tiny">${esc(ps.map(p => p.name).slice(0, 4).join(' · '))}${ps.length > 4 ? ` +${ps.length - 4}` : ''}</td></tr>`; }).join('');
+    const set = new Set(ws.map(w => w.id)); const reqs = list('requests').filter(x => set.has(x.workerId)).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))).slice(0, 40);
+    const RT = id => { try { const t = (typeof REQ_TYPES === 'object' && REQ_TYPES[id]) || null; return t ? (typeof t === 'string' ? t : t.name || t.label || id) : id; } catch (e) { return id; } };
+    const rq = reqs.map(x => `<tr><td><b>${esc((W(x.workerId) || {}).name || '')}</b></td><td>${esc(RT(x.type))}</td><td>${esc([x.from || x.date, x.to].filter(Boolean).map(d => fmtDate(String(d).slice(0, 10))).join(' → '))}</td><td>${esc(x.status || 'pending')}</td><td class="tiny muted">${esc(String(x.reason || x.note || '').slice(0, 80))}</td></tr>`).join('');
+    return `<style>.okteam .okp{display:inline-flex;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:600;border:1px solid var(--line);background:var(--surface-2);white-space:nowrap}.okteam .okp.g{background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.4);color:#15803d}.okteam .okp.y{background:rgba(245,179,1,.14);border-color:rgba(245,179,1,.45);color:#9a6700}.okteam .okp.b{background:rgba(80,177,231,.14);border-color:rgba(80,177,231,.45);color:#0c6aa0}.okteam .okp.r{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);color:#b91c1c}</style>
+    <div class="okteam stack"><div class="card"><div class="cardhead"><h3>${esc(L('فريقي النهارده', 'My team today'))} · ${ws.length}</h3><div class="grow"></div><span class="tiny muted">${esc(fmtMonth(ym))}</span></div>
+      <div class="tablewrap"><table><thead><tr><th>${esc(L('الاسم', 'Name'))}</th><th>${esc(L('النهارده', 'Today'))}</th><th>${esc(L('حضور', 'Present'))}</th><th>${esc(L('تأخير', 'Late'))}</th><th>${esc(L('غياب', 'Absent'))}</th><th>${esc(L('إجازات', 'Leave'))}</th><th>${esc(L('طلبات مفتوحة', 'Open requests'))}</th><th>${esc(L('المشاريع', 'Projects'))}</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+      <div class="card"><div class="cardhead"><h3>${esc(L('طلبات وإجازات الفريق', 'Team requests and leaves'))}</h3></div>${rq ? `<div class="tablewrap"><table><thead><tr><th>${esc(L('الاسم', 'Name'))}</th><th>${esc(L('النوع', 'Type'))}</th><th>${esc(L('التاريخ', 'Dates'))}</th><th>${esc(L('الحالة', 'Status'))}</th><th></th></tr></thead><tbody>${rq}</tbody></table></div>` : `<div class="muted small">${esc(L('مفيش طلبات', 'No requests'))}</div>`}</div></div>`;
+  };
+  if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.okteam = () => page();
+  if (typeof VIEW_TITLES === 'object') VIEW_TITLES.okteam = 'فريقي';
+  if (Array.isArray(NAV) && !NAV.some(n => n.id === 'okteam')) { const i = NAV.findIndex(n => n.id === 'projects'); NAV.splice(i < 0 ? NAV.length : i + 1, 0, { id: 'okteam', label: 'فريقي', icon: 'workers' }); }
+
+  /* ---------------- breaks: tell my Project Owners when I start / end one ---------------- */
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    const w = S.session && S.session.workerId ? W(S.session.workerId) : null; if (!w) return; const d = todayISO(); const r = (attendanceFor(d) || {})[w.id]; if (!r) return;
+    const b = r.brk || []; const last = b[b.length - 1]; const cur = b.length + ':' + (last && !last.e ? 'o' : 'c'); const key = 'ok.brk.' + d + '.' + w.id; let prev = window.__okBrk && window.__okBrk[key] != null ? window.__okBrk[key] : null; if (prev == null) { try { prev = localStorage.getItem(key); } catch (e) { /* */ } }
+    if (prev === cur) return; (window.__okBrk = window.__okBrk || {})[key] = cur; try { localStorage.setItem(key, cur); } catch (e) { /* */ } if (prev == null && cur === '0:c') return;
+    const started = /:o$/.test(cur), ended = !started && /:o$/.test(prev || ''); if (!started && !ended) return;
+    const to = new Set(); live().forEach(p => { if ((p.team || []).includes(w.id)) owners(p).forEach(i => { if (i !== w.id) to.add(i); }); }); const ids = Array.from(to); if (!ids.length || typeof pushSend !== 'function') return;
+    const hm = new Date().toTimeString().slice(0, 5);
+    pushSend(ids.concat(ids.map(i => 'w:' + i)), started ? L(`${w.name} أخد بريك`, `${w.name} started a break`) : L(`${w.name} رجع من البريك`, `${w.name} is back from the break`), hm, '#/okteam', 'ok-brk-' + w.id).catch(() => { });
+  } catch (e) { /* ignore */ } });
 })();
