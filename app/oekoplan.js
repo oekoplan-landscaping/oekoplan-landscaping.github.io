@@ -2873,13 +2873,17 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
    Everything shown (text, tooltips, placeholders, page title, notifications) is rewritten to Ökoplan Landscaping.
    The project «One Ninety» is a real project name and stays. What people type is never touched. */
 (() => { try {
-  const HIT = /ninety|نينتي/i;
+  const HIT = /ninety|نينتي|factory|مصنع|your advances|سلفك/i;
   const fix = t => String(t)
     .replace(/One Ninety/g, 'One\u0001N').replace(/ون نينتي/g, 'ون\u0001ن')
     .replace(/NINETY\s+FACTORY\s+MANAGEMENT/g, 'ÖKOPLAN LANDSCAPING')
     .replace(/Ninety\s+(Studioz|Fabrication|Construction|Degree)(\s+factory)?/gi, 'Ökoplan Landscaping')
     .replace(/نينتي\s+(ستوديوز|ستديوز|ستوديو|فابريكيشن|للتصنيع)/g, 'أوكوبلان لاندسكيب')
     .replace(/NINETY/g, 'ÖKOPLAN').replace(/Ninety/g, 'Ökoplan').replace(/ninety/g, 'ökoplan').replace(/نينتي/g, 'أوكوبلان')
+    /* an office, not a factory: the shared engine's wording, in both languages */
+    .replace(/your advances · /g, '').replace(/سلفك · /g, '')
+    .replace(/the factory floor/g, 'the office').replace(/factory manager/g, 'office manager').replace(/Factory manager/g, 'Office manager').replace(/Factory & office/g, 'Office').replace(/FACTORY/g, 'OFFICE').replace(/Factory/g, 'Office').replace(/factory/g, 'office')
+    .replace(/مدير المصنع/g, 'مدير المكتب').replace(/أرضية المصنع/g, 'المكتب').replace(/المصنع والمكتب/g, 'المكتب').replace(/المصنع/g, 'المكتب').replace(/للمصنع/g, 'للمكتب').replace(/بالمصنع/g, 'بالمكتب').replace(/مصنع/g, 'مكتب')
     .replace(/One\u0001N/g, 'One Ninety').replace(/ون\u0001ن/g, 'ون نينتي');
   window.okBrandFix = fix;
   const ATTRS = ['title', 'placeholder', 'aria-label', 'alt', 'data-tip'];
@@ -3218,5 +3222,22 @@ html[data-theme="dark"] .okp.g{color:#86efac!important}html[data-theme="dark"] .
     if (!w || !w.mustChangePw || !(S.sb && S.sb.auth)) { if (g && !g.dataset.preview) g.remove(); return; }
     if (typeof needsAck === 'function' && needsAck()) return; /* the regulation comes first */
     open(w);
+  } catch (e) { /* ignore */ } });
+})();
+
+
+/* =====================================================================
+   Ökoplan — an office, not a factory (12 Nov 2026): what the shared engine still offered that has no place here
+   · request types that belong to manufacturing, purchasing, fleet and pay are not offered;
+   · the portal has no advance card and no pay questions.
+   ===================================================================== */
+(() => {
+  if (window.__OK_OFFICE__) return; window.__OK_OFFICE__ = 1;
+  const DROP = ['estimate', 'trip', 'po', 'wagechange', 'routeplan', 'priceopen', 'quoteopen', 'need', 'pricecheck', 'transfer', 'abssettle', 'itemconfirm', 'rfqtech', 'rfqprice', 'custody', 'itemtech', 'tripconfirm', 'fund', 'opex', 'finlock', 'finedit', 'siteout', 'advance'];
+  try { if (typeof ASK_CHIPS !== 'undefined' && Array.isArray(ASK_CHIPS)) for (let i = ASK_CHIPS.length - 1; i >= 0; i--) if (/مرتب|راتب|قبض|سلف/.test(ASK_CHIPS[i])) ASK_CHIPS.splice(i, 1); } catch (e) { /* ignore */ }
+  const st = document.createElement('style'); st.textContent = DROP.map(k => `option[value="${k}"],[data-rq="${k}"],[data-arg="rq:${k}"],[data-type="${k}"]`).join(',') + '{display:none!important}'; document.head.appendChild(st);
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    document.querySelectorAll('select option').forEach(o => { if (DROP.includes(o.value) && o.parentElement && /type|kind|rq/i.test(o.parentElement.name || o.parentElement.id || '')) o.remove(); });
+    if (S.route && (S.route.view === 'me' || S.route.view === 'okabout')) document.querySelectorAll('#view .card').forEach(c => { if (c.dataset.okadv) return; c.dataset.okadv = '1'; const h = c.querySelector('h3,b,.title'); const t = (h ? h.textContent : c.textContent.slice(0, 40)) || ''; if (/^\s*(سلفتي|My advance)/.test(t) || /New request → Advance|طلب جديد ← سلفة/.test(c.textContent)) c.style.display = 'none'; });
   } catch (e) { /* ignore */ } });
 })();
