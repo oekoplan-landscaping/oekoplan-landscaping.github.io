@@ -39341,6 +39341,7 @@ html.apple .ngfly .cnt.crit,html.apple .ngfly .cnt.bad{background:#ff453a}
     add: G('<path d="M11.2 4.6H7.6a3 3 0 0 0-3 3v8.8a3 3 0 0 0 3 3h8.8a3 3 0 0 0 3-3v-3.6"/><path d="M17.7 3.9a1.85 1.85 0 0 1 2.6 2.6l-7.4 7.4-3.4.8.8-3.4z"/>'),
     ai: G('<path d="M10 3.6c.55 3.75 2.45 5.65 6.2 6.2-3.75.55-5.65 2.45-6.2 6.2-.55-3.75-2.45-5.65-6.2-6.2 3.75-.55 5.65-2.45 6.2-6.2z"/><path d="M18.2 14.6c.25 1.55.95 2.25 2.5 2.5-1.55.25-2.25.95-2.5 2.5-.25-1.55-.95-2.25-2.5-2.5 1.55-.25 2.25-.95 2.5-2.5z"/>'),
     memo: G('<rect x="5.2" y="3.4" width="13.6" height="17.2" rx="2.6"/><path d="M8.8 8.2h6.4M8.8 12h6.4M8.8 15.8h3.8"/>'),
+    punch: G('<path d="M12 11a2.5 2.5 0 0 0-2.5 2.5V17"/><path d="M7.5 13.5a4.5 4.5 0 0 1 9 0V18"/><path d="M5.5 11.5A6.5 6.5 0 0 1 18.5 11"/><path d="M4 9.2A8.5 8.5 0 0 1 20 9"/><path d="M12 16v4"/>'),
     notes: G('<path d="M5 4.5h14v9.5l-4.5 4.5H5z"/><path d="M14.5 18.5V14H19"/><path d="M8.5 9h7M8.5 12h4"/>'),
     concept: G('<path d="M4.6 19.4c2.3-.4 3.6-1.2 4.6-2.9"/><path d="M14.9 4.6l4.5 4.5-8.6 8.6-4.9 1.1 1.1-4.9z"/><path d="M13.1 6.4l4.5 4.5"/>'),
     call: G('<path d="M20.6 16.3v2.6a1.75 1.75 0 0 1-1.9 1.75 17.3 17.3 0 0 1-7.55-2.7 17 17 0 0 1-5.25-5.25 17.3 17.3 0 0 1-2.7-7.6A1.75 1.75 0 0 1 4.95 3.2h2.6a1.75 1.75 0 0 1 1.75 1.5c.11.85.32 1.67.61 2.46a1.75 1.75 0 0 1-.39 1.85l-1.1 1.1a14 14 0 0 0 5.25 5.25l1.1-1.1a1.75 1.75 0 0 1 1.85-.39c.79.29 1.61.5 2.46.61a1.75 1.75 0 0 1 1.5 1.77z"/>'),
@@ -39354,6 +39355,7 @@ html.apple .ngfly .cnt.crit,html.apple .ngfly .cnt.bad{background:#ff453a}
     { k: 'call', sel: '.callfab', label: () => L('المكالمات', 'Calls'), cls: 'call' },
     { k: 'snap', sel: '.snapfab', label: () => L('صوّر الشاشة', 'Screenshot'), cls: 'snap' },   /* v7.37: screenshot + sketch onto a task */
     { k: 'concept', sel: '.conceptfab', label: () => L('كونسبت', 'Concept'), cls: 'concept' },   /* v7.49: a new blank Concept drawing */
+    { k: 'punch', sel: '.punchfab', label: el => (el && el.dataset.label) || L('البصمة', 'Punch'), cls: 'punch' },   /* 12 Nov (Ökoplan): punch in / out from anywhere */
     { k: 'notes', sel: '.notesfab', label: () => L('ملاحظاتي', 'My notes'), cls: 'notes' },   /* 18 Oct (Ökoplan): private sticky notes */
   ];
   const D = { root: null, open: false, sig: '' };

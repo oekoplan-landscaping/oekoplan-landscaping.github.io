@@ -2674,6 +2674,7 @@ document.head.insertAdjacentHTML('beforeend', '<style id="ok-ngt">#nav .ngh .ngt
   function openPanel() { N.panel = true; renderPanel(); const pe = document.querySelector('#oknotes'); if (pe) pe.style.zIndex = ++N.z; if (!N.loaded) load().then(renderPanel); const q = document.querySelector('#oknotes .okn-q'); if (q && !mobile()) q.focus(); }
   function closePanel() { N.panel = false; renderPanel(); }
   ACTIONS.okNotes = () => openPanel();
+  ACTIONS.okPunchQuick = async (arg, btn) => { if (typeof ACTIONS.selfPunch !== 'function') return; const b = btn || document.querySelector('.punchfab') || document.createElement('button'); await ACTIONS.selfPunch(null, b); };
   ACTIONS.okNoteNew = () => { (N.loaded ? Promise.resolve() : load()).then(() => add()); };
 
   /* ---------------- events ---------------- */
@@ -2701,11 +2702,18 @@ document.head.insertAdjacentHTML('beforeend', '<style id="ok-ngt">#nav .ngh .ngt
   let booted = false;
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => {
     const want = !!(S.session && sb()); let b = document.querySelector('.notesfab'); if (!want) { if (b) b.remove(); document.querySelectorAll('.oknw').forEach(e => e.remove()); booted = false; return; }
+    /* 12 Nov: «Punch» in the + dial — the same self punch as «My portal», from any page */
+    try { const w = S.session && S.session.workerId ? byId('workers', S.session.workerId) : null; let pb = document.querySelector('.punchfab');
+      if (!w || w.noPunch || (S.route && S.route.view === 'me')) { if (pb) pb.remove(); }
+      else { const r = typeof attendanceFor === 'function' ? (attendanceFor(typeof todayISO === 'function' ? todayISO() : new Date().toISOString().slice(0, 10))[w.id] || null) : null; const lbl = r && r.in && !r.out ? L('تسجيل الانصراف', 'Punch out') : L('تسجيل الحضور', 'Punch in');
+        if (!pb) { document.body.insertAdjacentHTML('beforeend', `<button type="button" class="punchfab" data-action="okPunchQuick" title="${esc(lbl)}" aria-label="${esc(lbl)}" data-label="${esc(lbl)}">${icon('clock')}</button>`); pb = document.querySelector('.punchfab'); }
+        else if (pb.dataset.label !== lbl) { pb.dataset.label = lbl; pb.title = lbl; } } } catch (e) { /* cosmetic */ }
     if (!b) document.body.insertAdjacentHTML('beforeend', `<button type="button" class="notesfab" data-action="okNotes" title="${esc(L('ملاحظاتي', 'My notes'))}" aria-label="${esc(L('ملاحظاتي', 'My notes'))}">${icon('edit')}</button>`);
     if (!booted) { booted = true; setTimeout(() => { if (!N.loaded) load(); }, 1200); }
     const th = isDark() ? 'dark' : 'light'; if (th !== N.theme) { N.theme = th; document.querySelectorAll('.oknw').forEach(el => { const n = byId_(el.dataset.id); if (!n) return; el.style.setProperty('--nc', colorOf(n.color)[0]); el.style.setProperty('--nb', colorOf(n.color)[1]); el.classList.toggle('dark', n.color === 'dark' || isDark()); el.querySelectorAll('.oknw-c').forEach(c => { c.style.background = colorOf(c.dataset.c)[0]; }); }); if (N.panel) renderPanel(); }
   });
   document.head.insertAdjacentHTML('beforeend', `<style id="ok-notes-css">
+.punchfab{position:fixed;left:18px;bottom:calc(358px + env(safe-area-inset-bottom,0px));width:54px;height:54px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;z-index:60;cursor:pointer}body.printing .punchfab,body.fab-hide .punchfab,body.nf-typing .punchfab,body.nf-chatpage .punchfab,body.stuboard .punchfab,body:has(.side.open) .punchfab{display:none!important}
 .notesfab{position:fixed;left:18px;bottom:calc(290px + env(safe-area-inset-bottom,0px));width:54px;height:54px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;z-index:60;cursor:pointer}
 body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf-chatpage .notesfab,body.stuboard .notesfab,body:has(.side.open) .notesfab{display:none!important}
 /* the list */
