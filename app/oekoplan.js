@@ -3110,6 +3110,8 @@ html[data-theme="dark"] .okp.g{color:#86efac!important}html[data-theme="dark"] .
     if (MONEY.includes(v) || /^crm-/.test(v)) return false;
     if (v === 'clients') return (isPMO() || isPO()) ? true : false;
     if (v === 'reports') return role() === 'hr' && base.apply(this, arguments);
+    /* heads and the design manager are Project Owners like the rest: their people are the ones on their projects («My team»), not a whole department. The requests page stays — that is where they approve. */
+    if (['head', 'manager', 'vice'].includes(role()) && ['workers', 'attendance', 'penalties'].includes(v)) return false;
     return base.apply(this, arguments);
   })(canSee);
   /* the portal: no pay, no day value, no wallet — whatever card the shared engine adds */
