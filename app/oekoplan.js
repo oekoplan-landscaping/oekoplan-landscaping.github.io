@@ -2960,6 +2960,22 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
   const isFin = p => !!p && (finId(p) === me() || isAdmin());
   const finMgrs = () => list('workers').filter(w => w.status !== 'inactive' && w.status !== 'left' && /financial manager/i.test(w.title || ''));
   const isFinMgr = () => isAdmin() || finMgrs().some(w => w.id === me());
+  /* stage money (13 Nov 2026 — PIN): the finance owner of the project, the accounts manager and the CEO see what each stage
+     should bring, what came in and what is left; the technical Project Owner keeps shares and dates only. Amounts stay hidden
+     (••••) until tapped, and hide again by themselves. The server sends okfin / okpay only to these people. */
+  const canMoney = p => !!p && (isAdmin() || finId(p) === me() || isFinMgr() || (typeof window.okFinAll === 'function' && window.okFinAll()));
+  const mNum = v => { const n = +String(v == null ? '' : v).replace(/[^\d.-]/g, ''); return isFinite(n) ? n : 0; };
+  const mFmt = n => Math.round(n).toLocaleString('en-US');
+  const mShow = {}; const mOn = pid => mShow[pid] && Date.now() - mShow[pid] < 20000;
+  const mVal = (pid, n) => (mOn(pid) ? `${mFmt(n)} <small>${esc(L('ج.م', 'EGP'))}</small>` : '••••');
+  const mOf = (p, s) => { const f = byId('okfin', p.id) || {}; const pays = list('okpay').filter(x => x && !x.deleted && x.projectId === p.id && x.stage === s.id);
+    const want = mNum((f.stages || {})[s.id]) || (mNum(f.contract) && s.pct != null ? mNum(f.contract) * (+s.pct || 0) / 100 : 0); const got = pays.reduce((a, x) => a + mNum(x.amount), 0);
+    return { want, got, left: Math.max(0, want - got) }; };
+  const mTop = p => { const f = byId('okfin', p.id) || {}; const c = mNum(f.contract); const got = list('okpay').filter(x => x && !x.deleted && x.projectId === p.id).reduce((a, x) => a + mNum(x.amount), 0);
+    if (!c && !got) return `<div class="tiny muted" style="margin:2px 0 6px">${esc(L('قيم العقد والمراحل لسه ما اتدخلتش.', 'Contract and stage values are not entered yet.'))}</div>`;
+    return `<div class="okrow"><span class="muted">${esc(L('قيمة العقد', 'Contract'))}</span><b>${mVal(p.id, c)}</b><span class="muted">${esc(L('اتحصّل', 'Collected'))}</span><b>${mVal(p.id, got)}</b><span class="muted">${esc(L('فاضل', 'Left'))}</span><b>${mVal(p.id, Math.max(0, c - got))}</b></div>`; };
+  const mRow = (p, s) => { const m = mOf(p, s); if (!m.want && !m.got) return ''; return `<span class="okp" title="${esc(L('المطلوب · اتحصّل · فاضل', 'Due · collected · left'))}">${mVal(p.id, m.want)} · ${mVal(p.id, m.got)} · ${mVal(p.id, m.left)}</span>`; };
+  document.addEventListener('click', ev => { const t = ev.target.closest && ev.target.closest('[data-okamt]'); if (!t) return; ev.preventDefault(); const pid = t.dataset.okamt; mShow[pid] = mOn(pid) ? 0 : Date.now(); if (typeof rerender === 'function') rerender(); setTimeout(() => { if (typeof rerender === 'function') rerender(); }, 20500); });
   const d10 = iso => (iso ? fmtDate(String(iso).slice(0, 10)) : '');
   const stName = (sid) => { const s = PIPE().find(x => x.id === sid); return s ? L(s.ar, s.name) : ((window.okStageName && window.okStageName(sid)) || sid); };
   const tell = (ids, title, body, pid) => { ids = Array.from(new Set((ids || []).filter(id => id && id !== me()))); if (!ids.length) return;
@@ -2994,8 +3010,8 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
     if (st === 'sent' && isFinMgr()) return `<button type="button" class="btn sm p" data-okown="coll:${p.id}:${sid}">${icon('check')}<span>${esc(L('اتحصّلت', 'Collected'))}</span></button>`;
     return '';
   };
-  const claimRow = (p, s) => { const c = (p.okClaims || {})[s.id]; const st = claimState(c); const info = st === 'none' ? '' : [c.deliveredAt ? `${L('سُلّمت', 'Delivered')} ${d10(c.deliveredAt)} · ${c.deliveredBy || ''}` : '', c.sentAt ? `${L('المطالبة', 'Claim')} ${d10(c.sentAt)} · ${c.sentBy || ''}` : '', c.collectedAt ? `${L('التحصيل', 'Collected')} ${d10(c.collectedAt)} · ${c.collectedBy || ''}` : ''].filter(Boolean).join(' — ');
-    return `<div class="okrow"><b>${esc(L(s.ar, s.name))}</b><span class="okp ${CL[st][2]}">${esc(L(CL[st][0], CL[st][1]))}</span><span class="grow muted tiny">${esc(info)}</span>${claimBtn(p, s.id, st)}</div>`; };
+  const claimRow = (p, s, money) => { const c = (p.okClaims || {})[s.id]; const st = claimState(c); const info = st === 'none' ? '' : [c.deliveredAt ? `${L('سُلّمت', 'Delivered')} ${d10(c.deliveredAt)} · ${c.deliveredBy || ''}` : '', c.sentAt ? `${L('المطالبة', 'Claim')} ${d10(c.sentAt)} · ${c.sentBy || ''}` : '', c.collectedAt ? `${L('التحصيل', 'Collected')} ${d10(c.collectedAt)} · ${c.collectedBy || ''}` : ''].filter(Boolean).join(' — ');
+    return `<div class="okrow"><b>${esc(L(s.ar, s.name))}</b><span class="okp ${CL[st][2]}">${esc(L(CL[st][0], CL[st][1]))}</span>${money ? mRow(p, s) : ''}<span class="grow muted tiny">${esc(info)}</span>${claimBtn(p, s.id, st)}</div>`; };
 
   /* ---------------- team + borrow requests ---------------- */
   const JS = { pending: ['مستني الرد', 'Waiting', 'y'], approved: ['اتوافق عليه', 'Approved', 'g'], rejected: ['اترفض', 'Declined', 'r'] };
@@ -3012,7 +3028,7 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
       <div><h4><span>${esc(L('الفريق', 'Team'))} · ${team.length}</span><span class="grow"></span>${canAsk(p) ? `<button type="button" class="btn sm ghost" data-okown="join:${p.id}">${icon('plus')}<span>${esc(L('اطلب حد من تيم تاني', 'Ask for someone from another team'))}</span></button>` : ''}</h4>
         <div class="okchips">${os.map(id => `<span class="okchip o">${esc(nm(id))}</span>`).join('')}${team.map(id => `<span class="okchip">${esc(nm(id) || '—')}</span>`).join('')}</div>
         ${joins.length ? `<div style="margin-top:8px">${joins.map(j => joinRow(p, j, false)).join('')}</div>` : ''}</div>
-      ${seesClaims(p) ? `<div><h4><span>${esc(L('مطالبات المراحل (من غير مبالغ)', 'Stage claims (no amounts)'))}</span></h4>${(window.okStagesOf ? window.okStagesOf(p) : PIPE()).map(s => claimRow(p, s)).join('')}</div>` : ''}
+      ${seesClaims(p) || canMoney(p) ? (canMoney(p) ? `<div><h4><span>${esc(L('مطالبات المراحل والتحصيل', 'Stage claims and collection'))}</span><span class="grow"></span><button type="button" class="btn sm ghost" data-okamt="${p.id}">${esc(mOn(p.id) ? L('اخفي المبالغ', 'Hide amounts') : L('اعرض المبالغ', 'Show amounts'))}</button></h4>${mTop(p)}${(window.okStagesOf ? window.okStagesOf(p) : PIPE()).map(s => claimRow(p, s, true)).join('')}</div>` : `<div><h4><span>${esc(L('مطالبات المراحل (من غير مبالغ)', 'Stage claims (no amounts)'))}</span></h4>${(window.okStagesOf ? window.okStagesOf(p) : PIPE()).map(s => claimRow(p, s)).join('')}</div>`) : ''}
     </div></div>`;
   };
 
@@ -3842,4 +3858,31 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
     const t = b.dataset.okskin; try { await Store.saveSettings({ okTheme: t }); } catch (e) { toast(L('ما اتحفظش — جرّب تاني', 'Not saved — try again'), 'err'); return; }
     try { localStorage.setItem('ok.skin', t); } catch (e) { /* */ } apply(t); const c = document.getElementById('okskin'); if (c) c.remove(); if (typeof rerender === 'function') rerender(); toast(L('اتغيّر', 'Changed')); });
   window.okSkin = { apply };
+})();
+
+/* =====================================================================
+   People, salaries and project money — who sees what (13 Nov 2026, Mahmoud — approved by PIN)
+   · settings.okPeopleAll (the accounts manager): every employee's file, salaries (Payroll) and attendance.
+   · settings.okFinPay (the same person): every project, to follow its stage claims and record what comes in.
+   · Payroll is closed for everyone else but the CEO.
+   · Everyone else gets colleagues' name, title, department and photo only; a manager also gets his own people's phone,
+     e-mail, requests and attendance. Server: nf_people_vis(), docs_safe and the docs_select rules.
+   ===================================================================== */
+(() => {
+  if (window.__OK_PEOPLE__) return; window.__OK_PEOPLE__ = 1;
+  const me = () => (typeof stuMe === 'function' ? stuMe() : '') || '';
+  const inList = k => { const s = S.settings || {}; return !!S.session && !!me() && (s[k] || []).includes(me()); };
+  window.okPeopleAll = () => !!S.session && (isAdmin() || inList('okPeopleAll'));
+  window.okFinAll = () => !!S.session && (isAdmin() || inList('okFinPay'));
+  if (typeof canSee === 'function') canSee = (base => function (v) {
+    if ((v === 'attendance' || v === 'workers' || v === 'payroll') && inList('okPeopleAll')) return true;
+    if (v === 'payroll' && !isAdmin()) return false;
+    return base.apply(this, arguments);
+  })(canSee);
+  /* the accounts manager follows every project's collections: the projects list and project pages open for him the way they open for the accounts role */
+  if (typeof vProjects === 'function') vProjects = (base => function () {
+    if (!S.session || isAdmin() || !inList('okFinPay')) return base.apply(this, arguments);
+    const r0 = window.role; window.role = () => 'acc';
+    try { return base.apply(this, arguments); } finally { window.role = r0; }
+  })(vProjects);
 })();
