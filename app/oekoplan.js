@@ -3879,10 +3879,14 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
     if (v === 'payroll' && !isAdmin()) return false;
     return base.apply(this, arguments);
   })(canSee);
-  /* the accounts manager follows every project's collections: the projects list and project pages open for him the way they open for the accounts role */
+  /* the accounts manager follows every project's collections: the projects list and project pages open for him the way they
+     open for the accounts role. The finance owner of a project (the senior Project Owner the technical one reports to) opens
+     that project too, even when he is not on its team — counted as on the team for this render only, nothing is saved. */
   if (typeof vProjects === 'function') vProjects = (base => function () {
-    if (!S.session || isAdmin() || !inList('okFinPay')) return base.apply(this, arguments);
-    const r0 = window.role; window.role = () => 'acc';
-    try { return base.apply(this, arguments); } finally { window.role = r0; }
+    if (!S.session || isAdmin()) return base.apply(this, arguments);
+    const id = me(); const touched = [];
+    if (id) list('projects').forEach(p => { if (p && p.financeId === id && p.leadId !== id && !(p.team || []).includes(id)) { touched.push([p, p.team]); p.team = (p.team || []).concat([id]); } });
+    const fin = inList('okFinPay'); const r0 = window.role; if (fin) window.role = () => 'acc';
+    try { return base.apply(this, arguments); } finally { if (fin) window.role = r0; touched.forEach(([p, t]) => { if (t === undefined) delete p.team; else p.team = t; }); }
   })(vProjects);
 })();
