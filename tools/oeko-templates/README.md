@@ -12,3 +12,8 @@ edit the Word file in `src/`, then run from this folder:
     python3 make_offer.py && python3 make_agr.py
 
 and bump the app build.
+
+The PDF version (`app/_src/okpdf.js`, pdfmake) takes the agreement's standard text from
+`app/_src/tpl/agreement.layout.json`; after changing the agreement template run also
+
+    python3 make_agr_layout.py     # needs LibreOffice (soffice) for the list labels
