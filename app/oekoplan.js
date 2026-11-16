@@ -4127,7 +4127,9 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
     ov = document.createElement('div'); ov.id = 'okgdov';
     ov.innerHTML = `<div class="bar"><b>${esc(L('دليل الأدوار — للمراجعة', 'Roles guide — for review'))}</b><button type="button" class="btn sm" data-okgd="notes">${esc(L('ملاحظاتي', 'My notes'))}</button><button type="button" class="btn sm" data-okgd="close">✕</button></div><iframe title="Roles guide"></iframe><div class="notes" hidden><textarea id="okgdtx" dir="auto" placeholder="${esc(L('اكتبي ملاحظتك: الدور أو الاسم وإيه اللي محتاج يتعدل…', 'Write your note: the role or name and what should change…'))}"></textarea><div class="row"><button type="button" class="btn" style="background:#50b1e7;border-color:#50b1e7;color:#fff" data-okgd="send">${esc(L('ابعتي الملاحظة', 'Send the note'))}</button><span class="muted" id="okgdst"></span></div></div>`;
     document.body.appendChild(ov);
-    const html = String(d.html || '').replace('<body', `<script>window.OKW_LANG=${JSON.stringify(en() ? 'en' : 'ar')}<\/script><body`);
+    let html = String(d.html || '');
+    if (!html && d.htmlGz) { try { const bin = atob(d.htmlGz); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); html = await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).text(); } catch (e) { html = `<p style="font-family:sans-serif;padding:20px">${esc(L('الجهاز ده مش قادر يفتح الدليل — جرّبي من المتصفح على اللابتوب.', 'This device cannot open the guide — try a browser on a laptop.'))}</p>`; } }
+    html = html.replace('<body', `<script>window.OKW_LANG=${JSON.stringify(en() ? 'en' : 'ar')}<\/script><body`);
     ov.querySelector('iframe').srcdoc = html;
     if (!d.seenAt) { try { await save(Object.assign({}, d, { seenAt: nowISO() })); } catch (e) { /* */ } } };
   ACTIONS.okGuideOpen = () => open();
