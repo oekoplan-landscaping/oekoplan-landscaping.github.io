@@ -4098,3 +4098,48 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
     try { return base.apply(this, arguments); } finally { if (fin) window.role = r0; touched.forEach(([p, t]) => { if (t === undefined) delete p.team; else p.team = t; }); }
   })(vProjects);
 })();
+
+/* =====================================================================
+   «Roles guide — for review» (16 Nov 2026, Mahmoud, approved with the PIN): the interactive who-does-what guide,
+   shown only to the people listed in its own record (Rawan) so she can review it and send notes.
+   · The page lives in the CRM collection as okdeal/'guide:roles' { kind:'guide', html, viewers:[workerId], notes:[] } —
+     not in the public app files; the database lets only the CRM audience read it, and the menu shows it only to its viewers.
+   · Opens full screen over the app (so a refresh of the data never reloads it), with a notes box at the bottom.
+   ===================================================================== */
+(() => {
+  if (window.__OK_GUIDE__) return; window.__OK_GUIDE__ = 1;
+  const GID = 'guide:roles';
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const me = () => (typeof stuMe === 'function' ? stuMe() : '') || '';
+  const doc = () => { try { return byId('okdeal', GID) || null; } catch (e) { return null; } };
+  const vis = () => { const d = doc(); return !!(S.session && d && d.kind === 'guide' && (d.viewers || []).includes(me())); };
+  const myName = () => (S.session && S.session.name) || '';
+  const save = async d => { await Store.save('okdeal', Object.assign({}, d, { updatedAt: nowISO(), updatedBy: myName() }), { silent: true }); };
+  const fmtAt = iso => { try { return new Date(iso).toLocaleString(en() ? 'en-GB' : 'ar-EG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return String(iso || '').slice(0, 16); } };
+  const CSS = `<style>.okgd{max-width:860px;margin:0 auto}.okgd .bx{background:var(--surface);border:1px solid var(--line);border-radius:calc(var(--radius,14px) + 6px);box-shadow:var(--shadow);padding:20px 22px;margin-bottom:16px}.okgd h1{margin:0 0 6px;font-size:26px}.okgd p{color:var(--muted);margin:0 0 14px}.okgd .nt{border-top:1px solid var(--line);padding:10px 0}.okgd .nt small{color:var(--muted)}.okgd .nt div{white-space:pre-wrap}
+#okgdov{position:fixed;inset:0;z-index:9000;background:var(--surface,#fff);display:flex;flex-direction:column}#okgdov .bar{display:flex;align-items:center;gap:10px;padding:10px max(14px,env(safe-area-inset-right,0px)) 10px max(14px,env(safe-area-inset-left,0px));padding-top:max(10px,env(safe-area-inset-top,0px));background:var(--surface);border-bottom:1px solid var(--line)}#okgdov .bar b{flex:1;font-size:16px}#okgdov iframe{flex:1;width:100%;border:0;background:#fff}#okgdov .notes{border-top:1px solid var(--line);background:var(--surface);padding:10px 14px max(10px,env(safe-area-inset-bottom,0px))}#okgdov .notes textarea{width:100%;box-sizing:border-box;font:inherit;border:1px solid var(--line);border-radius:12px;padding:10px;min-height:70px;background:var(--surface);color:var(--ink)}#okgdov .notes .row{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}</style>`;
+  const page = () => { if (!vis()) return `<div class="banner warn">${esc(L('الصفحة دي مش متاحة', 'This page is not available'))}</div>`; const d = doc(); const ns = (d.notes || []).filter(n => n && n.by === myName()).slice().reverse();
+    return `${CSS}<div class="okgd"><div class="bx"><h1>${esc(L('دليل الأدوار — للمراجعة', 'Roles guide — for review'))}</h1><p>${esc(L('صفحة تفاعلية بتشرح كل واحد في السيستم المفروض يعمل إيه: يومه، مسؤولياته والصفحة اللي بيعملها منها، بيشوف إيه، ومين بيرفع المطالبات لمين. ظاهرة ليكي إنتي بس — راجعيها واكتبي ملاحظاتك تحت.', 'An interactive page explaining what each person should do in the system: their day, duties and the page they use, what they see, and whose claims go through whom. Shown to you only — review it and write your notes below.'))}</p><button type="button" class="btn" style="background:#50b1e7;border-color:#50b1e7;color:#fff" data-action="okGuideOpen">${esc(L('افتحي الدليل', 'Open the guide'))}</button></div>
+      <div class="bx"><h3 style="margin:0 0 6px">${esc(L('ملاحظاتك اللي اتبعتت', 'Notes you sent'))} (${ns.length})</h3>${ns.map(n => `<div class="nt"><small>${esc(fmtAt(n.at))}</small><div dir="auto">${esc(n.text)}</div></div>`).join('') || `<p style="margin:0">${esc(L('لسه مفيش — افتحي الدليل واكتبي ملاحظاتك من تحت.', 'None yet — open the guide and write your notes at the bottom.'))}</p>`}</div></div>`; };
+  const open = async () => { const d = doc(); if (!d || !vis()) return; let ov = document.getElementById('okgdov'); if (ov) ov.remove();
+    if (!document.getElementById('okgdcss')) { const st = document.createElement('div'); st.id = 'okgdcss'; st.innerHTML = CSS; document.body.appendChild(st); }
+    ov = document.createElement('div'); ov.id = 'okgdov';
+    ov.innerHTML = `<div class="bar"><b>${esc(L('دليل الأدوار — للمراجعة', 'Roles guide — for review'))}</b><button type="button" class="btn sm" data-okgd="notes">${esc(L('ملاحظاتي', 'My notes'))}</button><button type="button" class="btn sm" data-okgd="close">✕</button></div><iframe title="Roles guide"></iframe><div class="notes" hidden><textarea id="okgdtx" dir="auto" placeholder="${esc(L('اكتبي ملاحظتك: الدور أو الاسم وإيه اللي محتاج يتعدل…', 'Write your note: the role or name and what should change…'))}"></textarea><div class="row"><button type="button" class="btn" style="background:#50b1e7;border-color:#50b1e7;color:#fff" data-okgd="send">${esc(L('ابعتي الملاحظة', 'Send the note'))}</button><span class="muted" id="okgdst"></span></div></div>`;
+    document.body.appendChild(ov);
+    const html = String(d.html || '').replace('<body', `<script>window.OKW_LANG=${JSON.stringify(en() ? 'en' : 'ar')}<\/script><body`);
+    ov.querySelector('iframe').srcdoc = html;
+    if (!d.seenAt) { try { await save(Object.assign({}, d, { seenAt: nowISO() })); } catch (e) { /* */ } } };
+  ACTIONS.okGuideOpen = () => open();
+  document.addEventListener('click', async ev => { const b = ev.target.closest && ev.target.closest('[data-okgd]'); if (!b) return; const ov = document.getElementById('okgdov'); if (!ov) return; const a = b.dataset.okgd;
+    if (a === 'close') { ov.remove(); if (typeof rerender === 'function') rerender(); return; }
+    if (a === 'notes') { const n = ov.querySelector('.notes'); n.hidden = !n.hidden; if (!n.hidden) { const t = ov.querySelector('#okgdtx'); if (t) t.focus(); } return; }
+    if (a === 'send') { const t = ov.querySelector('#okgdtx'); const text = String((t && t.value) || '').trim(); if (!text) { toast(L('اكتبي الملاحظة الأول', 'Write the note first'), 'err'); return; } const d = doc(); if (!d) return; b.disabled = true;
+      try { await save(Object.assign({}, d, { notes: (d.notes || []).concat([{ at: nowISO(), by: myName(), byId: me(), text: text.slice(0, 4000) }]) })); t.value = ''; const st = ov.querySelector('#okgdst'); if (st) st.textContent = L('اتبعتت ✓ — تقدري تكتبي ملاحظة تانية', 'Sent ✓ — you can write another note'); toast(L('الملاحظة اتبعتت ✓', 'Note sent ✓')); } catch (e) { toast(L('ما اتبعتتش — جرّبي تاني', 'Not sent — try again'), 'err'); }
+      b.disabled = false; } });
+  if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.okguide = () => page();
+  if (typeof VIEW_TITLES === 'object') VIEW_TITLES.okguide = 'دليل الأدوار — للمراجعة';
+  if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okguide')) { const i = NAV.findIndex(n => n && n.id === 'okcrm'); NAV.splice(i >= 0 ? i : Math.min(2, NAV.length), 0, { id: 'okguide', label: 'دليل الأدوار — للمراجعة', short: 'الدليل', icon: 'star', count: () => { try { const d = doc(); return vis() && !d.seenAt ? 1 : 0; } catch (e) { return 0; } }, countCls: 'warn' }); }
+  if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okguide')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okguide']); });
+  if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okguide') return vis(); return base.apply(this, arguments); })(canSee);
+})();
