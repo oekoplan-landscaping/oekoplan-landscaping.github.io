@@ -3216,6 +3216,7 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
 #okpwgate .okpwerr{min-height:20px;margin-top:10px;color:var(--crit-ink);font-size:13px;text-align:center}
 #okpwgate .okpwbtn{width:100%;height:52px;border:0;border-radius:14px;background:#3ca13c;color:#fff;font-size:16.5px;font-weight:700;cursor:pointer;margin-top:6px}
 #okpwgate .okpwbtn:disabled{opacity:.45;cursor:default}
+#okpwgate .okpweye{display:none}
 #okpwgate .okpwout{display:block;margin:14px auto 0;border:0;background:none;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer}
 </style>`);
   const checks = (a, b) => ({ len: a.length >= 8, mix: /[A-Za-z]/.test(a) && /\d/.test(a), fresh: !!a && !WEAK.includes(a.toLowerCase()), same: !!a && a === b });
@@ -3228,6 +3229,7 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
       <p>${esc(L(`أهلاً ${w.name || ''} — دخلت بكلمة السر المبدئية. لازم تغيّرها دلوقتي عشان حسابك يبقى بتاعك لوحدك.`, `Welcome ${w.name || ''} — you signed in with the starter password. Change it now so the account is yours alone.`))}</p>
       <label>${esc(L('كلمة السر الجديدة', 'New password'))}</label><div class="okpwf"><input type="password" name="a" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"><button type="button" class="okpweye" data-eye>${esc(L('إظهار', 'Show'))}</button></div>
       <label>${esc(L('اكتبها تاني', 'Type it again'))}</label><div class="okpwf"><input type="password" name="b" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+      <label>${esc(L('إيميلك الشخصي (اختياري) — عشان لو نسيت كلمة السر يجيلك عليه كود', 'Your personal email (optional) — to get a code there if you forget your password'))}</label><div class="okpwf"><input type="email" name="pe" style="text-align:left;padding:0 14px" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="name@gmail.com" value="${esc(w.personalEmail || '')}"></div>
       <ul><li data-k="len"><i></i>${esc(L('8 حروف أو أكتر', '8 characters or more'))}</li><li data-k="mix"><i></i>${esc(L('فيها حروف إنجليزي وأرقام', 'Has letters and numbers'))}</li><li data-k="fresh"><i></i>${esc(L('مش كلمة السر المبدئية', 'Not the starter password'))}</li><li data-k="same"><i></i>${esc(L('الخانتين زي بعض', 'Both boxes match'))}</li></ul>
       <div class="okpwerr"></div><button type="submit" class="okpwbtn" disabled>${esc(L('حفظ والدخول', 'Save and continue'))}</button>
       <button type="button" class="okpwout" data-out>${esc(L('تسجيل خروج', 'Sign out'))}</button></form></div>`);
@@ -3238,7 +3240,8 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
     f.querySelector('[data-out]').addEventListener('click', () => { g.remove(); const o = document.querySelector('[data-action="logout"]'); if (o) o.click(); else if (ACTIONS.logout) ACTIONS.logout(); });
     f.addEventListener('submit', async ev => { ev.preventDefault(); const c = checks(a.value, b.value); if (!(c.len && c.mix && c.fresh && c.same)) return; btn.disabled = true; btn.textContent = L('جارٍ الحفظ…', 'Saving…');
       try { const r = await S.sb.auth.updateUser({ password: a.value }); if (r.error) throw r.error;
-        await Store.update('workers', w.id, { mustChangePw: false, passSetAt: nowISO(), pwChangedAt: nowISO() }); g.remove(); toast(L('كلمة السر اتغيّرت', 'Password changed'));
+        const pe = String((f.querySelector('[name=pe]') || {}).value || '').trim().toLowerCase(); const patch = { mustChangePw: false, passSetAt: nowISO(), pwChangedAt: nowISO() }; if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(pe)) patch.personalEmail = pe;
+        await Store.update('workers', w.id, patch); g.remove(); toast(L('كلمة السر اتغيّرت', 'Password changed'));
       } catch (e) { err.textContent = (e && e.message) || L('ماتغيّرتش — جرّب تاني', 'Not changed — try again'); btn.disabled = false; btn.textContent = L('حفظ والدخول', 'Save and continue'); } });
     setTimeout(() => { try { a.focus(); } catch (e) { /* */ } }, 60);
   };
@@ -4285,4 +4288,90 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
       return t.innerHTML;
     } catch (e) { return html; }
   })(vProjects);
+})();
+
+
+/* =====================================================================
+   Ökoplan — forgot password by email code (Mahmoud, 17 Nov 2026)
+   · the login screen: mobile number → a 6-digit code to the work email on file, or to the personal email when it matches
+     the one saved on the account (typing an address is never enough) → the code + the new password twice;
+   · or ask the office (HR puts the password back on the starter one);
+   · «My page»: the person keeps his personal recovery email.
+   Server: Edge oeko-mail (forgot_info / forgot) + SQL nf_ok_forgot_code (service role) + nf_ok_reset_password (5 wrong codes = locked an hour).
+   ===================================================================== */
+(() => {
+  if (window.__OK_FORGOT__) return; window.__OK_FORGOT__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const EM = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  const WEAK = ['123456', '1234567', '12345678', '123456789', '000000', '111111', 'password', 'qwerty', '654321'];
+  const st = document.createElement('style');
+  st.textContent = `.okfo{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:12px;margin:0 0 8px;cursor:pointer}.okfo input{margin-top:3px}.okfo b{display:block;font-size:14px}.okfo small{display:block;color:var(--muted);font-size:12.5px;direction:ltr;text-align:start}.okfo.off{opacity:.5;cursor:default}
+.okfr{margin:8px 0 0;font-size:12.5px;color:var(--muted);text-align:start}.okfr>div{padding:2px 0}.okfr i{font-style:normal;display:inline-block;width:18px}.okfr .k,.okfr .ok .o{display:none}.okfr .ok .k{display:inline-block}.okfr .ok{color:var(--good-ink)}
+.okrec .ltr{direction:ltr;unicode-bidi:isolate}`;
+  document.head.appendChild(st);
+  const call = b => Promise.resolve(S.sb.functions.invoke('oeko-mail', { body: b })).then(r => (r && r.data) || { status: 'error' }).catch(() => ({ status: 'error' }));
+  const baseForgot = ACTIONS.forgotPw;
+  ACTIONS.forgotPw = () => {
+    if (!(S.sb && S.sb.functions)) return baseForgot && baseForgot();
+    let login = '', info = null;
+    const pre = (document.getElementById('lg-user') || {}).value || '';
+    const s1 = () => `<div class="okfp" data-s="1"><p class="small muted full" style="margin:0 0 10px">${esc(L('اكتب رقم موبايلك، وهنبعتلك كود على الإيميل تغيّر بيه كلمة السر.', 'Type your mobile number and we will email you a code to set a new password.'))}</p>${field(L('رقم الموبايل', 'Mobile number'), inp('phone', pre, 'inputmode="tel" class="ltr" required placeholder="01xxxxxxxxx"'), 'full')}</div>`;
+    const s2 = () => `<div class="okfp" data-s="2"><p class="small muted" style="margin:0 0 10px">${esc(L('نبعتلك الكود فين؟', 'Where should we send the code?'))}</p>
+      <label class="okfo ${info.work ? '' : 'off'}"><input type="radio" name="where" value="work" ${info.work ? 'checked' : 'disabled'}><span><b>${esc(L('إيميل الشغل', 'Work email'))}</b><small>${esc(info.work || L('مفيش إيميل شغل متسجّل', 'No work email on file'))}</small></span></label>
+      <label class="okfo ${info.personal ? '' : 'off'}"><input type="radio" name="where" value="personal" ${info.personal ? (info.work ? '' : 'checked') : 'disabled'}><span><b>${esc(L('إيميلي الشخصي', 'My personal email'))}</b><small>${esc(info.personal ? L('اكتبه تحت — لازم يكون هو المسجّل على حسابك', 'Type it below — it must be the one saved on your account') : L('مش متسجّل على حسابك — ضيفه من «صفحتي» بعد ما تدخل', 'Not saved on your account — add it from «My page» once you are in'))}</small></span></label>
+      <input name="pemail" type="email" class="ltr" placeholder="name@gmail.com" autocomplete="email" style="display:none;width:100%;margin:0 0 8px">
+      <label class="okfo"><input type="radio" name="where" value="office" ${!info.work && !info.personal ? 'checked' : ''}><span><b>${esc(L('اطلب من إدارة المكتب', 'Ask the office'))}</b><small>${esc(L('بيرجّعوا كلمة سرك للمبدئية', 'They put your password back on the starter one'))}</small></span></label></div>`;
+    const s3 = to => `<div class="okfp" data-s="3"><div class="banner info" style="margin:0 0 10px">${icon('info')}<span>${esc(L('بعتنالك كود على ', 'We emailed a code to '))}<b dir="ltr">${esc(to)}</b>${esc(L(' — صالح 15 دقيقة.', ' — it works for 15 minutes.'))}</span></div>
+      ${field(L('الكود', 'Code'), inp('code', '', 'inputmode="numeric" maxlength="6" class="ltr" required placeholder="000000" autocomplete="one-time-code"'), 'full')}
+      ${field(L('كلمة السر الجديدة', 'New password'), `<input type="password" name="pa" class="ltr" autocomplete="new-password" required>`, 'full')}
+      ${field(L('اكتبها تاني', 'Type it again'), `<input type="password" name="pb" class="ltr" autocomplete="new-password" required>`, 'full')}
+      <div class="okfr"><div data-k="len"><i class="o">○</i><i class="k">✓</i>${esc(L('8 حروف أو أكتر', '8 characters or more'))}</div><div data-k="mix"><i class="o">○</i><i class="k">✓</i>${esc(L('فيها حروف إنجليزي وأرقام', 'Has letters and numbers'))}</div><div data-k="fresh"><i class="o">○</i><i class="k">✓</i>${esc(L('مش كلمة السر المبدئية', 'Not the starter password'))}</div><div data-k="same"><i class="o">○</i><i class="k">✓</i>${esc(L('الخانتين زي بعض', 'Both boxes match'))}</div></div></div>`;
+    const checks = (a, b) => ({ len: a.length >= 8, mix: /[A-Za-z]/.test(a) && /\d/.test(a), fresh: !!a && !WEAK.includes(a.toLowerCase()), same: !!a && a === b });
+    const btnOf = f => f.querySelector('button[type=submit]');
+    openModal({ title: L('نسيت كلمة السر', 'Forgot password'), submitLabel: L('التالي', 'Next'), body: `<div class="form" id="okfpw">${s1()}</div>`,
+      onSubmit: async f => {
+        const box = f.querySelector('#okfpw'); const step = (box.querySelector('.okfp') || {}).dataset ? box.querySelector('.okfp').dataset.s : '1'; const btn = btnOf(f);
+        if (step === '1') {
+          login = String((f.querySelector('[name=phone]') || {}).value || '').trim(); if (login.replace(/\D/g, '').length < 8) { toast(L('اكتب رقم الموبايل', 'Type your mobile number'), 'err'); return false; }
+          info = await call({ action: 'forgot_info', login });
+          if (info.status === 'not_found') { toast(L('الرقم ده مش متسجّل في السيستم', 'This number is not registered in the system'), 'err'); return false; }
+          if (info.status !== 'ok') { toast(L('حسابك مش مفعّل — كلّم إدارة المكتب', 'Your account is not active — talk to the office'), 'err'); return false; }
+          box.innerHTML = s2(); if (btn) btn.textContent = L('ابعت الكود', 'Send the code');
+          const pe = box.querySelector('[name=pemail]'); const sync = () => { const v = (box.querySelector('[name=where]:checked') || {}).value; pe.style.display = v === 'personal' ? '' : 'none'; if (btn) btn.textContent = v === 'office' ? L('ابعت الطلب', 'Send the request') : L('ابعت الكود', 'Send the code'); };
+          box.querySelectorAll('[name=where]').forEach(r => r.addEventListener('change', sync)); sync(); return false;
+        }
+        if (step === '2') {
+          const where = (box.querySelector('[name=where]:checked') || {}).value || 'work';
+          if (where === 'office') { const r = await S.sb.rpc('nf_request_reset', { p_login: login }); if (r.error) { toast(r.error.message, 'err'); return false; } toast(L('اتبعت — أول ما ترجع للمبدئية ادخل بيها', 'Sent — once it is back on the starter password, sign in with it')); return; }
+          const email = where === 'personal' ? String(box.querySelector('[name=pemail]').value || '').trim() : '';
+          if (where === 'personal' && !EM.test(email)) { toast(L('اكتب إيميلك الشخصي', 'Type your personal email'), 'err'); return false; }
+          const r = await call({ action: 'forgot', login, where, email });
+          if (r.status === 'no_match') { toast(L('الإيميل ده مش هو الإيميل الشخصي المسجّل على حسابك', 'That is not the personal email saved on your account'), 'err'); return false; }
+          if (r.status === 'rate') { toast(L('طلبت كود كتير — استنى ساعة أو اطلب من إدارة المكتب', 'Too many codes — wait an hour or ask the office'), 'err'); return false; }
+          if (r.status !== 'ok') { toast(L('الإيميل مااتبعتش — جرّب تاني أو اطلب من إدارة المكتب', 'The email was not sent — try again or ask the office'), 'err'); return false; }
+          box.innerHTML = s3(r.to || ''); if (btn) { btn.textContent = L('احفظ كلمة السر', 'Save the password'); }
+          const a = box.querySelector('[name=pa]'), b = box.querySelector('[name=pb]'); const upd = () => { const c = checks(a.value, b.value); Object.keys(c).forEach(k => box.querySelector(`[data-k=${k}]`).classList.toggle('ok', c[k])); }; a.addEventListener('input', upd); b.addEventListener('input', upd);
+          setTimeout(() => { try { box.querySelector('[name=code]').focus(); } catch (e) { /* */ } }, 50); return false;
+        }
+        const code = String(box.querySelector('[name=code]').value || '').replace(/\D/g, ''); const a = box.querySelector('[name=pa]').value, b = box.querySelector('[name=pb]').value; const c = checks(a, b);
+        if (code.length !== 6) { toast(L('اكتب الكود اللي جالك (6 أرقام)', 'Type the 6-digit code you received'), 'err'); return false; }
+        if (!(c.len && c.mix && c.fresh && c.same)) { toast(L('كلمة السر لازم تحقق الشروط اللي تحت', 'The password must meet the rules below'), 'err'); return false; }
+        const r = await S.sb.rpc('nf_ok_reset_password', { p_login: login, p_code: code, p_password: a });
+        const res = r && !r.error ? r.data : 'error';
+        if (res === 'ok') { toast(L('كلمة السر اتغيّرت — ادخل بيها دلوقتي', 'Password changed — sign in with it now')); const u = document.getElementById('lg-user'); if (u) u.value = login; setTimeout(() => { const pw = document.querySelector('#lg-pass,[name=password],input[type=password]'); if (pw) { pw.value = ''; pw.focus(); } }, 80); return; }
+        toast(res === 'bad_code' ? L('الكود غلط أو خلص — اطلب كود جديد', 'Wrong or expired code — ask for a new one') : res === 'locked' ? L('محاولات كتير — استنى ساعة', 'Too many tries — wait an hour') : res === 'bad_password' ? L('كلمة السر ضعيفة', 'The password is too weak') : L('ماتغيّرتش — جرّب تاني', 'Not changed — try again'), 'err'); return false;
+      } });
+  };
+
+  /* «My page»: the personal recovery email */
+  const meRec = () => (S.session && S.session.workerId ? byId('workers', S.session.workerId) : null);
+  ACTIONS.okRecMail = () => { const w = meRec(); if (!w) return;
+    openModal({ title: L('إيميل استرجاع كلمة السر', 'Password recovery email'), submitLabel: L('احفظ', 'Save'),
+      body: `<div class="form"><p class="small muted full" style="margin:0 0 8px">${esc(L('لو نسيت كلمة السر، تقدر تطلب الكود على إيميل الشغل أو على الإيميل ده.', 'If you forget your password you can get the code on your work email or on this one.'))}</p>${field(L('إيميلي الشخصي', 'My personal email'), inp('pe', w.personalEmail || '', 'type="email" class="ltr" placeholder="name@gmail.com"'), 'full')}</div>`,
+      onSubmit: async f => { const v = String(formData(f).pe || '').trim().toLowerCase(); if (v && !EM.test(v)) { toast(L('الإيميل مش مكتوب صح', 'That email is not valid'), 'err'); return false; } await Store.update('workers', w.id, { personalEmail: v }); toast(L('اتحفظ', 'Saved')); } }); };
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    if (!(S.route && S.route.view === 'me') || !S.session) return; const w = meRec(); const v = document.getElementById('view'); if (!w || !v || v.querySelector('.okrec')) return;
+    v.insertAdjacentHTML('beforeend', `<div class="card okrec" style="margin-top:12px"><div class="cardhead"><h3 style="margin:0">${esc(L('استرجاع كلمة السر', 'Password recovery'))}</h3><div class="grow"></div><button type="button" class="btn sm" data-action="okRecMail">${esc(w.personalEmail ? L('غيّر', 'Change') : L('ضيف إيميلك الشخصي', 'Add your personal email'))}</button></div><div class="small muted">${esc(L('الكود بيوصل على: ', 'The code goes to: '))}<span class="ltr">${esc(w.email || '—')}</span>${w.personalEmail ? ` · <span class="ltr">${esc(w.personalEmail)}</span>` : ''}</div></div>`);
+  } catch (e) { /* ignore */ } });
 })();
