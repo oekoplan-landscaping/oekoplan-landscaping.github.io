@@ -328,7 +328,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
   const OEKO_DEFAULTS = {
     company: NAME,
     companyAr: NAME_AR,
-    legal: { company: 'شركة أوكوبلان لتنسيق المواقع (ÖKOPLAN Landscaping)', address: 'مساكن شيراتون — هليوبوليس — مصر الجديدة — القاهرة', activity: 'تنسيق المواقع', headcount: 60, law: 'قانون العمل رقم 12 لسنة 2003', phone: '', email: 'info@oekoplanlandscaping.com', site: 'https://oekoplan.com' },
+    legal: { company: 'شركة أوكوبلان لتنسيق المواقع (ÖKOPLAN Landscaping)', address: 'مساكن شيراتون — هليوبوليس — مصر الجديدة — القاهرة', activity: 'تنسيق المواقع', headcount: 60, law: 'قانون العمل رقم 12 لسنة 2003', phone: '', email: 'info@oekoplanlandscaping.com', site: 'https://oekoplan-landscaping.github.io' },
     hoursPerDay: 8, otMultiplier: 1, weekStart: 0,
     shiftStart: '08:00', shiftEnd: '16:30', breakMinutes: 30, graceMinutes: 180,
     brands: [{ id: 'oek', name: NAME, desc: 'تصميم لاند سكيب · استشارات · إشراف على التنفيذ', code: 'OEK', color: C.teal, route: [] }],
@@ -339,7 +339,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
     policy: POLICY,
     regulation: { version: 1, title: 'لائحة العمل والنظام الأساسي ولائحة الجزاءات — شركة أوكوبلان لتنسيق المواقع', text: REG_AR, textEn: REG_EN, updatedAt: null },
     regParams: { annualAfterMonths: 12, probationMonths: 3 },
-    stuLogin: { video: '', videoM: '', poster: STILLS[0], logo: IMG.icon, stills: STILLS, slogan: 'Designing landscapes that live', sub: 'Landscape architecture · consulting · site supervision', site: 'https://oekoplan.com', ig: 'https://www.instagram.com/oekoplan.landscapers', fb: 'https://www.facebook.com/OekoplanLandscapers', li: '', be: '', vm: '' },
+    stuLogin: { video: '', videoM: '', poster: STILLS[0], logo: IMG.icon, stills: STILLS, slogan: 'Designing landscapes that live', sub: 'Landscape architecture · consulting · site supervision', site: 'https://oekoplan-landscaping.github.io', ig: 'https://www.instagram.com/oekoplan.landscapers', fb: 'https://www.facebook.com/OekoplanLandscapers', li: '', be: '', vm: '' },
   };
 
   if (typeof DEFAULT_SETTINGS === 'object') {
@@ -737,11 +737,17 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
   const PARTNERS = 'l01 l02 l03 l04 l05 l06 l07 l08 l09 l10 l11 l12 l13 l14 l15 l16 l17 l18 l19 l21 l22 l23 l24 l25 l26 l27 l28 l29 l30 l31 l32 l33 l34 l35 l37 l38 l39 l40 l41 l42 l43 l44 l46 l47 l48 l49 l51 l53 l101 l103 l104 l106 l107 l108 l110 l111 l112 l113 l115 l116'.split(' ');
   /* developer per project (the office's 2026 list; checked on the web, Oct 2026) — a partner logo when we have the file, else the developer's name */
   const DEV = { tatweer: ['l01', 'Tatweer Misr'], lmd: ['l104', 'LMD'], mv: ['l34', 'Mountain View'], qamzi: ['l35', 'Al Qamzi Developments'], mangroovy: ['l33', 'Mangroovy'], skywalk: ['l18', 'Skywalk'], sodic: ['l10', 'SODIC'], sabbour: ['l21', 'Al Ahly Sabbour'],
-    atric: ['', 'Atric Developments'], riyadh: ['', 'Al Riyadh Misr'], igi: ['', 'IGI Developments'], shurooq: ['', 'Shurooq'], dubaidev: ['', 'Dubai Developments'], lud: ['', 'LUD'], mda: ['', 'MDA Developments'], misritalia: ['', 'Misr Italia Properties'], hassanallam: ['', 'Hassan Allam Properties'], ezan: ['', 'EZAN Developments'], palmhills: ['', 'Palm Hills Developments'], madaar: ['', 'Madaar Development'], beta: ['', 'Beta Egypt'], jumeirah: ['', 'Jumeirah Egypt'], ndev: ['', 'N Developments'], ilcazar: ['', 'Il Cazar Developments'], marq: ['', 'The Marq Communities'], landmark: ['', 'Landmark Sabbour'], somabay: ['', 'Somabay'], citystars: ['', 'City Stars Properties'], cred: ['', 'Cred'], mostakbal: ['', 'El Mostakbal for Urban Development'], regent: ['', 'Regent Hotels & Resorts'] };
+    atric: ['', 'Atric Developments'], riyadh: ['', 'Al Riyadh Misr'], igi: ['', 'IGI Developments'], shurooq: ['', 'Shurooq'], dubaidev: ['', 'Dubai Developments'], lud: ['', 'LUD'], mda: ['', 'MDA Developments'], misritalia: ['', 'Misr Italia Properties'], hassanallam: ['', 'Hassan Allam Properties'], ezan: ['', 'EZAN Developments'], palmhills: ['', 'Palm Hills Developments'], madaar: ['', 'Madaar Development'], beta: ['', 'Beta Egypt'], jumeirah: ['', 'Jumeirah Egypt'], ndev: ['', 'N Developments'], ilcazar: ['', 'Il Cazar Developments'], marq: ['', 'The Marq Communities'], landmark: ['', 'Landmark Sabbour'], somabay: ['', 'Somabay'], citystars: ['', 'City Stars Properties'], cred: ['', 'Cred'], mostakbal: ['', 'El Mostakbal for Urban Development'], regent: ['', 'Regent Hotels & Resorts'],
+    times: ['l44', 'Times Developments'], tmg: ['l03', 'Talaat Moustafa Group'], kiroseiz: ['l29', 'Kiroseiz'], crowne: ['l12', 'Crowne Plaza'], foukabay: ['l49', 'Fouka Bay'], montegalala: ['l28', 'IL Monte Galala'],
+    skyad: ['', 'Sky AD Developments'], amazon: ['', 'Amazon Developments'], upwyde: ['', 'Upwyde Developments'], hometown: ['', 'HomeTown Developments'], marasem: ['', 'Al Marasem Development'], qdev: ['', 'Q Developments'], qataridiar: ['', 'Qatari Diar'] };
   const DEV_OF = { 'D-Bay': 'tatweer', 'Salt': 'tatweer', 'Bloomfields Phase 1': 'tatweer', 'Bloomfields Phase 2': 'tatweer', 'Rivers': 'tatweer', 'Fouka-Bay Phase 4': 'tatweer', 'IL MONTE GALALA Phase 2': 'tatweer',
     'STEI8HT RESIDENTIAL': 'lmd', 'STEI8HT COMMERCIAL': 'lmd', 'One Ninety': 'lmd', 'LMD roundabout': 'lmd', 'Icity': 'mv', 'El-Qamzy Eastshire': 'qamzi', 'Seazen': 'qamzi', 'Mangroovy': 'mangroovy', 'Skywalk': 'skywalk', 'Skywalk Oasis': 'skywalk', 'Estates club house - Sodic': 'sodic', 'Masaya': 'sabbour',
     'Boardwalk': 'atric', 'Peerage Residence': 'riyadh', 'South Of Gardenia Compound': 'igi', 'AJWAN': 'shurooq', 'LUMIA': 'dubaidev', 'The Rift': 'lud', 'Raville': 'mda', 'Raville 77': 'mda', 'IL BOSCO': 'misritalia', 'SOLARE': 'misritalia', 'SWAN LAKE PARCEL 5': 'hassanallam', 'MEDIAN': 'ezan', 'Palm Hills New Cairo': 'palmhills', 'Azha': 'madaar', 'Beta Egypt': 'beta', 'BETA': 'beta', 'Naia West': 'jumeirah', 'Naia Bay': 'jumeirah', 'Nest': 'ndev', 'Creek Town': 'ilcazar', 'The Marq': 'marq', 'Zoya- North coast': 'landmark', 'Mesca Residence': 'somabay', 'City Stars': 'citystars', 'Ever Roundabout': 'cred', 'EL MOSTAKBAL CITY': 'mostakbal', 'Mostakbal city': 'mostakbal', 'Regent Hotel - Jeddah': 'regent' };
-  const devOf = p => { if (!p) return null; if (p.coverLogo) return [p.coverLogo, '']; const k = DEV_OF[String(p.name || '').trim()]; return k ? DEV[k] : null; };
+  /* the names in the 2026 projects list (17 Nov 2026) */
+  Object.assign(DEV_OF, { 'Dbay': 'tatweer', 'Bloomfield Phase 1': 'tatweer', 'Bloomfield Phase 2': 'tatweer', 'Fouka Bay': 'foukabay', 'IL Monte Galala': 'montegalala', 'Masaya Beach': 'sabbour', 'Masaya Cluster': 'sabbour', 'Cityzen - El Qamzi': 'qamzi', 'Stei8ht Residential': 'lmd', 'Palm Hills': 'palmhills', 'South of Gardenia': 'igi', 'Solare': 'misritalia', 'Zoya': 'landmark', 'Avelin': 'times', 'The Spine': 'tmg', 'Essmat Nathan Kiroseaz': 'kiroseiz', 'Crowne Plaza': 'crowne', 'Blue Tree': 'skyad', 'Amazon Towers': 'amazon', 'Jazebeya': 'upwyde', 'Lafayette': 'hometown', 'Udora': 'hometown', 'Marbay': 'marasem', 'Qnorth': 'qdev', 'City Gate Club': 'qataridiar', 'City Gate Sales Center': 'qataridiar' });
+  const devKey = t => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const DEV_N = {}; Object.keys(DEV_OF).forEach(n => { DEV_N[devKey(n)] = DEV_OF[n]; });
+  const devOf = p => { if (!p) return null; if (p.coverLogo) return [p.coverLogo, '']; const k = DEV_OF[String(p.name || '').trim()] || DEV_N[devKey(p.name)]; return k ? DEV[k] : null; };
   const logoSrc = k => BASE + '_src/partners/' + k + '.png';
   const coverLogo = p => { const d = devOf(p); return d && d[0] ? d[0] : ''; };
   document.head.insertAdjacentHTML('beforeend', `<style id="oeko-cover">
@@ -4203,4 +4209,80 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
     body: `<p style="margin:0;line-height:1.7">${esc(L('مفيش كود تفعيل. ادخل برقم موبايلك وكلمة السر المبدئية اللي إدارة المكتب إدّتهالك، وبعدها هتختار كلمة سرك.', 'There is no activation code. Sign in with your mobile number and the starter password the office gave you, then choose your own.'))}</p>` });
   /* the «Code» button on a person reads as what it does now */
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try { document.querySelectorAll('[data-action="actCode"]:not([data-okpw])').forEach(b => { b.dataset.okpw = '1'; b.title = L('رجّع كلمة السر للمبدئية', 'Back to the starter password'); const ic = b.querySelector('svg'); b.textContent = L('كلمة السر', 'Password'); if (ic) b.prepend(ic); }); } catch (e) { /* ignore */ } });
+})();
+
+/* =====================================================================
+   Ökoplan — the Project Owner runs his team (Mahmoud, 17 Nov 2026 «ابدأ»)
+   · his people = the ones on his projects (Project Owner / second Project Owner) + the ones he manages on the org chart;
+     the office role can't read worker records, so theirs come from nf_ok_my_team (no pay, no secrets, no HR notes);
+   · he decides the «head» step of their leave / permission / punch requests and is the one notified of them;
+     he (and every head) sees the requests of his own people only — never the whole office;
+   · his projects page is split: technical & finance · finance only · technical only · on the team.
+   ===================================================================== */
+(() => {
+  if (window.__OK_PO__) return; window.__OK_PO__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const me = () => (typeof stuMe === 'function' ? stuMe() : '') || (S.session && S.session.workerId) || '';
+  const live = () => list('projects').filter(p => p && p.status !== 'archived');
+  const owners = p => Array.from(new Set([p.leadId, p.ownerId].concat(p.coOwnerIds || []).filter(Boolean)));
+  const W = id => (id ? byId('workers', id) : null);
+  const finMgr = () => !!(window.okAccess && window.okAccess.isFinMgr && window.okAccess.isFinMgr());
+  const boss = () => !!S.session && (isAdmin() || role() === 'hr' || finMgr());
+  const leads = wid => { const m = me(); if (!m || !wid || wid === m) return false; const w = W(wid); if (w && w.managerId === m) return true; return live().some(p => owners(p).includes(m) && (p.team || []).includes(wid)); };
+  const posOf = wid => { const s = new Set(); live().forEach(p => { if ((p.team || []).includes(wid)) owners(p).forEach(o => { if (o !== wid) s.add(o); }); }); return Array.from(s); };
+  const isPO = () => { const m = me(); return !!m && live().some(p => owners(p).includes(m)); };
+  window.okPO = { leads, posOf, isPO };
+  /* the «head» step of a request is the Project Owner's here */
+  try { if (typeof CHAIN_LABEL === 'object') CHAIN_LABEL.head = 'Project Owner'; } catch (e) { /* */ }
+
+  /* his people's records (lite) — merged into the local list, refreshed every 5 minutes */
+  let LITE = [], asked = 0, busy = false;
+  const merge = () => { if (!(S.data && S.data.workers instanceof Map)) return false; let ch = false; LITE.forEach(x => { const cur = S.data.workers.get(x.id); if (!cur) { S.data.workers.set(x.id, x); ch = true; } }); return ch; };
+  const load = () => {
+    if (!S.sb || !S.session || busy || boss() || role() === 'kiosk' || !(S.loaded && S.loaded.projects)) return;
+    if (Date.now() - asked < 5 * 60e3) { if (merge()) setTimeout(() => { try { rerender(); } catch (e) { /* */ } }, 0); return; }
+    asked = Date.now(); busy = true;
+    Promise.resolve(S.sb.rpc('nf_ok_my_team')).then(r => { busy = false; LITE = (r && Array.isArray(r.data)) ? r.data : []; if (merge()) setTimeout(() => { try { rerender(); } catch (e) { /* */ } }, 0); }).catch(() => { busy = false; });
+  };
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try { load(); } catch (e) { /* ignore */ } });
+
+  /* approvals: the «head» step of his people's requests is his */
+  if (typeof stepActor === 'function') stepActor = (base => function (step, r) { try { if (step === 'head' && r && S.session && !isAdmin()) { if (leads(r.workerId)) return true; if (posOf(r.workerId).length) return false; } } catch (e) { /* */ } return base.apply(this, arguments); })(stepActor);
+  if (typeof reqStepTargets === 'function') reqStepTargets = (base => function (r) {
+    const out = base.apply(this, arguments);
+    try { if (r && r.workerId && Array.isArray(r.chain) && r.chain[r.step || 0] === 'head') { const pos = posOf(r.workerId); if (pos.length) return Array.from(new Set(pos.reduce((a, i) => a.concat([i, 'w:' + i]), []))); } } catch (e) { /* */ }
+    return out;
+  })(reqStepTargets);
+  if (typeof requestVisible === 'function') requestVisible = (base => function (r) {
+    if (!r || !S.session || boss()) return base.apply(this, arguments);
+    if (r.type === 'regchange' || r.type === 'password') return false;
+    const m = me(); if (r.workerId && r.workerId === m) return true;
+    if (r.createdBy && (r.createdBy === S.session.id || r.createdBy === 'w:' + m)) return true;
+    return leads(r.workerId);
+  })(requestVisible);
+  if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'requests' && S.session && !isAdmin() && ['office', 'employee'].includes(role()) && isPO()) return true; return base.apply(this, arguments); })(canSee);
+
+  /* projects page: what he does on each one */
+  if (typeof vProjects === 'function') vProjects = (base => function () {
+    const html = base.apply(this, arguments);
+    try {
+      if (!S.session || (S.route && S.route.id) || isAdmin()) return html;
+      const m = me(); if (!m) return html;
+      const kind = p => { const own = owners(p).includes(m); const fin = p.financeId === m; if (own && (fin || !p.financeId)) return 'tf'; if (fin && !own) return 'f'; if (own) return 't'; return 'm'; };
+      const mine = live().filter(p => owners(p).includes(m) || p.financeId === m); const ks = new Set(mine.map(kind));
+      if (!(ks.has('f') || ks.has('t'))) return html;
+      const t = document.createElement('template'); t.innerHTML = html;
+      const grid = t.content.querySelector('.spgrid'); if (!grid) return html;
+      const lab = grid.previousElementSibling;
+      const g = { tf: [], f: [], t: [], m: [] };
+      Array.from(grid.children).forEach(a => { const id = String(a.getAttribute && a.getAttribute('href') || '').replace('#/projects/', ''); const p = id ? byId('projects', id) : null; g[p ? kind(p) : 'm'].push(a); });
+      const title = { tf: L('تكنيكال وفاينانس', 'Technical & finance'), f: L('فاينانس بس — مشاريع Project Owners تانيين', 'Finance only — other Project Owners’ projects'), t: L('تكنيكال بس — الفاينانس عند Project Owner تاني', 'Technical only — finance with another Project Owner'), m: L('في الفريق', 'On the team') };
+      const frag = document.createDocumentFragment();
+      ['tf', 'f', 't', 'm'].forEach(k => { if (!g[k].length) return; const h = document.createElement('div'); h.className = 'tiny muted okpgrp'; h.style.cssText = 'margin:14px 0 8px;font-weight:600'; h.textContent = `${title[k]} · ${g[k].length}`; const gr = document.createElement('div'); gr.className = 'spgrid'; g[k].forEach(a => gr.appendChild(a)); frag.appendChild(h); frag.appendChild(gr); });
+      if (lab && lab.classList && lab.classList.contains('tiny')) lab.remove();
+      grid.replaceWith(frag);
+      return t.innerHTML;
+    } catch (e) { return html; }
+  })(vProjects);
 })();
