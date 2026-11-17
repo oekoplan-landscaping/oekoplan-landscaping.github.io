@@ -1032,11 +1032,11 @@ html[data-theme="dark"] .okn{background:var(--surface-2)}
   if (window.__OK_PSTATE__) return; window.__OK_PSTATE__ = 1;
   const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
   const L = (a, b) => (en() ? b : a);
-  const STATES = { active: { ar: 'شغّال', en: 'Active', c: '34,197,94' }, hold: { ar: 'متوقف مؤقتًا', en: 'On hold', c: '245,179,1' }, stopped: { ar: 'واقف', en: 'Stopped', c: '239,68,68' }, done: { ar: 'اتسلّم', en: 'Delivered', c: '148,163,184' } };
+  const STATES = { active: { ar: 'شغّال', en: 'Ongoing', c: '34,197,94' }, hold: { ar: 'متوقف مؤقتًا', en: 'On hold', c: '245,179,1' }, stopped: { ar: 'واقف', en: 'Stopped', c: '239,68,68' }, done: { ar: 'اتسلّم', en: 'Delivered', c: '148,163,184' } };
   const ORDER = ['active', 'hold', 'stopped', 'done'];
   const stateOf = p => { if (!p || p.status === 'archived') return null; if (p.okState && STATES[p.okState]) return p.okState; if (p.osStatus === 'delivered' || p.osStatus === 'closed' || p.stage === 'delivered') return 'done'; if (p.blocked) return 'hold'; return 'active'; };
   const me = () => (typeof stuMe === 'function' ? stuMe() : '');
-  const canSet = p => !!p && typeof stuCanEdit === 'function' && stuCanEdit() && ((typeof stuManager === 'function' && stuManager()) || p.leadId === me() || p.ownerId === me());
+  const canSet = p => !!p && typeof stuCanEdit === 'function' && stuCanEdit() && ((typeof stuManager === 'function' && stuManager()) || p.leadId === me() || p.ownerId === me() || (p.coOwnerIds || []).includes(me()));
   window.okPState = { stateOf, STATES };
   document.head.insertAdjacentHTML('beforeend', `<style>
 .spcard.ok-active{border-color:rgba(34,197,94,.55)!important;box-shadow:0 0 0 1px rgba(34,197,94,.22),0 0 22px rgba(34,197,94,.30)}
@@ -3087,7 +3087,9 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
       openModal({ title: L('اطلب حد من تيم تاني', 'Ask for someone from another team'), submitLabel: L('ابعت الطلب', 'Send the request'),
         body: `<div class="form"><div class="field full"><label>${esc(L('مين؟', 'Who?'))}</label><select name="wid" required><option value="">—</option>${ppl.map(w => `<option value="${w.id}">${esc(w.name)} — ${esc(w.title || '')}${homeOwner(w.id) ? ' · ' + esc(nm(homeOwner(w.id))) : ''}</option>`).join('')}</select></div><div class="field full"><label>${esc(L('من إمتى ولحد إمتى، وهيعمل إيه', 'From when to when, and for what'))}</label><textarea name="note" rows="3" maxlength="400" dir="auto" required></textarea></div><div class="full small muted">${esc(L('الطلب بيروح للـ Project Owner اللي الشخص ده تابع له — يوافق أو يرفض، وتتفقوا على التوقيت.', 'The request goes to the Project Owner this person belongs to — he approves or declines, and you agree the timing together.'))}</div></div>`,
         onSubmit: async f => { const d = formData(f); if (!d.wid || !d.note) { toast(L('اختار الشخص واكتب التفاصيل', 'Choose the person and write the details'), 'err'); return false; }
-          const to = homeOwner(d.wid); const j = { id: uid(), wid: d.wid, by: me(), byName: myName(), at: nowISO(), note: d.note, to: to && to !== me() ? to : '', status: 'pending' };
+          /* 17 Nov 2026: the Head of PMO alone puts people on projects — the request goes to her (hers is approved at once) */
+          const pmoIds = Array.from(new Set(list('workers').filter(w => w.status !== 'inactive' && w.status !== 'left' && /head of pmo/i.test(w.title || '')).map(w => w.id).concat((S.settings && S.settings.okDealViewers) || [])));
+          const to = isPMO() ? me() : (pmoIds[0] || ''); const j = { id: uid(), wid: d.wid, by: me(), byName: myName(), at: nowISO(), note: d.note, to: to && to !== me() ? to : '', status: 'pending' };
           if (to && to === me()) { j.status = 'approved'; j.decAt = nowISO(); j.decBy = myName(); await up(pid, { okJoin: (p.okJoin || []).concat([j]), team: Array.from(new Set((p.team || []).concat([d.wid]))) }); toast(L('اتضاف — هو من فريقك', 'Added — he is on your own team')); return; }
           await up(pid, { okJoin: (p.okJoin || []).concat([j]) });
           const title = L(`طلب ضم ${nm(d.wid)} لمشروع ${p.name}`, `Request: ${nm(d.wid)} on ${p.name}`); const body = L(`${myName()} عايز ${nm(d.wid)} يشتغل معاه في المشروع: ${d.note}`, `${myName()} asks for ${nm(d.wid)} on the project: ${d.note}`);
@@ -3103,6 +3105,7 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
           tell(Array.from(new Set(old.concat(now, [d.fin]))), L(`${p.name}: الـ Project Owner بقى ${now.map(nm).join(' & ')}`, `${p.name}: the Project Owner is now ${now.map(nm).join(' & ')}`), `${myName()} — ${d.why}`, pid); toast(L('اتغيّر', 'Changed')); } }); return; }
     if (act === 'jok' || act === 'jno') { const j = (p.okJoin || []).find(q => q.id === x); if (!j || !canDecide(j)) return;
       const done = async reason => { const okJoin = (p.okJoin || []).map(q => (q.id === x ? Object.assign({}, q, { status: act === 'jok' ? 'approved' : 'rejected', decAt: nowISO(), decBy: myName(), reason: reason || '' }) : q)); const patch = { okJoin }; if (act === 'jok') patch.team = Array.from(new Set((p.team || []).concat([j.wid]))); await up(pid, patch);
+        if (act === 'jok') { const h = homeOwner(j.wid); if (h && h !== j.by && h !== me()) tell([h], L(`للعلم: ${nm(j.wid)} على مشروع ${p.name}`, `For your information: ${nm(j.wid)} on ${p.name}`), myName(), pid); }
         tell([j.by, act === 'jok' ? j.wid : ''], act === 'jok' ? L(`${nm(j.wid)} اتضاف لمشروع ${p.name}`, `${nm(j.wid)} joined ${p.name}`) : L(`طلب ضم ${nm(j.wid)} لمشروع ${p.name} اترفض`, `Request for ${nm(j.wid)} on ${p.name} was declined`), `${myName()}${reason ? ' — ' + reason : ''}`, pid); toast(L('اتسجّل', 'Saved')); };
       openModal({ title: act === 'jok' ? L(`موافقة: ${nm(j.wid)} ← ${p.name}`, `Approve: ${nm(j.wid)} → ${p.name}`) : L(`رفض: ${nm(j.wid)} ← ${p.name}`, `Decline: ${nm(j.wid)} → ${p.name}`), submitLabel: act === 'jok' ? L('موافق', 'Approve') : L('رفض', 'Decline'),
         body: `<div class="form"><div class="full small muted">${esc(j.byName || '')}: ${esc(j.note || '')}</div><div class="field full"><label>${esc(act === 'jok' ? L('ملاحظة (التوقيت المتفق عليه)', 'Note (the agreed timing)') : L('سبب الرفض', 'Reason'))}</label><input name="reason" maxlength="200" dir="auto" ${act === 'jno' ? 'required' : ''}></div></div>`,
@@ -4790,4 +4793,127 @@ html[data-theme="dark"] #oklock{background:#0d1719}
   } catch (e) { /* ignore */ } });
   document.addEventListener('click', async ev => { const t = ev.target.closest && ev.target.closest('[data-okphreset]'); if (!t || !isAdmin()) return; ev.preventDefault();
     const r = await rpc('nf_ok_phone_reset', { p_worker: t.dataset.okphreset }); toast(r === 'ok' ? L('اتمسح — أول موبايل يعمل سكان هيتسجّل', 'Reset — the next phone that scans is registered') : L('مااتمسحش', 'Not reset'), r === 'ok' ? undefined : 'err'); });
+})();
+
+/* =====================================================================
+   Ökoplan — «Update my projects» (17 Nov 2026)
+   Each Project Owner keeps his projects true, once a week, on one page:
+   · the state of each project in one tap — Ongoing · On hold · Stopped · Delivered (a reason for on hold / stopped);
+   · who works with him on it — shown; a change is asked from the Head of PMO, who alone puts people on projects
+     (Mahmoud: «so nobody keeps adding and duplicating people»);
+   · «Nothing changed ✓» confirms the project as it is; every change also counts as this week's update (okCheckAt);
+   · smart hints: no task moved for 14 days while «Ongoing», a stage date passed, on hold for 3 weeks, nobody on the team;
+   · a project not updated for 7 days is flagged: the menu counter and a line on his home page; Projects & teams shows
+     the Head of PMO when each project was last updated.
+   ===================================================================== */
+(() => {
+  if (window.__OK_CHECK__) return; window.__OK_CHECK__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const me = () => (typeof stuMe === 'function' ? stuMe() : '') || (S.session && S.session.workerId) || '';
+  const myName = () => (S.session && S.session.name) || '';
+  const W = id => (id ? byId('workers', id) : null);
+  const nm = id => { const w = W(id); return (w && w.name) || ''; };
+  const act = w => !!w && !['inactive', 'left', 'suspended'].includes(w.status);
+  const uniq = a => Array.from(new Set(a.filter(Boolean)));
+  const owners = p => uniq([p.leadId, p.ownerId].concat(p.coOwnerIds || []));
+  const live = () => list('projects').filter(p => p && p.status !== 'archived');
+  const mine = () => live().filter(p => owners(p).includes(me())).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  const can = () => !!S.session && !!me() && mine().length > 0;
+  const DAY = 864e5; const STALE = 7 * DAY;
+  const ago = iso => { if (!iso) return Infinity; const t = new Date(iso).getTime(); return isFinite(t) ? Date.now() - t : Infinity; };
+  const days = ms => Math.floor(ms / DAY);
+  const checkedAt = p => p.okCheckAt || '';
+  const stale = p => ago(checkedAt(p)) > STALE && (window.okPState ? window.okPState.stateOf(p) : p.okState) !== 'done';
+  const ST = () => (window.okPState && window.okPState.STATES) || {};
+  const stOf = p => (window.okPState ? window.okPState.stateOf(p) : p.okState || 'active');
+  const reportsOf = po => { const ws = list('workers').filter(act); const l1 = ws.filter(w => w.managerId === po).map(w => w.id); const l2 = ws.filter(w => l1.includes(w.managerId)).map(w => w.id); return uniq(l1.concat(l2)).filter(id => id !== po); };
+  const lastMove = p => { let t = 0; list('tasks').forEach(x => { if (x && (x.projectId === p.id || x.pid === p.id) && x.kind !== 'notice') { const v = new Date(x.updatedAt || x.createdAt || 0).getTime(); if (v > t) t = v; } }); return t; };
+  const hints = p => { const out = []; const st = stOf(p); const today = new Date().toISOString().slice(0, 10);
+    if (st === 'active') { const t = lastMove(p); if (t && Date.now() - t > 14 * DAY) out.push(L(`مفيش مهمة اتحرّكت من ${days(Date.now() - t)} يوم — المشروع متوقف مؤقتًا؟`, `No task moved for ${days(Date.now() - t)} days — is it on hold?`)); }
+    if (st === 'hold' && p.okStateAt && ago(p.okStateAt) > 21 * DAY) out.push(L(`متوقف من ${days(ago(p.okStateAt))} يوم — لسه متوقف؟`, `On hold for ${days(ago(p.okStateAt))} days — still on hold?`));
+    if (st === 'active') { const due = (p.okStages || []).filter(s => s && s.due && s.due < today && !((p.okClaims || {})[s.id] || {}).deliveredAt); if (due.length) out.push(L(`ميعاد مرحلة «${due[0].name}» عدّى (${due[0].due})`, `The «${due[0].name}» stage date has passed (${due[0].due})`)); }
+    if (!(p.team || []).filter(id => !owners(p).includes(id)).length && st === 'active') out.push(L('مفيش حد في الفريق — مين شغال معاك فيه؟', 'Nobody on the team — who works with you on it?'));
+    return out; };
+  const tell = (ids, title, body, pid) => { ids = uniq(ids || []).filter(id => id !== me()); if (!ids.length) return;
+    ids.forEach(id => { try { Store.save('tasks', { id: 'okn_' + uid(), title, desc: body || '', assigneeId: id, deptId: null, status: 'open', kind: 'notice', source: 'okcheck', priority: 'normal', createdBy: (S.session && S.session.id) || null, createdByName: myName(), createdAt: nowISO(), link: '#/projects/' + pid }, { silent: true }); } catch (e) { /* */ } });
+    try { if (typeof pushSend === 'function') { const r = pushSend(ids.concat(ids.map(i => 'w:' + i)), title, body || '', '#/projects/' + pid, 'ok-check'); if (r && r.catch) r.catch(() => { }); } } catch (e) { /* */ } };
+  const save = async (p, patch) => { await Store.update('projects', p.id, Object.assign({ okCheckAt: nowISO(), okCheckBy: me(), updatedAt: nowISO() }, patch)); if (typeof rerender === 'function') rerender(); };
+
+  document.head.insertAdjacentHTML('beforeend', `<style>
+.okck{max-width:1080px;margin:0 auto}.okck .hd{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin:4px 2px 14px}.okck .hd h1{margin:0;font-size:27px;font-weight:600;letter-spacing:-.4px}.okck .hd p{margin:2px 0 0;color:var(--muted);font-size:14px}.okck .grow{flex:1}
+.okck .bar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden;min-width:180px}.okck .bar i{display:block;height:100%;background:linear-gradient(90deg,#50b1e7,#38a599)}
+.okck .pc{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px 16px;margin-bottom:12px;display:grid;gap:10px}.okck .pc.st{border-color:rgba(245,179,1,.55);box-shadow:0 0 0 1px rgba(245,179,1,.18)}
+.okck .t{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.okck .t a{font-weight:600;font-size:16px;color:var(--ink);text-decoration:none}.okck .t small{color:var(--muted);font-size:12.5px}.okck .when{font-size:12px;color:var(--muted)}.okck .when.bad{color:#9a5b00;font-weight:600}
+.okck .seg{display:flex;gap:6px;flex-wrap:wrap}.okck .seg button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;border:1.5px solid var(--line);font-size:13.5px;font-weight:600;color:var(--muted);background:var(--surface)}
+.okck .seg button i{width:9px;height:9px;border-radius:50%;background:rgb(var(--okc))}.okck .seg button.on{border-color:rgb(var(--okc));color:var(--ink);box-shadow:0 0 0 2px rgba(var(--okc),.18);background:rgba(var(--okc),.08)}
+.okck .hint{display:flex;gap:8px;align-items:flex-start;font-size:13px;background:#fdf6e6;color:#7a4b00;border-radius:12px;padding:8px 11px}html[data-theme="dark"] .okck .hint{background:#2e2410;color:#f0c46a}
+.okck .ch{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.okck .c{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12.5px;background:var(--surface-2)}.okck .c.o{border-color:#50b1e7;color:#2b8fc7;font-weight:600;background:#eef8fd}
+.okck .c button{all:unset;cursor:pointer;color:var(--muted);font-size:14px;line-height:1}.okck .c button:hover{color:var(--crit-ink)}.okck select{max-width:240px}.okck .ft{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.okck .reason{display:flex;gap:8px}.okck .reason input{flex:1;min-width:0}
+.okckbar{border:1px solid rgba(245,179,1,.5);background:#fffaf0;border-radius:14px;padding:10px 14px;margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:14px}html[data-theme="dark"] .okckbar{background:#2a2312}
+</style>`);
+
+  const why = {};   /* the reason box open for a project (on hold / stopped) */
+  const card = p => {
+    const st = stOf(p); const S0 = ST(); const os = owners(p); const team = (p.team || []).filter(id => !os.includes(id)); const late = stale(p); const hs = hints(p);
+    const when = checkedAt(p) ? L(`آخر تحديث من ${days(ago(checkedAt(p)))} يوم`, `Last update ${days(ago(checkedAt(p)))} days ago`).replace(/من 0 يوم|0 days ago/, L('النهارده', 'today')) : L('لسه ما اتحدّثش', 'Never updated');
+    return `<div class="pc ${late ? 'st' : ''}" data-pid="${esc(p.id)}"><div class="t"><a href="#/projects/${esc(p.id)}">${esc(p.name || '—')}</a><small>${esc([p.code, p.client].filter(Boolean).join(' · '))}</small><span class="grow"></span><span class="when ${late ? 'bad' : ''}">${esc(when)}</span></div>
+      <div class="seg">${['active', 'hold', 'stopped', 'done'].filter(k => S0[k]).map(k => `<button type="button" class="${st === k ? 'on' : ''}" style="--okc:${S0[k].c}" data-okck="st:${esc(p.id)}:${k}"><i></i>${esc(L(S0[k].ar, S0[k].en))}</button>`).join('')}</div>
+      ${why[p.id] ? `<div class="reason"><input data-okckwhy="${esc(p.id)}" maxlength="160" dir="auto" placeholder="${esc(L('السبب؟ (مثلاً: مستنيين رد الـ Client)', 'Why? (e.g. waiting for the Client)'))}" value="${esc(p.okStateNote || '')}"><button type="button" class="btn sm p" data-okck="why:${esc(p.id)}:${why[p.id]}">${esc(L('احفظ', 'Save'))}</button></div>` : (st !== 'active' && p.okStateNote ? `<div class="when">${esc(L('السبب: ', 'Reason: '))}${esc(p.okStateNote)}</div>` : '')}
+      ${hs.map(h => `<div class="hint">💡 <span>${esc(h)}</span></div>`).join('')}
+      <div class="ch">${os.map(id => `<span class="c o">${esc(nm(id) || '—')}</span>`).join('')}${team.map(id => `<span class="c">${esc(nm(id) || '—')}</span>`).join('')}
+        <button type="button" class="btn sm ghost" data-okck="team:${esc(p.id)}">${icon('edit')}<span>${esc(L('اطلب تعديل في الفريق', 'Ask for a team change'))}</span></button></div>
+      <div class="ft"><button type="button" class="btn sm ${late ? 'p' : 'ghost'}" data-okck="ok:${esc(p.id)}">${icon('check')}<span>${esc(L('مفيش تغيير ✓', 'Nothing changed ✓'))}</span></button></div></div>`;
+  };
+  const page = () => {
+    if (!can()) return `<div class="empty"><b>${esc(L('الصفحة دي للـ Project Owners على مشاريعهم', 'This page is for Project Owners on their projects'))}</b></div>`;
+    const ps = mine(); const done = ps.filter(p => !stale(p)).length; const pct = ps.length ? Math.round(done * 100 / ps.length) : 0;
+    const order = ps.slice().sort((a, b) => (stale(b) - stale(a)) || String(a.name).localeCompare(String(b.name)));
+    return `<div class="okck"><div class="hd"><div class="grow"><h1>${esc(L('تحديث مشاريعي', 'Update my projects'))}</h1><p>${esc(L('مرة في الأسبوع: حالة كل مشروع، ومين شغال معاك فيه.', 'Once a week: the state of each project, and who works with you on it.'))}</p></div>
+      <div style="min-width:200px"><div class="when" style="margin-bottom:6px">${esc(L(`${done} من ${ps.length} اتحدّثوا الأسبوع ده`, `${done} of ${ps.length} updated this week`))}</div><div class="bar"><i style="width:${pct}%"></i></div></div></div>${order.map(card).join('')}</div>`;
+  };
+
+  document.addEventListener('click', async ev => {
+    const t = ev.target.closest && ev.target.closest('[data-okck]'); if (!t) return; ev.preventDefault();
+    const [k, pid, x] = t.dataset.okck.split(':'); const p = byId('projects', pid); if (!p || !owners(p).includes(me())) return;
+    if (k === 'st') { if (x === 'hold' || x === 'stopped') { why[pid] = x; if (typeof rerender === 'function') rerender(); setTimeout(() => { const i = document.querySelector(`[data-okckwhy="${pid}"]`); if (i) i.focus(); }, 60); return; }
+      delete why[pid]; const log = (p.okStateLog || []).slice(-30).concat([{ st: x, note: '', at: nowISO(), by: me() }]); await save(p, { okState: x, okStateNote: '', okStateAt: nowISO(), okStateBy: me(), okStateLog: log }); toast(L('اتحفظ ✓', 'Saved ✓')); return; }
+    if (k === 'why') { const note = String((document.querySelector(`[data-okckwhy="${pid}"]`) || {}).value || '').trim(); if (!note) { toast(L('اكتب السبب', 'Write the reason'), 'err'); return; }
+      delete why[pid]; const log = (p.okStateLog || []).slice(-30).concat([{ st: x, note, at: nowISO(), by: me() }]); await save(p, { okState: x, okStateNote: note, okStateAt: nowISO(), okStateBy: me(), okStateLog: log });
+      const pmo = uniq(list('workers').filter(w => act(w) && /head of pmo/i.test(w.title || '')).map(w => w.id).concat((S.settings && S.settings.okDealViewers) || [], [p.financeId])); tell(pmo, L(`${p.name}: ${x === 'hold' ? 'متوقف مؤقتًا' : 'واقف'}`, `${p.name}: ${x === 'hold' ? 'on hold' : 'stopped'}`), `${myName()} — ${note}`, pid); toast(L('اتحفظ ✓', 'Saved ✓')); return; }
+    if (k === 'ok') { await save(p, {}); toast(L('اتأكد ✓', 'Confirmed ✓')); return; }
+    if (k === 'team') { askTeam(p); return; }
+  });
+  const askTeam = p => {   /* the Head of PMO alone puts people on projects: the Project Owner asks her */
+      const pid = p.id; const pmo = uniq(list('workers').filter(w => act(w) && /head of pmo/i.test(w.title || '')).map(w => w.id).concat((S.settings && S.settings.okDealViewers) || []));
+      openModal({ title: L(`تعديل في فريق ${p.name}`, `Team change on ${p.name}`), submitLabel: L('ابعت لرئيسة الـ PMO', 'Send to the Head of PMO'),
+        body: `<div class="form"><p class="small muted full" style="margin:0 0 8px">${esc(L('مين محتاج يتضاف أو يتشال، وليه؟ الطلب بيروح لرئيسة الـ PMO وهي اللي بتعدّل الفريق.', 'Who should join or leave, and why? The request goes to the Head of PMO, who changes the team.'))}</p>${field(L('الطلب', 'The request'), `<textarea name="t" rows="4" dir="auto" maxlength="600" required></textarea>`, 'full')}</div>`,
+        onSubmit: async f => { const t0 = String(formData(f).t || '').trim(); if (!t0) { toast(L('اكتب الطلب', 'Write the request'), 'err'); return false; }
+          tell(pmo, L(`طلب تعديل في فريق ${p.name}`, `Team change asked on ${p.name}`), `${myName()}: ${t0}`, pid);
+          await save(p, { okTeamAsk: (p.okTeamAsk || []).concat([{ at: nowISO(), by: myName(), byId: me(), text: t0 }]).slice(-20) }); toast(L('الطلب اتبعت لرئيسة الـ PMO ✓', 'Sent to the Head of PMO ✓')); } });
+  };
+  /* the project page's «Ask for someone from another team»: for a Project Owner it is the same request to the Head of PMO */
+  document.addEventListener('click', ev => { const t = ev.target.closest && ev.target.closest('[data-okown^="join:"]'); if (!t) return; if (isAdmin() || (window.okAccess && window.okAccess.isPMO && window.okAccess.isPMO())) return;
+    const p = byId('projects', t.dataset.okown.split(':')[1]); if (!p) return; ev.preventDefault(); ev.stopImmediatePropagation(); askTeam(p); }, true);
+  /* his home pages: a line when projects wait for the weekly update */
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    const v = S.route && S.route.view; const view = document.getElementById('view'); const old = document.getElementById('okckbar');
+    if (!view || !can() || !['me', 'dashboard', 'home', 'projects'].includes(v) || (v === 'projects' && S.route.id)) { if (old) old.remove(); return; }
+    const n = mine().filter(stale).length; if (!n) { if (old) old.remove(); return; }
+    const html = `<div class="okckbar" id="okckbar">🗓️ <span class="grow">${esc(L(`${n} من مشاريعك محتاجة تحديث الأسبوع ده — الحالة ومين معاك`, `${n} of your projects need this week's update — the state and who is with you`))}</span><a class="btn sm p" href="#/okcheck">${esc(L('حدّثها', 'Update them'))}</a></div>`;
+    if (!old) view.insertAdjacentHTML('afterbegin', html); else if (old.outerHTML !== html) old.outerHTML = html;
+  } catch (e) { /* ignore */ } });
+  /* Projects & teams (Head of PMO): when each project was last updated */
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    if (!(S.route && S.route.view === 'okpmo')) return;
+    document.querySelectorAll('.okpmo .pc').forEach(c => { if (c.querySelector('.okckw')) return; const a = c.querySelector('.t a[href^="#/projects/"]'); if (!a) return; const p = byId('projects', a.getAttribute('href').slice(11)); if (!p) return;
+      const d = checkedAt(p) ? days(ago(checkedAt(p))) : null; const st = stOf(p); const S0 = ST()[st] || {};
+      c.querySelector('.t').insertAdjacentHTML('afterend', `<div class="okckw" style="font-size:12px;color:${stale(p) ? '#9a5b00' : 'var(--muted)'}">${S0.ar ? `<b style="color:rgb(${S0.c})">●</b> ${esc(L(S0.ar, S0.en))} · ` : ''}${esc(d == null ? L('الـ Project Owner لسه ما حدّثهوش', 'Not updated by the Project Owner yet') : d === 0 ? L('اتحدّث النهارده', 'Updated today') : L(`اتحدّث من ${d} يوم`, `Updated ${d} days ago`))}${p.okStateNote && st !== 'active' ? ' · ' + esc(p.okStateNote) : ''}</div>`); });
+  } catch (e) { /* ignore */ } });
+
+  if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.okcheck = () => page();
+  if (typeof VIEW_TITLES === 'object') try { Object.defineProperty(VIEW_TITLES, 'okcheck', { configurable: true, enumerable: true, get: () => L('تحديث مشاريعي', 'Update my projects') }); } catch (e) { VIEW_TITLES.okcheck = 'تحديث مشاريعي'; }
+  if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okcheck')) { const i = NAV.findIndex(n => n && n.id === 'okteam'); NAV.splice(i >= 0 ? i : Math.min(2, NAV.length), 0, { id: 'okcheck', get label() { return L('تحديث مشاريعي', 'Update my projects'); }, get short() { return L('مشاريعي', 'My projects'); }, icon: 'check', countCls: 'warn', count: () => { try { return can() ? mine().filter(stale).length : 0; } catch (e) { return 0; } } }); }
+  if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okcheck')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okcheck']); });
+  if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okcheck') return can(); return base.apply(this, arguments); })(canSee);
 })();
