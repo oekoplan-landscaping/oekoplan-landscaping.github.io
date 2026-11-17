@@ -4919,3 +4919,167 @@ html[data-theme="dark"] #oklock{background:#0d1719}
   if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okcheck')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okcheck']); });
   if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okcheck') return can(); return base.apply(this, arguments); })(canSee);
 })();
+
+/* =====================================================================
+   Ökoplan — page tabs, a refresh button, and «What's new» (17 Nov 2026)
+   · tabs: every page a person opens stays as a tab under the top bar (up to 8, this window only); tap to go back to it,
+     × to close it. Leaving a project page still closes its money (the phone key).
+   · refresh: a button in the top bar — fetches the latest version of the system and reloads.
+   · What's new: after an update, each person sees once a short illustrated tour of what changed for HIM (by role) and
+     how to use it, with a button that opens the page; «What's new» in «My account» opens it again.
+   ===================================================================== */
+(() => {
+  if (window.__OK_TABS__) return; window.__OK_TABS__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const phone = () => { try { return matchMedia('(pointer:coarse)').matches && Math.min(screen.width, screen.height) < 900; } catch (e) { return false; } };
+  document.head.insertAdjacentHTML('beforeend', `<style>
+#oktabs{display:flex;gap:6px;align-items:flex-end;overflow-x:auto;scrollbar-width:none;padding:8px 14px 0;border-bottom:1px solid var(--line);background:var(--surface)}#oktabs::-webkit-scrollbar{display:none}
+#oktabs a{flex:none;display:inline-flex;align-items:center;gap:8px;max-width:220px;padding:7px 8px 7px 12px;border:1px solid var(--line);border-bottom:0;border-radius:11px 11px 0 0;background:var(--surface-2);color:var(--muted);font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap}
+#oktabs a span{overflow:hidden;text-overflow:ellipsis}#oktabs a.on{background:var(--bg,var(--surface));color:var(--ink);border-color:#50b1e7;box-shadow:inset 0 2px 0 #50b1e7}
+#oktabs a button{all:unset;cursor:pointer;width:18px;height:18px;border-radius:6px;display:grid;place-items:center;font-size:14px;line-height:1;color:var(--muted)}#oktabs a button:hover{background:var(--line);color:var(--ink)}
+@media (max-width:700px){#oktabs{display:none}}
+.okrefresh{display:inline-grid;place-items:center;width:36px;height:36px;border-radius:12px;border:0;background:transparent;color:var(--ink);cursor:pointer}.okrefresh:hover{background:var(--surface-2)}.okrefresh svg{width:19px;height:19px}.okrefresh.spin svg{animation:okspin .8s linear infinite}@keyframes okspin{to{transform:rotate(360deg)}}
+</style>`);
+
+  /* ---------------- tabs ---------------- */
+  const KEY = 'ok.tabs'; const MAX = 8;
+  const read = () => { try { return JSON.parse(sessionStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
+  const write = a => { try { sessionStorage.setItem(KEY, JSON.stringify(a)); } catch (e) { /* */ } };
+  const here = () => (location.hash || '#/').split('?')[0];
+  const SKIP = /^#\/(okkey|login|okqr)?(\/|$)/;
+  const titleOf = h => { const m = /^#\/([^/]+)(?:\/([^/]+))?/.exec(h) || []; const v = m[1] || '', id = m[2] || '';
+    if (v === 'projects' && id) { const p = byId('projects', id); if (p) return p.name || ''; }
+    if (v === 'tasks' && id) { const t = byId('tasks', id); if (t) return t.title || ''; }
+    let t = ''; try { t = (typeof VIEW_TITLES === 'object' && VIEW_TITLES[v]) || ''; } catch (e) { /* */ }
+    if (!t) { const n = (typeof NAV !== 'undefined' ? NAV : []).find(x => x && x.id === v); t = n ? (typeof n.label === 'function' ? n.label() : n.label) : ''; }
+    return String(t || v || L('الرئيسية', 'Home')).split(' — ')[0]; };
+  const draw = () => {
+    if (!S.session || phone()) { const o = document.getElementById('oktabs'); if (o) o.remove(); return; }
+    const top = document.getElementById('topbar'); if (!top) return;
+    let a = read(); const h = here();
+    if (!SKIP.test(h)) { const t = titleOf(h); const i = a.findIndex(x => x.h === h); if (i >= 0) { a[i].t = t || a[i].t; } else { a.push({ h, t }); if (a.length > MAX) a.splice(a.findIndex(x => x.h !== h), 1); } write(a); }
+    const html = `<div id="oktabs" role="tablist">${a.map(x => `<a href="${esc(x.h)}" class="${x.h === h ? 'on' : ''}" role="tab" aria-selected="${x.h === h}"><span>${esc(x.t || '—')}</span>${a.length > 1 ? `<button type="button" data-oktabx="${esc(x.h)}" aria-label="${esc(L('اقفل', 'Close'))}">×</button>` : ''}</a>`).join('')}</div>`;
+    const old = document.getElementById('oktabs'); if (old && old.outerHTML === html) return; if (old) old.outerHTML = html; else top.insertAdjacentHTML('afterend', html);
+    const on = document.querySelector('#oktabs a.on'); if (on && on.scrollIntoView) try { on.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) { /* */ }
+  };
+  document.addEventListener('click', ev => { const x = ev.target.closest && ev.target.closest('[data-oktabx]'); if (!x) return; ev.preventDefault(); ev.stopPropagation();
+    const h = x.dataset.oktabx; let a = read(); const i = a.findIndex(t => t.h === h); if (i < 0) return; a.splice(i, 1); write(a);
+    if (h === here()) location.hash = (a[Math.min(i, a.length - 1)] || { h: '#/' }).h; else draw(); }, true);
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try { draw(); } catch (e) { /* ignore */ } });
+
+  /* ---------------- refresh ---------------- */
+  const RI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>';
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    if (!S.session) return; const box = document.querySelector('#topbar .tb-actions'); if (!box || box.querySelector('.okrefresh')) return;
+    const bell = box.querySelector('.bellbtn'); const html = `<button type="button" class="okrefresh" data-okrefresh title="${esc(L('تحديث', 'Refresh'))}" aria-label="${esc(L('تحديث', 'Refresh'))}">${RI}</button>`;
+    if (bell) bell.insertAdjacentHTML('beforebegin', html); else box.insertAdjacentHTML('beforeend', html);
+  } catch (e) { /* ignore */ } });
+  document.addEventListener('click', async ev => { const b = ev.target.closest && ev.target.closest('[data-okrefresh]'); if (!b) return; ev.preventDefault(); b.classList.add('spin');
+    try { const r = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); if (r) await r.update(); } catch (e) { /* */ }
+    setTimeout(() => location.reload(), 250); });
+})();
+
+(() => {
+  if (window.__OK_NEWS__) return; window.__OK_NEWS__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const me = () => (typeof stuMe === 'function' ? stuMe() : '') || (S.session && S.session.workerId) || '';
+  const W = id => (id ? byId('workers', id) : null);
+  const owners = p => Array.from(new Set([p.leadId, p.ownerId].concat(p.coOwnerIds || []).filter(Boolean)));
+  const live = () => list('projects').filter(p => p && p.status !== 'archived');
+  const acc = () => window.okAccess || {};
+  const isPMO = () => !!(acc().isPMO && acc().isPMO()); const isFM = () => !!(acc().isFinMgr && acc().isFinMgr());
+  const isPO = () => live().some(p => owners(p).includes(me()));
+  const finPO = () => !isAdmin() && !isFM() && (live().some(p => (p.financeId || p.leadId) === me()) || ((S.settings && S.settings.okFinContract) || []).includes(me()));
+  const isHeadDesign = () => typeof role === 'function' && role() === 'manager';
+  const RELEASE = '2026-11-17';
+  /* the illustrations: small flat drawings in the office colours */
+  const B = '#50b1e7', T = '#38a599', G = '#70b62e', K = '#17201f', P = '#eef8fd';
+  const svg = inner => `<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">${inner}</svg>`;
+  const ART = {
+    mail: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/><rect x="58" y="44" width="120" height="82" rx="12" fill="#fff" stroke="${B}" stroke-width="3"/><path d="M58 52l60 40 60-40" fill="none" stroke="${B}" stroke-width="3"/><rect x="196" y="58" width="90" height="34" rx="10" fill="${T}"/><text x="241" y="81" text-anchor="middle" font-family="Jost,sans-serif" font-size="18" font-weight="700" fill="#fff" letter-spacing="3">482 913</text><path d="M180 86h12" stroke="${T}" stroke-width="3" stroke-linecap="round"/><circle cx="241" cy="116" r="12" fill="${G}"/><path d="M235 116l4 4 8-8" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>`),
+    lock: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/><rect x="40" y="38" width="150" height="96" rx="10" fill="#fff" stroke="${K}" stroke-opacity=".2" stroke-width="3"/><rect x="96" y="76" width="38" height="32" rx="6" fill="${B}"/><path d="M103 76v-8a12 12 0 0 1 24 0v8" fill="none" stroke="${B}" stroke-width="4"/><text x="115" y="126" text-anchor="middle" font-family="Jost,sans-serif" font-size="12" fill="${K}" opacity=".6">5 min</text><rect x="222" y="44" width="56" height="96" rx="12" fill="#fff" stroke="${T}" stroke-width="3"/><rect x="234" y="62" width="32" height="32" rx="4" fill="${T}" opacity=".15"/><path d="M238 66h8v8h-8zM254 66h8v8h-8zM238 82h8v8h-8zM256 84h6v6h-6z" fill="${T}"/><path d="M196 86h20" stroke="${T}" stroke-width="3" stroke-dasharray="4 4"/>`),
+    money: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/><rect x="34" y="40" width="150" height="92" rx="10" fill="#fff" stroke="${K}" stroke-opacity=".2" stroke-width="3"/><rect x="52" y="58" width="56" height="56" rx="6" fill="#fff" stroke="${K}" stroke-width="2"/><path d="M58 64h12v12H58zM90 64h12v12H90zM58 96h12v12H58zM78 80h8v8h-8zM92 98h8v8h-8z" fill="${K}"/><text x="146" y="82" text-anchor="middle" font-family="Jost,sans-serif" font-size="20" font-weight="700" fill="${K}" opacity=".25">••••</text><rect x="214" y="38" width="62" height="104" rx="13" fill="#fff" stroke="${B}" stroke-width="3"/><circle cx="245" cy="62" r="10" fill="${B}"/><rect x="232" y="84" width="26" height="26" rx="5" fill="none" stroke="${B}" stroke-width="2"/><path d="M190 86h20" stroke="${B}" stroke-width="3" stroke-dasharray="4 4"/><circle cx="245" cy="126" r="7" fill="${G}"/>`),
+    status: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/>${[0, 1, 2].map(i => `<rect x="40" y="${38 + i * 36}" width="240" height="28" rx="10" fill="#fff"/><rect x="52" y="${48 + i * 36}" width="80" height="8" rx="4" fill="${K}" opacity=".18"/><rect x="${150}" y="${44 + i * 36}" width="56" height="16" rx="8" fill="${[G, '#f5b301', '#94a3b8'][i]}" opacity=".9"/><circle cx="262" cy="${52 + i * 36}" r="8" fill="${i === 1 ? '#f5b301' : G}"/><path d="M258 ${52 + i * 36}l3 3 6-6" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/>`).join('')}`),
+    pmo: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/><rect x="38" y="38" width="96" height="94" rx="12" fill="#fff"/><rect x="48" y="50" width="56" height="8" rx="4" fill="${K}" opacity=".25"/>${[0, 1, 2].map(i => `<rect x="48" y="${68 + i * 20}" width="76" height="12" rx="6" fill="${[B, T, G][i]}" opacity=".85"/>`).join('')}<circle cx="215" cy="54" r="14" fill="${T}"/>${[170, 215, 260].map(x => `<circle cx="${x}" cy="114" r="12" fill="${B}" opacity=".85"/><path d="M215 68L${x} 102" stroke="${K}" stroke-opacity=".3" stroke-width="2"/>`).join('')}`),
+    jd: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/><rect x="86" y="34" width="148" height="104" rx="12" fill="#fff"/><circle cx="114" cy="62" r="14" fill="${B}" opacity=".85"/><rect x="136" y="54" width="80" height="8" rx="4" fill="${K}" opacity=".3"/><rect x="136" y="68" width="56" height="6" rx="3" fill="${K}" opacity=".15"/>${[0, 1, 2].map(i => `<circle cx="106" cy="${94 + i * 14}" r="3" fill="${T}"/><rect x="116" y="${91 + i * 14}" width="${100 - i * 18}" height="6" rx="3" fill="${K}" opacity=".18"/>`).join('')}`),
+    design: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/>${[0, 1, 2, 3].map(i => `<rect x="${44 + i * 62}" y="70" width="50" height="30" rx="9" fill="${[G, B, T, '#94a3b8'][i]}" opacity="${i < 2 ? 1 : .55}"/>`).join('')}${[0, 1, 2].map(i => `<path d="M${94 + i * 62} 85h12" stroke="${K}" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/>`).join('')}<rect x="44" y="46" width="120" height="8" rx="4" fill="${K}" opacity=".2"/><rect x="44" y="114" width="232" height="8" rx="4" fill="${K}" opacity=".08"/><rect x="44" y="114" width="120" height="8" rx="4" fill="${T}"/>`),
+  };
+  const ITEMS = () => [
+    { id: 'pmo', show: () => isPMO() || isAdmin(), art: 'pmo', go: '#/okpmo',
+      t: L('قائمة «إدارة المشروعات» الجديدة', 'The new «PMO» menu'),
+      s: [L('«قائمة المشاريع»: كل المشاريع — مين Project Owner تكنيكال، ومين ماسك الفاينانس، ومين في الفريق.', '«Project List»: every project — the technical Project Owner, who handles finance, and who is on the team.'),
+        L('«مشاريعي»: نفس التفاصيل للمشاريع بتاعتك بس.', '«My Projects»: the same detail for your own projects.'),
+        L('زرار «الـ Project Owner والفريق» يغيّر الـ Project Owner والفاينانس والفريق — وطلبات تعديل الفرق بتوصلك إنتي.', 'The «Project Owner & team» button changes the Project Owner, the finance and the team — team-change requests come to you.')] },
+    { id: 'jd', show: () => isPMO() || isAdmin(), art: 'jd', go: '#/okorgjd',
+      t: L('الهيكل والوصف الوظيفي', 'Structure & job descriptions'),
+      s: [L('افتح «الهيكل والوصف الوظيفي» من قائمة إدارة المشروعات.', 'Open «Structure & job descriptions» in the PMO menu.'),
+        L('دوس على أي شخص في الهيكل: المسمّى والوصف الوظيفي — كل مسؤولية في سطر.', 'Tap anyone on the chart: the job title and the job description — one responsibility per line.'),
+        L('الشخص بيشوف وصفه الوظيفي في «صفحتي».', 'The person sees his job description on «My page».')] },
+    { id: 'check', show: () => isPO(), art: 'status', go: '#/okcheck',
+      t: L('«تحديث مشاريعي» — مرة في الأسبوع', '«Update my projects» — once a week'),
+      s: [L('حالة كل مشروع بدوسة: شغّال · متوقف مؤقتًا · واقف · اتسلّم (ولو متوقف اكتب السبب).', 'Each project\'s state in one tap: Ongoing · On hold · Stopped · Delivered (write why when on hold).'),
+        L('«مفيش تغيير ✓» لو المشروع زي ما هو.', '«Nothing changed ✓» when the project is as it was.'),
+        L('محتاج حد يتضاف أو يتشال من الفريق؟ «اطلب تعديل في الفريق» — بيروح لرئيسة الـ PMO.', 'Need someone added or removed? «Ask for a team change» — it goes to the Head of PMO.')] },
+    { id: 'money', show: () => finPO(), art: 'money', go: '#/okcheck',
+      t: L('فلوس المشروع بتتفتح من موبايلك', 'Project money opens with your phone'),
+      s: [L('على الكمبيوتر دوس «اعرض المبالغ» — هيظهر QR.', 'On the computer tap «Show amounts» — a QR shows.'),
+        L('على موبايلك: تطبيق Ökoplan ← أيقونة الـ QR فوق ← سكان. أول موبايل يعمل سكان بيبقى موبايلك.', 'On your phone: the Ökoplan app → the QR icon at the top → scan. The first phone that scans becomes yours.'),
+        L('بتتقفل أول ما تخرج من المشروع. على موبايلك بتفتح على طول.', 'It closes when you leave the project. On your phone it opens directly.')] },
+    { id: 'design', show: () => isHeadDesign(), art: 'design', go: '#/okpipeedit',
+      t: L('إنتي رئيسة فريق التصميم', 'You are the Head of Design'),
+      s: [L('«مراحل الشغل»: ترتيب مراحل التصميم وتعديلها.', '«Pipeline editor»: arrange and edit the design stages.'),
+        L('«تايم لاين المشاريع»: إيه المتأخر النهارده.', '«Projects timeline»: what is late today.'),
+        L('قواعد التشغيل الآلي والهيكل التنظيمي.', 'The automation rules and the organisation chart.')] },
+    { id: 'lock', show: () => !!S.session, art: 'lock', go: '',
+      t: L('الكمبيوتر بيتقفل لوحده بعد 5 دقايق', 'The computer locks itself after 5 minutes'),
+      s: [L('لو سبت الكمبيوتر 5 دقايق من غير استخدام، السيستم بيتقفل.', 'Leave the computer 5 minutes and the system locks.'),
+        L('افتحه بسكان من موبايلك (أيقونة الـ QR فوق في التطبيق) أو بكلمة السر.', 'Open it with a scan from your phone (the QR icon at the top of the app) or your password.'),
+        L('وفيه زرار تحديث ⟳ فوق، والصفحات اللي بتفتحها بتفضل تابات فوق.', 'There is also a refresh ⟳ button at the top, and the pages you open stay as tabs.')] },
+    { id: 'mail', show: () => !!S.session && !!me(), art: 'mail', go: '#/me',
+      t: L('نسيت كلمة السر؟ كود على الإيميل', 'Forgot your password? A code by email'),
+      s: [L('في «صفحتي» ضيف إيميلك الشخصي من «استرجاع كلمة السر».', 'On «My page», add your personal email under «Password recovery».'),
+        L('في شاشة الدخول: «نسيت كلمة السر» ← رقمك ← اختار الإيميل ← يجيلك كود.', 'On the sign-in screen: «Forgot password» → your number → choose the email → you get a code.'),
+        L('اكتب الكود وكلمة السر الجديدة مرتين.', 'Type the code and the new password twice.')] },
+  ];
+  const mine = () => ITEMS().filter(x => { try { return x.show(); } catch (e) { return false; } });
+  const seenKey = () => 'ok.news.' + (me() || (S.session && S.session.id) || 'x');
+  const seen = () => { let v = ''; try { v = localStorage.getItem(seenKey()) || ''; } catch (e) { /* */ } const w = W(me()); return v === RELEASE || (w && w.okNewsSeen === RELEASE); };
+  const markSeen = () => { try { localStorage.setItem(seenKey(), RELEASE); } catch (e) { /* */ } const w = W(me()); if (w && !w._lite && w.okNewsSeen !== RELEASE) { try { Store.update('workers', w.id, { okNewsSeen: RELEASE }); } catch (e) { /* */ } } };
+  document.head.insertAdjacentHTML('beforeend', `<style>
+#oknews{position:fixed;inset:0;z-index:99980;background:rgba(10,20,26,.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px}
+#oknews .nb{width:100%;max-width:520px;background:var(--surface,#fff);border-radius:24px;box-shadow:0 24px 70px rgba(0,0,0,.25);overflow:hidden;color:var(--ink)}
+#oknews .art{background:linear-gradient(135deg,#eef8fd,#e8f5f1);padding:18px 18px 6px}#oknews .art svg{display:block;width:100%;height:auto}
+#oknews .bd{padding:18px 22px 8px}#oknews .tag{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.06em;color:#2b8fc7;background:#eef8fd;border-radius:99px;padding:3px 10px;margin-bottom:8px}
+#oknews h3{margin:0 0 12px;font-size:20px;line-height:1.3}#oknews ol{list-style:none;margin:0;padding:0;display:grid;gap:10px}#oknews li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;line-height:1.55}
+#oknews li b{flex:none;width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#50b1e7,#38a599);color:#fff;display:grid;place-items:center;font-size:12.5px}
+#oknews .ft{display:flex;align-items:center;gap:8px;padding:14px 22px 20px}#oknews .dots{display:flex;gap:5px;flex:1}#oknews .dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}#oknews .dots i.on{background:#50b1e7;width:18px;border-radius:5px}
+#oknews .go{background:#50b1e7;color:#fff;border:0}html[data-theme="dark"] #oknews .art{background:linear-gradient(135deg,#14313f,#12322b)}
+</style>`);
+  let idx = 0, list0 = [];
+  const show = all => {
+    list0 = all || mine(); if (!list0.length) return; idx = 0; const old = document.getElementById('oknews'); if (old) old.remove();
+    document.body.insertAdjacentHTML('beforeend', `<div id="oknews" dir="${en() ? 'ltr' : 'rtl'}"><div class="nb" role="dialog" aria-modal="true"></div></div>`); paint();
+  };
+  const paint = () => { const box = document.querySelector('#oknews .nb'); if (!box) return; const x = list0[idx];
+    box.innerHTML = `<div class="art">${ART[x.art] || ''}</div><div class="bd"><span class="tag">${esc(L('الجديد في Ökoplan', 'New in Ökoplan'))} · ${idx + 1}/${list0.length}</span><h3>${esc(x.t)}</h3><ol>${x.s.map((t, i) => `<li><b>${i + 1}</b><span>${esc(t)}</span></li>`).join('')}</ol></div>
+      <div class="ft"><div class="dots">${list0.map((_, i) => `<i class="${i === idx ? 'on' : ''}"></i>`).join('')}</div>${x.go ? `<button type="button" class="btn sm" data-oknews="go">${esc(L('افتحها', 'Open it'))}</button>` : ''}${idx > 0 ? `<button type="button" class="btn sm ghost" data-oknews="back">${esc(L('السابق', 'Back'))}</button>` : ''}<button type="button" class="btn sm go" data-oknews="${idx < list0.length - 1 ? 'next' : 'done'}">${esc(idx < list0.length - 1 ? L('التالي', 'Next') : L('تمام', 'Got it'))}</button></div>`; };
+  document.addEventListener('click', ev => { const t = ev.target.closest && ev.target.closest('[data-oknews]'); if (!t) { if (ev.target && ev.target.id === 'oknews') { markSeen(); ev.target.remove(); } return; } ev.preventDefault();
+    const a = t.dataset.oknews; const close = () => { markSeen(); const g = document.getElementById('oknews'); if (g) g.remove(); };
+    if (a === 'next') { idx++; paint(); } else if (a === 'back') { idx = Math.max(0, idx - 1); paint(); } else if (a === 'done') close(); else if (a === 'go') { const go = list0[idx].go; close(); if (go) location.hash = go; } });
+  ACTIONS.okNewsOpen = () => show(mine());
+  /* once per release, when nothing else stands in front of him */
+  let asked = false;
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    if (asked || !S.session || !(S.loaded && S.loaded.projects) || document.getElementById('okpwgate') || document.getElementById('oklock') || document.getElementById('oknews') || document.querySelector('#modalroot .modal')) return;
+    if (typeof needsAck === 'function' && needsAck()) return; if (typeof role === 'function' && role() === 'kiosk') return; if (S.route && ['okqr', 'okkey'].includes(S.route.view)) return;
+    if (seen()) { asked = true; return; } asked = true; setTimeout(() => { if (!document.getElementById('okpwgate') && !document.getElementById('oklock')) show(); }, 1200);
+  } catch (e) { /* ignore */ } });
+  /* «What's new» in «My account» */
+  if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.oknews = () => { setTimeout(() => { show(mine()); }, 30); return `<div class="empty"><b>${esc(L('الجديد في Ökoplan', 'New in Ökoplan'))}</b></div>`; };
+  if (typeof VIEW_TITLES === 'object') try { Object.defineProperty(VIEW_TITLES, 'oknews', { configurable: true, enumerable: true, get: () => L('الجديد في السيستم', 'What\'s new') }); } catch (e) { /* */ }
+  if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'oknews')) { const i = NAV.findIndex(n => n && n.id === 'support'); NAV.splice(i >= 0 ? i + 1 : NAV.length, 0, { id: 'oknews', get label() { return L('الجديد في السيستم', 'What\'s new'); }, icon: 'star' }); }
+  if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('oknews')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['oknews']); });
+  if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'oknews') return !!S.session && (typeof role !== 'function' || role() !== 'kiosk'); return base.apply(this, arguments); })(canSee);
+})();
