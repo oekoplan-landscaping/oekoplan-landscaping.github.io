@@ -2802,11 +2802,11 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
   /* ---------------- the scanner (phone) ---------------- */
   let scan = null;
   function stopScan() { if (!scan) return; try { scan.stream.getTracks().forEach(t => t.stop()); } catch (e) { /* ignore */ } cancelAnimationFrame(scan.raf); scan = null; }
-  ACTIONS.okQrScan = async () => {
-    const w = me(); if (!w) return; /* everyone scans: the attendance code, or the key that opens his own computer (OKK) */
+  ACTIONS.okQrScan = async (arg, btn, opts) => {
+    const w = me(); if (!w) return; opts = (opts && typeof opts === 'object') ? opts : {}; /* everyone scans: the attendance code, or the key that opens his own computer (OKK) */
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toast(L('الكاميرا مش متاحة هنا — افتح التطبيق من الموبايل', 'No camera here — open the app on the phone'), 'err'); return; }
     openModal({ title: L('امسح الكود', 'Scan the code'), sticky: true, footer: `<button type="button" class="btn" data-action="closemodal">${esc(L('إلغاء', 'Cancel'))}</button>`,
-      body: `<div class="okqr-scan"><video id="okqr-v" autoplay muted playsinline></video><div class="okqr-frame"></div><div class="okqr-hint" id="okqr-hint">${esc(L('وجّه الكاميرا على الكود اللي على شاشة الكمبيوتر', 'Point the camera at the code on the computer screen'))}</div></div>` });
+      body: `<div class="okqr-scan"><video id="okqr-v" autoplay muted playsinline></video><div class="okqr-frame"></div><div class="okqr-hint" id="okqr-hint">${esc(opts.hint || L('وجّه الكاميرا على الكود اللي على شاشة الكمبيوتر', 'Point the camera at the code on the computer screen'))}</div></div>` });
     const v = document.getElementById('okqr-v'); const hint = document.getElementById('okqr-hint');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }); v.srcObject = stream; await v.play();
@@ -2825,7 +2825,7 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
           else if (text) { hint.textContent = L('ده مش كود بصمة أوكوبلان', 'That is not an Ökoplan attendance code'); }
         } catch (e) { /* keep scanning */ } busy = false; };
       loop();
-    } catch (e) { console.warn('qr cam', e); closeModal(); toast(L('مقدرتش أفتح الكاميرا — اسمح للتطبيق باستخدامها', 'Could not open the camera — allow the app to use it'), 'err'); }
+    } catch (e) { console.warn('qr cam', e); closeModal(); if (typeof opts.onFail === 'function') { opts.onFail(); return; } toast(L('مقدرتش أفتح الكاميرا — اسمح للتطبيق باستخدامها', 'Could not open the camera — allow the app to use it'), 'err'); }
   };
   async function punchWith(token, w) {
     try { const r = await fn({ a: 'verify', token }); if (!r.ok) { closeModal(); toast(r.why === 'expired' ? L('الكود انتهى — امسح الكود الجديد على الشاشة', 'The code expired — scan the new one on the screen') : L('كود غير صالح', 'Invalid code'), 'err'); return; }
@@ -2844,9 +2844,10 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
   if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okqr')) { const i = NAV.findIndex(n => n && n.id === 'attendance'); NAV.splice(i >= 0 ? i + 1 : NAV.length, 0, { id: 'okqr', label: 'محطة بصمة QR', short: 'QR', icon: 'clock', roles: ['admin', 'manager', 'hr', 'vice', 'head'] }); }
   if (typeof ROLE_VIEWS === 'object') ['admin', 'manager', 'hr', 'vice', 'head'].forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okqr')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okqr']); });
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => {
-    const w = me(); let b = document.querySelector('.qrscanfab'); const want = !!(w && !w.noPunch && S.sb);
+    const onPhone = (() => { try { return matchMedia('(pointer:coarse)').matches && Math.min(screen.width, screen.height) < 900; } catch (e) { return false; } })();
+    const w = me(); let b = document.querySelector('.qrscanfab'); const want = !!(w && S.sb && (!w.noPunch || onPhone));
     if (!want) { if (b) b.remove(); return; }
-    if (!b) document.body.insertAdjacentHTML('beforeend', `<button type="button" class="qrscanfab" data-action="okQrScan" title="${esc(L('امسح كود البصمة', 'Scan the QR'))}" aria-label="${esc(L('امسح كود البصمة', 'Scan the QR'))}">${icon('clock')}</button>`);
+    if (!b) document.body.insertAdjacentHTML('beforeend', `<button type="button" class="qrscanfab" data-action="okQrScan" title="${esc(L('امسح الكود', 'Scan a code'))}" aria-label="${esc(L('امسح الكود', 'Scan a code'))}">${icon('clock')}</button>`);
     /* a QR-only person sees the scan, not the plain «Punch» */
     const pf = document.querySelector('.punchfab'); if (pf && qrOnly(w)) pf.remove();
     if (S.route && S.route.view === 'me' && qrOnly(w)) { const mb = document.querySelector('[data-action="selfPunch"]'); if (mb && !mb.dataset.qr) { mb.dataset.qr = '1'; mb.innerHTML = `${icon('clock')} ${esc(L('امسح كود البصمة', 'Scan the attendance QR'))}`; } }
@@ -4751,6 +4752,34 @@ html[data-theme="dark"] #oklock{background:#0d1719}
       other_person: L('الكود ده لحساب حد تاني', 'That code belongs to another account'), other_phone: L('ده مش الموبايل المتسجّل بتاعك — كلّم إدارة المكتب لو غيّرت موبايلك', 'This is not your registered phone — talk to the office if you changed phones'), no_device: L('الموبايل ده مش جاهز — جرّب تاني', 'This phone is not ready — try again') }[r] || L('الكود مش صالح', 'Invalid code');
     toast(msg, r === 'ok' ? undefined : 'err');
   };
+  /* the phone is ready by itself (Mahmoud, 17 Nov: «he opens his phone and finds it ready on the scan — no fingerprint, no Face ID»):
+     a computer waiting for this person's phone (the project money, or the lock) → opening the app opens the camera straight away.
+     Checked when the app opens or comes back to the front, then every 4 s for 90 s. The phone still scans the code on the screen. */
+  let pendSeen = '', pendBusy = false, pendUntil = 0;
+  const scanning = () => !!document.getElementById('okqr-v');
+  const pendWhy = r => { const p = r.project ? byId('projects', r.project) : null;
+    return r.purpose === 'unlock' ? L('الكمبيوتر بتاعك مستني موبايلك عشان يتفتح — وجّه الكاميرا على الكود اللي على الشاشة', 'Your computer is waiting for your phone to unlock — point the camera at the code on the screen')
+      : L(`الكمبيوتر مستني موبايلك عشان يفتح فلوس ${p && p.name ? p.name : 'المشروع'} — وجّه الكاميرا على الكود اللي على الشاشة`, `The computer is waiting for your phone to open ${p && p.name ? p.name : 'the project'} money — point the camera at the code on the screen`); };
+  const pendFallback = why => openModal({ title: L('موبايلك مطلوب', 'Your phone is needed'), footer: `<button type="button" class="btn" data-action="closemodal">${esc(L('مش دلوقتي', 'Not now'))}</button>`,
+    body: `<div class="okkey"><b class="t">📷 ${esc(L('افتح الكاميرا', 'Open the camera'))}</b><p>${esc(why)}</p><button type="button" class="go btn p" data-action="okQrScan" style="min-width:220px;height:48px;font-size:16px">${esc(L('امسح الكود', 'Scan the code'))}</button></div>` });
+  const checkPending = async () => {
+    if (pendBusy || !S.session || !phone() || document.hidden || scanning() || (typeof role === 'function' && role() === 'kiosk')) return;
+    if (document.getElementById('overlay') || document.getElementById('oknews')) return;   /* he is in the middle of something — the + still has the scan */
+    pendBusy = true;
+    try {
+      const r = await rpc('nf_ok_key_pending'); if (!r || r.status !== 'pending' || !r.id || r.id === pendSeen) return;
+      if (document.hidden || scanning() || document.getElementById('overlay') || document.getElementById('oknews')) return;
+      pendSeen = r.id; const why = pendWhy(r);
+      if (typeof ACTIONS.okQrScan === 'function') ACTIONS.okQrScan(null, null, { hint: why, onFail: () => pendFallback(why) }); else pendFallback(why);
+    } finally { pendBusy = false; }
+  };
+  const pendWake = () => { if (document.hidden || !phone()) return; pendUntil = Date.now() + 90e3; checkPending(); };
+  document.addEventListener('visibilitychange', pendWake); window.addEventListener('focus', pendWake); window.addEventListener('pageshow', pendWake);
+  setInterval(() => { if (Date.now() < pendUntil) checkPending(); }, 4e3);
+  let pendBoot = false;
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { if (pendBoot || !S.session || !phone()) return; pendBoot = true; setTimeout(pendWake, 600); });
+  window.okPendingCheck = pendWake;
+
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
     if (!S.session || !(S.route && S.route.view === 'okkey')) return; const h = location.hash || ''; if (window.__okkeyDone === h) return; window.__okkeyDone = h;
     const t = decodeURIComponent(h.replace(/^#\/okkey\//, '')); setTimeout(() => { location.hash = '#/me'; window.okKeyApprove(t); }, 50);
@@ -4798,7 +4827,7 @@ html[data-theme="dark"] #oklock{background:#0d1719}
     if (phone()) { rpc('nf_ok_fin_view', { p_project: pid, p_key: null, p_device: devKey() }).then(done); return; }
     const p = byId('projects', pid) || {};
     openModal({ title: L(`فلوس ${p.name || 'المشروع'}`, `${p.name || 'Project'} money`), footer: `<button type="button" class="btn" data-action="closemodal">${esc(L('إلغاء', 'Cancel'))}</button>`,
-      body: `<div class="okkey"><b class="t">🔒 ${esc(L('افتحها من موبايلك', 'Open it with your phone'))}</b><p>${esc(L('افتح تطبيق Ökoplan على موبايلك، دوس على أيقونة الـ QR فوق، واعمل سكان للكود ده. بتفضل مفتوحة لحد ما تخرج من صفحة المشروع.', 'Open the Ökoplan app on your phone, tap the QR icon at the top and scan this code. It stays open until you leave the project page.'))}</p><div data-okhost></div></div>`,
+      body: `<div class="okkey"><b class="t">🔒 ${esc(L('افتحها من موبايلك', 'Open it with your phone'))}</b><p>${esc(L('افتح تطبيق Ökoplan على موبايلك — الكاميرا هتفتح لوحدها، وجّهها على الكود ده (أو علامة + ← «امسح الكود»). بتفضل مفتوحة لحد ما تخرج من صفحة المشروع.', 'Open the Ökoplan app on your phone — the camera opens by itself; point it at this code (or + → «Scan a code»). It stays open until you leave the project page.'))}</p><div data-okhost></div></div>`,
       onOpen: f => { const host = (f || document).querySelector('[data-okhost]'); keyFlow('fin', pid, host, async kid => { const d = await rpc('nf_ok_fin_view', { p_project: pid, p_key: kid, p_device: null }); try { closeModal(); } catch (e) { /* */ } done(d); }); } });
   };
   /* the money buttons of a project: «Show amounts» on the claims card, «Contract values» */
@@ -4830,10 +4859,15 @@ html[data-theme="dark"] #oklock{background:#0d1719}
     const nm = (S.session && S.session.name) || '';
     document.body.insertAdjacentHTML('beforeend', `<div id="oklock" dir="${en() ? 'ltr' : 'rtl'}"><div class="box">
       <div class="who"><img src="${esc(logo)}" alt="Ökoplan Landscaping" onerror="this.style.display='none'"><div class="grow"><h2>${esc(L('السيستم اتقفل', 'The system is locked'))}</h2><small>${esc(nm)} · ${esc(L('اتقفل لوحده بعد 5 دقايق من غير استخدام', 'Locked by itself after 5 idle minutes'))}</small></div></div>
-      <div class="okls"><h3>${esc(L('اعمل سكان من موبايلك', 'Scan with your phone'))}</h3><p>${esc(L('افتح تطبيق Ökoplan على موبايلك ← أيقونة الـ QR فوق ← سكان.', 'Open the Ökoplan app on your phone → the QR icon at the top → scan.'))}</p><div class="okkey" data-okhost></div></div>
+      <div class="okls"><h3>${esc(L('اعمل سكان من موبايلك', 'Scan with your phone'))}</h3><p>${esc(L('افتح تطبيق Ökoplan على موبايلك — الكاميرا هتفتح لوحدها (أو علامة + ← «امسح الكود»).', 'Open the Ökoplan app on your phone — the camera opens by itself (or + → «Scan a code»).'))}</p><div class="okkey" data-okhost></div></div>
       <form class="okls" autocomplete="off"><h3>${esc(L('أو كلمة السر', 'Or your password'))}</h3><input type="password" name="pw" autocomplete="current-password" placeholder="${esc(L('كلمة السر', 'Password'))}"><div class="err"></div><button type="submit" class="go">${esc(L('افتح', 'Unlock'))}</button><button type="button" class="out" data-out>${esc(L('تسجيل خروج', 'Sign out'))}</button></form></div></div>`);
     const g = document.getElementById('oklock'); const f = g.querySelector('form'); const err = f.querySelector('.err');
-    keyFlow('unlock', null, g.querySelector('[data-okhost]'), async kid => { const r = await rpc('nf_ok_key_use', { p_id: kid, p_purpose: 'unlock' }); if (r === 'ok') { unlock(); toast(L('اتفتح ✓', 'Unlocked ✓')); } else err.textContent = L('مااتفتحش — جرّب كود جديد أو كلمة السر', 'Did not unlock — try a new code or the password'); });
+    const kh = g.querySelector('[data-okhost]'); const WK = ['mousemove', 'mousedown', 'keydown', 'touchstart'];
+    const unwake = () => WK.forEach(e => window.removeEventListener(e, wake, true));
+    const wake = () => { unwake(); if (!document.body.contains(kh) || kh.dataset.on) return; kh.dataset.on = '1'; startKey(); };
+    kh.innerHTML = `<p class="st">${esc(L('حرّك الماوس — الكود هيظهر', 'Move the mouse — the code shows'))}</p>`;
+    setTimeout(() => { if (document.body.contains(kh)) WK.forEach(e => window.addEventListener(e, wake, { capture: true, passive: true })); }, 1500);
+    const startKey = () => keyFlow('unlock', null, kh, async kid => { const r = await rpc('nf_ok_key_use', { p_id: kid, p_purpose: 'unlock' }); if (r === 'ok') { unlock(); toast(L('اتفتح ✓', 'Unlocked ✓')); } else err.textContent = L('مااتفتحش — جرّب كود جديد أو كلمة السر', 'Did not unlock — try a new code or the password'); });
     f.addEventListener('submit', async ev => { ev.preventDefault(); const pw = f.querySelector('[name=pw]').value; if (!pw) return; const b = f.querySelector('.go'); b.disabled = true; err.textContent = '';
       try { const email = (S.sbUser && S.sbUser.email) || ''; const r = await S.sb.auth.signInWithPassword({ email, password: pw }); if (r.error) throw r.error; unlock(); }
       catch (e) { err.textContent = L('كلمة السر غلط', 'Wrong password'); } b.disabled = false; });
@@ -5086,6 +5120,7 @@ html[data-theme="dark"] #oklock{background:#0d1719}
     pmo: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/><rect x="38" y="38" width="96" height="94" rx="12" fill="#fff"/><rect x="48" y="50" width="56" height="8" rx="4" fill="${K}" opacity=".25"/>${[0, 1, 2].map(i => `<rect x="48" y="${68 + i * 20}" width="76" height="12" rx="6" fill="${[B, T, G][i]}" opacity=".85"/>`).join('')}<circle cx="215" cy="54" r="14" fill="${T}"/>${[170, 215, 260].map(x => `<circle cx="${x}" cy="114" r="12" fill="${B}" opacity=".85"/><path d="M215 68L${x} 102" stroke="${K}" stroke-opacity=".3" stroke-width="2"/>`).join('')}`),
     jd: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/><rect x="86" y="34" width="148" height="104" rx="12" fill="#fff"/><circle cx="114" cy="62" r="14" fill="${B}" opacity=".85"/><rect x="136" y="54" width="80" height="8" rx="4" fill="${K}" opacity=".3"/><rect x="136" y="68" width="56" height="6" rx="3" fill="${K}" opacity=".15"/>${[0, 1, 2].map(i => `<circle cx="106" cy="${94 + i * 14}" r="3" fill="${T}"/><rect x="116" y="${91 + i * 14}" width="${100 - i * 18}" height="6" rx="3" fill="${K}" opacity=".18"/>`).join('')}`),
     move: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/><rect x="36" y="46" width="96" height="78" rx="12" fill="#fff"/><rect x="188" y="46" width="96" height="78" rx="12" fill="#fff"/><rect x="48" y="58" width="56" height="8" rx="4" fill="${K}" opacity=".25"/><rect x="200" y="58" width="56" height="8" rx="4" fill="${K}" opacity=".25"/><circle cx="84" cy="96" r="13" fill="${B}" opacity=".35"/><circle cx="236" cy="96" r="13" fill="${B}"/><path d="M140 85h40" stroke="${T}" stroke-width="4" stroke-linecap="round"/><path d="M170 76l11 9-11 9" fill="none" stroke="${T}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="128" y="104" width="64" height="22" rx="11" fill="${G}"/><text x="160" y="119" text-anchor="middle" font-family="Jost,sans-serif" font-size="11" font-weight="700" fill="#fff">20 → 30</text>`),
+    scan: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/><rect x="34" y="40" width="132" height="86" rx="10" fill="#fff" stroke="${K}" stroke-opacity=".2" stroke-width="3"/><rect x="80" y="126" width="40" height="8" rx="3" fill="${K}" opacity=".15"/><rect x="72" y="56" width="56" height="56" rx="6" fill="#fff" stroke="${K}" stroke-width="2"/><path d="M78 62h12v12H78zM110 62h12v12h-12zM78 94h12v12H78zM98 78h8v8h-8zM112 96h8v8h-8z" fill="${K}"/><path d="M176 83h22" stroke="${T}" stroke-width="3" stroke-dasharray="4 5" stroke-linecap="round"/><rect x="206" y="34" width="70" height="114" rx="14" fill="${K}"/><rect x="211" y="44" width="60" height="94" rx="9" fill="#24302e"/><path d="M222 62v-8h8M260 62v-8h-8M222 108v8h8M260 108v8h-8" stroke="${G}" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M226 85h30" stroke="${G}" stroke-width="2" opacity=".8"/><circle cx="262" cy="134" r="15" fill="${B}" stroke="#fff" stroke-width="3"/><path d="M262 127v14M255 134h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/>`),
     design: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/>${[0, 1, 2, 3].map(i => `<rect x="${44 + i * 62}" y="70" width="50" height="30" rx="9" fill="${[G, B, T, '#94a3b8'][i]}" opacity="${i < 2 ? 1 : .55}"/>`).join('')}${[0, 1, 2].map(i => `<path d="M${94 + i * 62} 85h12" stroke="${K}" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/>`).join('')}<rect x="44" y="46" width="120" height="8" rx="4" fill="${K}" opacity=".2"/><rect x="44" y="114" width="232" height="8" rx="4" fill="${K}" opacity=".08"/><rect x="44" y="114" width="120" height="8" rx="4" fill="${T}"/>`),
   };
   const ITEMS = () => [
@@ -5119,10 +5154,15 @@ html[data-theme="dark"] #oklock{background:#0d1719}
       s: [L('بيوصلك إشعار: «من يوم كذا هتشتغل في مشروع كذا».', 'You get a notice: «From day … you work on project …».'),
         L('وفيه مين الـ Project Owner اللي هتتابع معاه، ولحد إمتى.', 'With the Project Owner you follow up with, and until when.'),
         L('الإشعارات بتوصل على الموبايل — فعّلها من الجرس فوق.', 'Notices reach your phone — turn them on from the bell at the top.')] },
+    { id: 'scan', show: () => !!S.session && !!me(), art: 'scan', go: '',
+      t: L('السكان في علامة + — والموبايل بيجهز لوحده', 'The scan is in the + — and the phone gets ready by itself'),
+      s: [L('على الموبايل: علامة + ← «امسح الكود» — لأي كود: الحضور، فلوس المشروع، فتح الكمبيوتر.', 'On the phone: + → «Scan a code» — for any code: attendance, project money, unlocking the computer.'),
+        L('لما الكمبيوتر يطلب موبايلك، افتح تطبيق Ökoplan — الكاميرا بتفتح لوحدها على السكان.', 'When the computer asks for your phone, open the Ökoplan app — the camera opens on the scan by itself.'),
+        L('من غير بصمة ولا Face ID — موبايلك المتسجّل هو المفتاح.', 'No fingerprint, no Face ID — your registered phone is the key.')] },
     { id: 'money', show: () => finPO(), art: 'money', go: '#/okcheck',
       t: L('فلوس المشروع بتتفتح من موبايلك', 'Project money opens with your phone'),
       s: [L('على الكمبيوتر دوس «اعرض المبالغ» — هيظهر QR.', 'On the computer tap «Show amounts» — a QR shows.'),
-        L('على موبايلك: تطبيق Ökoplan ← أيقونة الـ QR فوق ← سكان. أول موبايل يعمل سكان بيبقى موبايلك.', 'On your phone: the Ökoplan app → the QR icon at the top → scan. The first phone that scans becomes yours.'),
+        L('على موبايلك: افتح تطبيق Ökoplan — الكاميرا بتفتح لوحدها (أو علامة + ← «امسح الكود»). أول موبايل يعمل سكان بيبقى موبايلك.', 'On your phone: open the Ökoplan app — the camera opens by itself (or + → «Scan a code»). The first phone that scans becomes yours.'),
         L('بتتقفل أول ما تخرج من المشروع. على موبايلك بتفتح على طول.', 'It closes when you leave the project. On your phone it opens directly.')] },
     { id: 'design', show: () => isHeadDesign(), art: 'design', go: '#/okpipeedit',
       t: L('إنتي رئيسة فريق التصميم', 'You are the Head of Design'),
@@ -5132,7 +5172,7 @@ html[data-theme="dark"] #oklock{background:#0d1719}
     { id: 'lock', show: () => !!S.session, art: 'lock', go: '',
       t: L('الكمبيوتر بيتقفل لوحده بعد 5 دقايق', 'The computer locks itself after 5 minutes'),
       s: [L('لو سبت الكمبيوتر 5 دقايق من غير استخدام، السيستم بيتقفل.', 'Leave the computer 5 minutes and the system locks.'),
-        L('افتحه بسكان من موبايلك (أيقونة الـ QR فوق في التطبيق) أو بكلمة السر.', 'Open it with a scan from your phone (the QR icon at the top of the app) or your password.'),
+        L('افتحه بسكان من موبايلك (افتح التطبيق والكاميرا بتفتح لوحدها) أو بكلمة السر.', 'Open it with a scan from your phone (open the app — the camera opens by itself) or your password.'),
         L('وفيه زرار تحديث ⟳ فوق، والصفحات اللي بتفتحها بتفضل تابات فوق.', 'There is also a refresh ⟳ button at the top, and the pages you open stay as tabs.')] },
     { id: 'mail', show: () => !!S.session && !!me(), art: 'mail', go: '#/me',
       t: L('نسيت كلمة السر؟ كود على الإيميل', 'Forgot your password? A code by email'),

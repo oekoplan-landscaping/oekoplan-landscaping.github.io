@@ -39357,7 +39357,7 @@ html.apple .ngfly .cnt.crit,html.apple .ngfly .cnt.bad{background:#ff453a}
     { k: 'snap', sel: '.snapfab', label: () => L('صوّر الشاشة', 'Screenshot'), cls: 'snap' },   /* v7.37: screenshot + sketch onto a task */
     { k: 'concept', sel: '.conceptfab', label: () => L('كونسبت', 'Concept'), cls: 'concept' },   /* v7.49: a new blank Concept drawing */
     { k: 'punch', sel: '.punchfab', label: el => (el && el.dataset.label) || L('البصمة', 'Punch'), cls: 'punch' },   /* 12 Nov (Ökoplan): punch in / out from anywhere */
-    { k: 'qrscan', sel: '.qrscanfab', label: () => L('امسح كود البصمة', 'Scan the QR'), cls: 'qrscan' },   /* 12 Nov (Ökoplan): attendance by QR */
+    { k: 'qrscan', sel: '.qrscanfab', label: () => L('امسح الكود', 'Scan a code'), cls: 'qrscan' },   /* 17 Nov: every code — attendance, project money, unlocking the computer */   /* 12 Nov (Ökoplan): attendance by QR */
     { k: 'notes', sel: '.notesfab', label: () => L('ملاحظاتي', 'My notes'), cls: 'notes' },   /* 18 Oct (Ökoplan): private sticky notes */
   ];
   const D = { root: null, open: false, sig: '' };
