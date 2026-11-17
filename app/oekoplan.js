@@ -5085,6 +5085,7 @@ html[data-theme="dark"] #oklock{background:#0d1719}
     status: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/>${[0, 1, 2].map(i => `<rect x="40" y="${38 + i * 36}" width="240" height="28" rx="10" fill="#fff"/><rect x="52" y="${48 + i * 36}" width="80" height="8" rx="4" fill="${K}" opacity=".18"/><rect x="${150}" y="${44 + i * 36}" width="56" height="16" rx="8" fill="${[G, '#f5b301', '#94a3b8'][i]}" opacity=".9"/><circle cx="262" cy="${52 + i * 36}" r="8" fill="${i === 1 ? '#f5b301' : G}"/><path d="M258 ${52 + i * 36}l3 3 6-6" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/>`).join('')}`),
     pmo: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/><rect x="38" y="38" width="96" height="94" rx="12" fill="#fff"/><rect x="48" y="50" width="56" height="8" rx="4" fill="${K}" opacity=".25"/>${[0, 1, 2].map(i => `<rect x="48" y="${68 + i * 20}" width="76" height="12" rx="6" fill="${[B, T, G][i]}" opacity=".85"/>`).join('')}<circle cx="215" cy="54" r="14" fill="${T}"/>${[170, 215, 260].map(x => `<circle cx="${x}" cy="114" r="12" fill="${B}" opacity=".85"/><path d="M215 68L${x} 102" stroke="${K}" stroke-opacity=".3" stroke-width="2"/>`).join('')}`),
     jd: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/><rect x="86" y="34" width="148" height="104" rx="12" fill="#fff"/><circle cx="114" cy="62" r="14" fill="${B}" opacity=".85"/><rect x="136" y="54" width="80" height="8" rx="4" fill="${K}" opacity=".3"/><rect x="136" y="68" width="56" height="6" rx="3" fill="${K}" opacity=".15"/>${[0, 1, 2].map(i => `<circle cx="106" cy="${94 + i * 14}" r="3" fill="${T}"/><rect x="116" y="${91 + i * 14}" width="${100 - i * 18}" height="6" rx="3" fill="${K}" opacity=".18"/>`).join('')}`),
+    move: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/><rect x="36" y="46" width="96" height="78" rx="12" fill="#fff"/><rect x="188" y="46" width="96" height="78" rx="12" fill="#fff"/><rect x="48" y="58" width="56" height="8" rx="4" fill="${K}" opacity=".25"/><rect x="200" y="58" width="56" height="8" rx="4" fill="${K}" opacity=".25"/><circle cx="84" cy="96" r="13" fill="${B}" opacity=".35"/><circle cx="236" cy="96" r="13" fill="${B}"/><path d="M140 85h40" stroke="${T}" stroke-width="4" stroke-linecap="round"/><path d="M170 76l11 9-11 9" fill="none" stroke="${T}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="128" y="104" width="64" height="22" rx="11" fill="${G}"/><text x="160" y="119" text-anchor="middle" font-family="Jost,sans-serif" font-size="11" font-weight="700" fill="#fff">20 → 30</text>`),
     design: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/>${[0, 1, 2, 3].map(i => `<rect x="${44 + i * 62}" y="70" width="50" height="30" rx="9" fill="${[G, B, T, '#94a3b8'][i]}" opacity="${i < 2 ? 1 : .55}"/>`).join('')}${[0, 1, 2].map(i => `<path d="M${94 + i * 62} 85h12" stroke="${K}" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/>`).join('')}<rect x="44" y="46" width="120" height="8" rx="4" fill="${K}" opacity=".2"/><rect x="44" y="114" width="232" height="8" rx="4" fill="${K}" opacity=".08"/><rect x="44" y="114" width="120" height="8" rx="4" fill="${T}"/>`),
   };
   const ITEMS = () => [
@@ -5092,7 +5093,7 @@ html[data-theme="dark"] #oklock{background:#0d1719}
       t: L('قائمة «إدارة المشروعات» الجديدة', 'The new «PMO» menu'),
       s: [L('«قائمة المشاريع»: كل المشاريع — مين Project Owner تكنيكال، ومين ماسك الفاينانس، ومين في الفريق.', '«Project List»: every project — the technical Project Owner, who handles finance, and who is on the team.'),
         L('«مشاريعي»: نفس التفاصيل للمشاريع بتاعتك بس.', '«My Projects»: the same detail for your own projects.'),
-        L('زرار «الـ Project Owner والفريق» يغيّر الـ Project Owner والفاينانس والفريق — وطلبات تعديل الفرق بتوصلك إنتي.', 'The «Project Owner & team» button changes the Project Owner, the finance and the team — team-change requests come to you.')] },
+        L('زرار «الـ Project Owner والفريق» يغيّر الـ Project Owner والفاينانس والفريق. حد شغال مع Project Owner تاني؟ بيروح طلب بمواعيد وهو يوافق — و«مستنيكي» فوق فيه طلبات مد المدة.', 'The «Project Owner & team» button changes the Project Owner, the finance and the team. Someone working with another Project Owner? A request with dates goes to him — and «Waiting for you» at the top holds the extension requests.')] },
     { id: 'jd', show: () => isPMO() || isAdmin(), art: 'jd', go: '#/okorgjd',
       t: L('الهيكل والوصف الوظيفي', 'Structure & job descriptions'),
       s: [L('افتح «الهيكل والوصف الوظيفي» من قائمة إدارة المشروعات.', 'Open «Structure & job descriptions» in the PMO menu.'),
@@ -5103,6 +5104,21 @@ html[data-theme="dark"] #oklock{background:#0d1719}
       s: [L('حالة كل مشروع بدوسة: شغّال · متوقف مؤقتًا · واقف · اتسلّم (ولو متوقف اكتب السبب).', 'Each project\'s state in one tap: Ongoing · On hold · Stopped · Delivered (write why when on hold).'),
         L('«مفيش تغيير ✓» لو المشروع زي ما هو.', '«Nothing changed ✓» when the project is as it was.'),
         L('تنقل ناس بين مشاريعك بنفسك (× أو «ضيف حد من مشاريعك»). حد جديد على مشاريعك؟ «اطلب تعديل في الفريق» — بيروح لرئيسة الـ PMO.', 'Move people between your own projects yourself (× or «Add someone from your projects»). Someone new to your projects? «Ask for a team change» — it goes to the Head of PMO.')] },
+    { id: 'moveown', show: () => isPO(), art: 'move', go: '#/okcheck',
+      t: L('انقل ناسك بين مشاريعك', 'Move your people between your projects'),
+      s: [L('في «تحديث مشاريعي»: «ضيف حد من مشاريعك» يحط حد شغال معاك في مشروع تاني من مشاريعك.', 'In «Update my projects»: «Add someone from your projects» puts someone who works with you on another of your projects.'),
+        L('× تشيله من مشروع (لو هو لسه على مشروع تاني من مشاريعك).', '× takes him off a project (while he stays on another of your projects).'),
+        L('هو والـ Project Owners اللي معاه بيتبلّغوا «فلان هيتنقل من كذا لكذا».', 'He and the Project Owners he works with are told «X moves from A to B».')] },
+    { id: 'loan', show: () => isPO(), art: 'move', go: '#/me',
+      t: L('حد عايز واحد من فريقك؟ إنت اللي بتوافق', 'Someone wants one of your people? You agree'),
+      s: [L('لما رئيسة الـ PMO تطلب حد شغال معاك لمشروع تاني، الطلب بيجيلك.', 'When the Head of PMO asks for someone who works with you, the request comes to you.'),
+        L('توافق وتحدد من يوم كذا لحد يوم كذا — أو ترفض بسبب.', 'Approve with the dates, from … until … — or decline with a reason.'),
+        L('المدة لما تخلص بيرجعلك لوحده. الـ Project Owner التاني لو عايز يمد بيطلب من رئيسة الـ PMO («مدّ» في «تحديث مشاريعي»).', 'When the dates end he comes back by himself. The other Project Owner asks the Head of PMO to extend («Extend» in «Update my projects»).')] },
+    { id: 'moved', show: () => !!me() && !isAdmin(), art: 'move', go: '#/me',
+      t: L('لو اتنقلت لمشروع تاني هتعرف على طول', 'If you move to another project you know at once'),
+      s: [L('بيوصلك إشعار: «من يوم كذا هتشتغل في مشروع كذا».', 'You get a notice: «From day … you work on project …».'),
+        L('وفيه مين الـ Project Owner اللي هتتابع معاه، ولحد إمتى.', 'With the Project Owner you follow up with, and until when.'),
+        L('الإشعارات بتوصل على الموبايل — فعّلها من الجرس فوق.', 'Notices reach your phone — turn them on from the bell at the top.')] },
     { id: 'money', show: () => finPO(), art: 'money', go: '#/okcheck',
       t: L('فلوس المشروع بتتفتح من موبايلك', 'Project money opens with your phone'),
       s: [L('على الكمبيوتر دوس «اعرض المبالغ» — هيظهر QR.', 'On the computer tap «Show amounts» — a QR shows.'),
@@ -5125,9 +5141,13 @@ html[data-theme="dark"] #oklock{background:#0d1719}
         L('اكتب الكود وكلمة السر الجديدة مرتين.', 'Type the code and the new password twice.')] },
   ];
   const mine = () => ITEMS().filter(x => { try { return x.show(); } catch (e) { return false; } });
+  const FIRST = ['pmo', 'jd', 'check', 'money', 'design', 'lock', 'mail'];   /* the first tour (17 Nov, before the moves) */
   const seenKey = () => 'ok.news.' + (me() || (S.session && S.session.id) || 'x');
-  const seen = () => { let v = ''; try { v = localStorage.getItem(seenKey()) || ''; } catch (e) { /* */ } const w = W(me()); return v === RELEASE || (w && w.okNewsSeen === RELEASE); };
-  const markSeen = () => { try { localStorage.setItem(seenKey(), RELEASE); } catch (e) { /* */ } const w = W(me()); if (w && !w._lite && w.okNewsSeen !== RELEASE) { try { Store.update('workers', w.id, { okNewsSeen: RELEASE }); } catch (e) { /* */ } } };
+  const asSet = v => (Array.isArray(v) ? v : v === RELEASE ? FIRST : []);
+  const seenIds = () => { let v = null; try { const r = localStorage.getItem(seenKey()); v = r && r[0] === '[' ? JSON.parse(r) : r; } catch (e) { /* */ } const w = W(me()); return new Set(asSet(v).concat(asSet(w && w.okNewsSeen))); };
+  const unseen = () => { const s0 = seenIds(); return mine().filter(x => !s0.has(x.id)); };
+  const seen = () => !unseen().length;
+  const markSeen = () => { const s0 = seenIds(); list0.forEach(x => s0.add(x.id)); const arr = Array.from(s0); try { localStorage.setItem(seenKey(), JSON.stringify(arr)); } catch (e) { /* */ } const w = W(me()); if (w && !w._lite) { try { Store.update('workers', w.id, { okNewsSeen: arr }); } catch (e) { /* */ } } };
   document.head.insertAdjacentHTML('beforeend', `<style>
 #oknews{position:fixed;inset:0;z-index:99980;background:rgba(10,20,26,.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px}
 #oknews .nb{width:100%;max-width:520px;background:var(--surface,#fff);border-radius:24px;box-shadow:0 24px 70px rgba(0,0,0,.25);overflow:hidden;color:var(--ink)}
@@ -5155,7 +5175,7 @@ html[data-theme="dark"] #oklock{background:#0d1719}
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
     if (asked || !S.session || !(S.loaded && S.loaded.projects) || document.getElementById('okpwgate') || document.getElementById('oklock') || document.getElementById('oknews') || document.querySelector('#modalroot .modal')) return;
     if (typeof needsAck === 'function' && needsAck()) return; if (typeof role === 'function' && role() === 'kiosk') return; if (S.route && ['okqr', 'okkey'].includes(S.route.view)) return;
-    if (seen()) { asked = true; return; } asked = true; setTimeout(() => { if (!document.getElementById('okpwgate') && !document.getElementById('oklock')) show(); }, 1200);
+    if (seen()) { asked = true; return; } asked = true; setTimeout(() => { if (!document.getElementById('okpwgate') && !document.getElementById('oklock')) show(unseen()); }, 1200);
   } catch (e) { /* ignore */ } });
   /* «What's new» in «My account» */
   if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.oknews = () => { setTimeout(() => { show(mine()); }, 30); return `<div class="empty"><b>${esc(L('الجديد في Ökoplan', 'New in Ökoplan'))}</b></div>`; };
