@@ -786,6 +786,7 @@ html[data-theme="dark"] .spcard .cov.okdev,html[data-theme="dark"] .sphead .cov.
     }
   };
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(paintCovers);
+  window.okLogoOf = p => { const d = devOf(p); return d ? (d[0] ? { src: logoSrc(d[0]) } : { name: d[1] }) : null; };
   const shrink = (src, max) => new Promise((res, rej) => { const im = new Image(); im.onload = () => { const k = Math.min(1, max / Math.max(im.width, im.height)); const c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', 0.8)); }; im.onerror = rej; im.src = src; });
   ACTIONS.oekoCover = id => {
     const p = byId('projects', id); if (!p || !(typeof stuCanEdit === 'function' && stuCanEdit())) return;
@@ -4374,4 +4375,175 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
     if (!(S.route && S.route.view === 'me') || !S.session) return; const w = meRec(); const v = document.getElementById('view'); if (!w || !v || v.querySelector('.okrec')) return;
     v.insertAdjacentHTML('beforeend', `<div class="card okrec" style="margin-top:12px"><div class="cardhead"><h3 style="margin:0">${esc(L('استرجاع كلمة السر', 'Password recovery'))}</h3><div class="grow"></div><button type="button" class="btn sm" data-action="okRecMail">${esc(w.personalEmail ? L('غيّر', 'Change') : L('ضيف إيميلك الشخصي', 'Add your personal email'))}</button></div><div class="small muted">${esc(L('الكود بيوصل على: ', 'The code goes to: '))}<span class="ltr">${esc(w.email || '—')}</span>${w.personalEmail ? ` · <span class="ltr">${esc(w.personalEmail)}</span>` : ''}</div></div>`);
   } catch (e) { /* ignore */ } });
+})();
+
+/* =====================================================================
+   Ökoplan — Projects & teams, for the Head of PMO (Mahmoud, 17 Nov 2026)
+   Rawan makes the offers and the contracts, puts the projects in and decides who runs them:
+   · one page with every live project of the office: its Project Owner, second Project Owner, the Client Financial
+     Reporting Responsible and the team — by project or by Project Owner, with search;
+   · «Edit» on a project (and the «Change Project Owner» button on the project page) opens one editor: the Project Owner's
+     own people from the organisation chart are offered as the default team, anyone else can be added or removed;
+   · every change is logged on the project (okTeamLog / okOwnerLog) and told to the people concerned — the person added or
+     removed, the Project Owners, and for someone from another team his own Project Owner, for information.
+   · the staff directory (name, title, department, manager — no pay, phones or personal data) comes from nf_ok_directory.
+   Seen by the CEO (admin) and the Head of PMO only.
+   ===================================================================== */
+(() => {
+  if (window.__OK_PMO__) return; window.__OK_PMO__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const me = () => (typeof stuMe === 'function' ? stuMe() : '') || (S.session && S.session.workerId) || '';
+  const myName = () => (S.session && S.session.name) || '';
+  const W = id => (id ? byId('workers', id) : null);
+  const nm = id => { const w = W(id); return (w && w.name) || ''; };
+  const act = w => !!w && !['inactive', 'left', 'suspended'].includes(w.status);
+  const live = () => list('projects').filter(p => p && p.status !== 'archived');
+  const uniq = a => Array.from(new Set(a.filter(Boolean)));
+  const owners = p => uniq([p.leadId, p.ownerId].concat(p.coOwnerIds || []));
+  const finId = p => (p && (p.financeId || p.leadId)) || '';
+  const isPMO = () => !!(window.okAccess && window.okAccess.isPMO && window.okAccess.isPMO());
+  const can = () => !!S.session && (isAdmin() || isPMO());
+  const ppl = () => list('workers').filter(act).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  const projOf = wid => live().filter(p => (p.team || []).includes(wid) || owners(p).includes(wid));
+  /* the Project Owner's own people: the ones under him on the organisation chart (two levels) */
+  const reportsOf = po => { if (!po) return []; const lv1 = ppl().filter(w => w.managerId === po && w.id !== po).map(w => w.id); const lv2 = ppl().filter(w => lv1.includes(w.managerId) && w.id !== po).map(w => w.id); return uniq(lv1.concat(lv2)); };
+  const homeOf = wid => { const w = W(wid); return w && w.managerId && W(w.managerId) ? w.managerId : ''; };
+
+  /* ---------- the staff directory (names and titles only) ---------- */
+  let dirAt = 0, dirBusy = false;
+  const loadDir = () => {
+    if (!can() || isAdmin() || dirBusy || !S.sb || typeof S.sb.rpc !== 'function' || Date.now() - dirAt < 10 * 60e3) return;
+    dirAt = Date.now(); dirBusy = true;
+    Promise.resolve(S.sb.rpc('nf_ok_directory')).then(r => { dirBusy = false; const a = r && Array.isArray(r.data) ? r.data : []; if (!(S.data && S.data.workers instanceof Map)) return; let ch = false;
+      a.forEach(x => { if (x && x.id && !S.data.workers.has(x.id)) { S.data.workers.set(x.id, x); ch = true; } }); if (ch) setTimeout(() => { try { rerender(); } catch (e) { /* */ } }, 0); }).catch(() => { dirBusy = false; });
+  };
+
+  /* ---------- notices ---------- */
+  const tell = (ids, title, body, pid) => { ids = uniq(ids || []).filter(id => id !== me()); if (!ids.length) return;
+    ids.forEach(id => { try { Store.save('tasks', { id: 'okn_' + uid(), title, desc: body || '', assigneeId: id, deptId: null, status: 'open', kind: 'notice', source: 'okpmo', priority: 'normal', createdBy: (S.session && S.session.id) || null, createdByName: myName(), createdAt: nowISO(), link: '#/projects/' + pid }, { silent: true }); } catch (e) { /* best effort */ } });
+    try { if (typeof pushSend === 'function') { const r = pushSend(ids.concat(ids.map(i => 'w:' + i)), title, body || '', '#/projects/' + pid, 'ok-pmo'); if (r && r.catch) r.catch(() => { }); } } catch (e) { /* best effort */ } };
+
+  /* ---------- look ---------- */
+  document.head.insertAdjacentHTML('beforeend', `<style>
+.okpmo{max-width:1180px;margin:0 auto;--kb:#50b1e7}.okpmo .hd{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin:4px 2px 14px}.okpmo .hd h1{margin:0;font-size:28px;font-weight:600;letter-spacing:-.4px}.okpmo .hd p{margin:2px 0 0;color:var(--muted);font-size:14px}.okpmo .grow{flex:1}
+.okpmo .kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}.okpmo .kp>div{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px}.okpmo .kp b{display:block;font-size:24px;font-weight:600;color:var(--ink)}.okpmo .kp small{color:var(--muted);font-size:12.5px}
+.okpmo .tb{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}.okpmo .tb input{flex:1;min-width:200px;height:40px;border:1px solid var(--line);border-radius:12px;padding:0 12px;background:var(--surface);color:var(--ink);font:inherit}
+.okpmo .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface)}.okpmo .seg button{all:unset;cursor:pointer;padding:6px 14px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--muted)}.okpmo .seg button.on{background:var(--kb);color:#fff}
+.okpmo .gr{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}.okpmo .pc{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:9px;min-width:0}
+.okpmo .pc .t{display:flex;gap:10px;align-items:center}.okpmo .pc .lg{flex:none;width:44px;height:44px;border-radius:12px;background:#e9eef0;display:grid;place-items:center;overflow:hidden}.okpmo .pc .lg img{max-width:78%;max-height:78%;object-fit:contain;filter:grayscale(1);opacity:.85;mix-blend-mode:multiply}.okpmo .pc:hover .lg img{filter:none;opacity:1}.okpmo .pc .lg b{font-size:12px;letter-spacing:.06em;color:#5c6b72;text-transform:uppercase}.okpmo .pc .t a{font-weight:600;font-size:15.5px;color:var(--ink);text-decoration:none;overflow-wrap:anywhere}.okpmo .pc .t small{display:block;color:var(--muted);font-size:12px;font-weight:400}
+.okpmo .kv{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:13px}.okpmo .kv span{color:var(--muted)}.okpmo .kv b{font-weight:600;overflow-wrap:anywhere}
+.okpmo .ch,.okpe .ch{display:flex;flex-wrap:wrap;gap:5px}.okpmo .c,.okpe .c{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12.5px;background:var(--surface-2);color:var(--ink)}.okpmo .c.o,.okpe .c.o{border-color:var(--kb,#50b1e7);color:#2b8fc7;font-weight:600;background:#eef8fd}
+.okpmo .pill{display:inline-flex;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:600;background:var(--warn-soft);color:var(--warn-ink);white-space:nowrap}
+.okpmo .ft{display:flex;gap:8px;margin-top:auto;padding-top:4px}.okpmo .po{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px 16px;margin-bottom:12px}.okpmo .po h3{margin:0 0 2px;font-size:16.5px}.okpmo .po .sub{color:var(--muted);font-size:12.5px;margin-bottom:8px}
+.okpmo .row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px;flex-wrap:wrap}.okpmo .row:first-of-type{border-top:0}.okpmo .row .grow{min-width:140px}.okpmo .row a{color:var(--ink);text-decoration:none}.okpmo .muted{color:var(--muted)}
+.okpe .g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.okpe label{display:block;font-size:12.5px;font-weight:600;margin:0 0 5px}.okpe select,.okpe input{width:100%;box-sizing:border-box}
+.okpe h4{margin:16px 0 8px;font-size:14px;display:flex;align-items:center;gap:8px}.okpe h4 .grow{flex:1}.okpe .c button{all:unset;cursor:pointer;font-size:14px;line-height:1;color:var(--muted);padding:0 2px}.okpe .c button:hover{color:var(--crit-ink)}
+.okpe .c.s{border-style:dashed;cursor:pointer;background:transparent}.okpe .c.s:hover{border-color:var(--kb,#50b1e7);color:#2b8fc7}.okpe .add{display:flex;gap:8px}.okpe .add select{flex:1}.okpe .hint{color:var(--muted);font-size:12.5px;margin:4px 0 0}
+</style>`);
+
+  /* ---------- the page ---------- */
+  const ui = { q: '', by: 'proj', f: 'all' };
+  const match = p => { const q = ui.q.trim().toLowerCase(); if (!q) return true; return [p.name, p.code, p.client].concat(owners(p).map(nm), [nm(finId(p))], (p.team || []).map(nm)).some(x => String(x || '').toLowerCase().includes(q)); };
+  const shown = () => live().filter(p => (ui.f === 'all' || (ui.f === 'hold' ? p.okState === 'hold' : p.okState !== 'hold')) && match(p)).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  const chips = (ids, max, cls) => { const a = ids.slice(0, max); return a.map(id => `<span class="c ${cls || ''}">${esc(nm(id) || '—')}</span>`).join('') + (ids.length > max ? `<span class="c">+${ids.length - max}</span>` : ''); };
+  const card = p => { const os = owners(p); const team = (p.team || []).filter(id => !os.includes(id)); const f = finId(p);
+    const lg = window.okLogoOf ? window.okLogoOf(p) : null;
+    return `<div class="pc"><div class="t"><span class="lg">${lg && lg.src ? `<img src="${esc(lg.src)}" alt="" loading="lazy">` : `<b>${esc(lg && lg.name ? lg.name.slice(0, 3) : String(p.name || '?').slice(0, 2))}</b>`}</span><div class="grow"><a href="#/projects/${esc(p.id)}">${esc(p.name || '—')}</a><small>${esc([p.code, p.client].filter(Boolean).join(' · '))}</small></div>${p.okState === 'hold' ? `<span class="pill">On hold</span>` : ''}</div>
+      <div class="kv"><span>Project Owner</span><b>${esc(os.map(nm).filter(Boolean).join(' & ') || '—')}</b>${f && !os.includes(f) ? `<span>${esc(L('المالي', 'Finance'))}</span><b>${esc(nm(f) || '—')}</b>` : ''}</div>
+      <div><div class="muted" style="font-size:12px;margin-bottom:4px">${esc(L('الفريق', 'Team'))} · ${team.length}</div><div class="ch">${team.length ? chips(team, 6) : `<span class="muted" style="font-size:12.5px">${esc(L('لسه مفيش حد', 'Nobody yet'))}</span>`}</div></div>
+      <div class="ft"><button type="button" class="btn sm p" data-okpmo="edit:${esc(p.id)}">${icon('edit')}<span>${esc(L('الـ Project Owner والفريق', 'Project Owner & team'))}</span></button></div></div>`; };
+  const byPO = ps => { const m = new Map(); ps.forEach(p => { const os = owners(p); (os.length ? os : ['']).forEach(o => { if (!m.has(o)) m.set(o, []); m.get(o).push(p); }); });
+    return Array.from(m.keys()).sort((a, b) => String(nm(a) || 'zz').localeCompare(String(nm(b) || 'zz'))).map(o => { const list2 = m.get(o); const folks = uniq([].concat(...list2.map(p => p.team || []))).filter(id => id !== o); const w = W(o);
+      return `<div class="po"><h3>${esc(nm(o) || L('من غير Project Owner', 'No Project Owner'))}</h3><div class="sub">${esc((w && w.title) || '')}${w && w.title ? ' · ' : ''}${esc(L(`${list2.length} مشروع · ${folks.length} شخص`, `${list2.length} projects · ${folks.length} people`))}</div>
+        ${list2.map(p => { const t = (p.team || []).filter(id => !owners(p).includes(id)); return `<div class="row"><a class="grow" href="#/projects/${esc(p.id)}"><b>${esc(p.name || '—')}</b></a>${p.okState === 'hold' ? `<span class="pill">On hold</span>` : ''}<span class="muted">${esc(L(`فريق ${t.length}`, `Team ${t.length}`))}</span><button type="button" class="btn sm ghost" data-okpmo="edit:${esc(p.id)}">${icon('edit')}<span>${esc(L('عدّل', 'Edit'))}</span></button></div>`; }).join('')}</div>`; }).join(''); };
+  const page = () => {
+    if (!can()) return `<div class="empty"><b>${esc(L('الصفحة دي لرئيسة الـ PMO والمدير التنفيذي', 'This page is for the Head of PMO and the CEO'))}</b></div>`;
+    loadDir();
+    const all = live(); const ps = shown(); const pos = uniq([].concat(...all.map(owners))); const onP = new Set([].concat(...all.map(p => (p.team || []).concat(owners(p)))));
+    const free = ppl().filter(w => !onP.has(w.id) && !w.noPunch);
+    return `<div class="okpmo"><div class="hd"><div class="grow"><h1>${esc(L('المشاريع والفرق', 'Projects & teams'))}</h1><p>${esc(L('مين الـ Project Owner على كل مشروع، ومين شغال معاه.', 'Who is the Project Owner on each project, and who works with him.'))}</p></div>
+        <a class="btn" href="#/okcrm">${icon('quote')}<span>CRM</span></a></div>
+      <div class="kp"><div><b>${all.length}</b><small>${esc(L('مشروع شغال', 'Live projects'))}</small></div><div><b>${pos.length}</b><small>Project Owners</small></div><div><b>${onP.size}</b><small>${esc(L('شخص على المشاريع', 'People on projects'))}</small></div><div title="${esc(free.map(w => w.name).join('، '))}"><b>${free.length}</b><small>${esc(L('مش على أي مشروع', 'On no project'))}</small></div></div>
+      <div class="tb"><input type="search" data-okpmoq value="${esc(ui.q)}" placeholder="${esc(L('دوّري باسم مشروع أو شخص…', 'Search a project or a person…'))}">
+        <div class="seg">${[['proj', L('بالمشروع', 'By project')], ['po', L('بالـ Project Owner', 'By Project Owner')]].map(([k, t]) => `<button type="button" data-okpmo="by:${k}" class="${ui.by === k ? 'on' : ''}">${esc(t)}</button>`).join('')}</div>
+        <div class="seg">${[['all', L('الكل', 'All')], ['active', L('شغال', 'Active')], ['hold', 'On hold']].map(([k, t]) => `<button type="button" data-okpmo="f:${k}" class="${ui.f === k ? 'on' : ''}">${esc(t)}</button>`).join('')}</div></div>
+      ${!ps.length ? `<div class="empty"><b>${esc(L('مفيش مشاريع بالبحث ده', 'No project matches'))}</b></div>` : ui.by === 'po' ? byPO(ps) : `<div class="gr">${ps.map(card).join('')}</div>`}</div>`;
+  };
+
+  /* ---------- the editor ---------- */
+  const editor = pid => {
+    const p = byId('projects', pid); if (!p || !can()) return; loadDir();
+    const old = owners(p); const oldTeam = uniq(p.team || []);
+    const ed = { team: new Set(oldTeam) };   /* a Project Owner who is replaced stays on the team until he is removed */
+    const opts = (v, blank) => `${blank ? `<option value="">—</option>` : ''}${ppl().map(w => `<option value="${esc(w.id)}" ${w.id === v ? 'selected' : ''}>${esc(w.name)}${w.title ? ' — ' + esc(w.title) : ''}</option>`).join('')}`;
+    const body = `<div class="okpe"><div class="g3"><div><label>Project Owner</label><select name="lead" required>${opts(p.leadId || p.ownerId || '', true)}</select></div>
+        <div><label>${esc(L('Project Owner تاني (اختياري)', 'Second Project Owner (optional)'))}</label><select name="co">${opts((p.coOwnerIds || [])[0] || '', true)}</select></div>
+        <div><label>${esc(L('المسؤول عن المتابعة المالية مع الـ Client', 'Client Financial Reporting Responsible'))}</label><select name="fin">${opts(p.financeId || '', true)}</select></div></div>
+      <h4><span data-okpe="tc"></span><span class="grow"></span></h4><div class="ch" data-okpe="team"></div>
+      <h4><span data-okpe="sh"></span><span class="grow"></span><button type="button" class="btn sm ghost" data-okpe-all>${icon('plus')}<span>${esc(L('ضيفهم كلهم', 'Add them all'))}</span></button></h4><div class="ch" data-okpe="sug"></div><p class="hint">${esc(L('دول الناس اللي تحت الـ Project Owner في الهيكل — الفريق الافتراضي بتاعه.', 'These are the people under the Project Owner on the organisation chart — his default team.'))}</p>
+      <h4>${esc(L('ضيفي حد تاني', 'Add someone else'))}</h4><div class="add"><select data-okpe="pick"></select><button type="button" class="btn sm" data-okpe-add>${icon('plus')}<span>${esc(L('ضيف', 'Add'))}</span></button></div><p class="hint">${esc(L('لو من تيم Project Owner تاني، هيوصله إشعار للعلم.', 'If he is on another Project Owner\'s team, that Project Owner is told, for information.'))}</p>
+      <h4>${esc(L('ملاحظة (اختياري)', 'Note (optional)'))}</h4><input name="why" maxlength="200" dir="auto" placeholder="${esc(L('ليه التغيير؟', 'Why the change?'))}"></div>`;
+    let f0 = null;
+    const val = n => ((f0 && f0.querySelector(`[name=${n}]`)) || {}).value || '';
+    const draw = () => { if (!f0) return; const lead = val('lead'), co = val('co'); const os = uniq([lead, co]);
+      const t = Array.from(ed.team).filter(id => !os.includes(id)).sort((a, b) => String(nm(a)).localeCompare(String(nm(b))));
+      f0.querySelector('[data-okpe=tc]').textContent = L(`الفريق · ${t.length}`, `Team · ${t.length}`);
+      f0.querySelector('[data-okpe=team]').innerHTML = os.map(id => `<span class="c o">${esc(nm(id))} · PO</span>`).join('') + t.map(id => { const n = projOf(id).filter(x => x.id !== pid).length; return `<span class="c" title="${esc(L(`على ${n} مشروع تاني`, `On ${n} other projects`))}">${esc(nm(id) || '—')}<button type="button" data-okpe-rm="${esc(id)}" aria-label="${esc(L('شيل', 'Remove'))}">×</button></span>`; }).join('');
+      const sug = uniq(reportsOf(lead).concat(reportsOf(co))).filter(id => !ed.team.has(id) && !os.includes(id));
+      f0.querySelector('[data-okpe=sh]').textContent = lead ? L(`ناس ${nm(lead)}`, `${nm(lead)}'s people`) + (co ? ` & ${nm(co)}` : '') : L('ناس الـ Project Owner', 'The Project Owner\'s people');
+      f0.querySelector('[data-okpe=sug]').innerHTML = sug.length ? sug.map(id => `<span class="c s" data-okpe-sug="${esc(id)}">+ ${esc(nm(id))}</span>`).join('') : `<span class="muted" style="font-size:12.5px">${esc(L('كلهم على الفريق', 'All of them are on the team'))}</span>`;
+      const allBtn = f0.querySelector('[data-okpe-all]'); if (allBtn) allBtn.style.display = sug.length > 1 ? '' : 'none';
+      const rest = ppl().filter(w => !ed.team.has(w.id) && !os.includes(w.id)); const groups = {}; rest.forEach(w => { const h = homeOf(w.id); const k = h ? nm(h) : L('من غير مدير مباشر', 'No direct manager'); (groups[k] = groups[k] || []).push(w); });
+      f0.querySelector('[data-okpe=pick]').innerHTML = `<option value="">${esc(L('اختاري…', 'Choose…'))}</option>` + Object.keys(groups).sort().map(k => `<optgroup label="${esc(k)}">${groups[k].map(w => `<option value="${esc(w.id)}">${esc(w.name)}${w.title ? ' — ' + esc(w.title) : ''} · ${projOf(w.id).length}</option>`).join('')}</optgroup>`).join('');
+    };
+    openModal({ title: L(`الـ Project Owner والفريق — ${p.name}`, `Project Owner & team — ${p.name}`), wide: true, submitLabel: L('احفظ', 'Save'), body,
+      onOpen: f => { f0 = f; draw();
+        ['lead', 'co'].forEach(n => { const s = f.querySelector(`[name=${n}]`); if (s) s.addEventListener('change', () => { if (n === 'lead') { const fs = f.querySelector('[name=fin]'); if (fs && !fs.value) fs.value = s.value; } draw(); }); });
+        f.addEventListener('click', ev => { const rm = ev.target.closest('[data-okpe-rm]'), sg = ev.target.closest('[data-okpe-sug]'), all = ev.target.closest('[data-okpe-all]'), add = ev.target.closest('[data-okpe-add]');
+          if (rm) { ev.preventDefault(); ed.team.delete(rm.dataset.okpeRm); draw(); }
+          else if (sg) { ev.preventDefault(); ed.team.add(sg.dataset.okpeSug); draw(); }
+          else if (all) { ev.preventDefault(); f.querySelectorAll('[data-okpe-sug]').forEach(x => ed.team.add(x.dataset.okpeSug)); draw(); }
+          else if (add) { ev.preventDefault(); const v = f.querySelector('[data-okpe=pick]').value; if (!v) { toast(L('اختاري الشخص', 'Choose the person'), 'err'); return; } ed.team.add(v); draw(); } }); },
+      onSubmit: async f => {
+        const lead = val('lead'), co0 = val('co'), fin = val('fin') || lead, why = val('why').trim();
+        if (!lead) { toast(L('اختاري الـ Project Owner', 'Choose the Project Owner'), 'err'); return false; }
+        const co = co0 && co0 !== lead ? [co0] : []; const now = [lead].concat(co);
+        const team = uniq(now.concat(Array.from(ed.team)));
+        const added = team.filter(id => !oldTeam.includes(id) && !now.includes(id)); const removed = oldTeam.filter(id => !team.includes(id));
+        const poCh = old.slice().sort().join() !== now.slice().sort().join(); const finCh = finId(p) !== fin;
+        if (!poCh && !finCh && !added.length && !removed.length) { toast(L('مفيش تغيير', 'Nothing changed')); return; }
+        const patch = { leadId: lead, ownerId: lead, coOwnerIds: co, leadName: now.map(nm).join(' & '), financeId: fin, financeName: nm(fin), team, updatedAt: nowISO(),
+          okTeamLog: (p.okTeamLog || []).concat([{ at: nowISO(), by: myName(), byId: me(), from: old, to: now, fin, added, removed, why }]).slice(-60) };
+        if (poCh || finCh) patch.okOwnerLog = (p.okOwnerLog || []).concat([{ at: nowISO(), by: myName(), byId: me(), from: old, to: now, fin, why: why || L('من صفحة المشاريع والفرق', 'From Projects & teams') }]);
+        await Store.update('projects', pid, patch);
+        const pn = p.name || ''; const who = now.map(nm).join(' & ');
+        if (poCh) tell(uniq(old.concat(now, [fin])), L(`${pn}: الـ Project Owner بقى ${who}`, `${pn}: the Project Owner is now ${who}`), `${myName()}${why ? ' — ' + why : ''}`, pid);
+        else if (finCh) tell([fin, finId(p)].concat(now), L(`${pn}: المتابعة المالية مع الـ Client بقت مع ${nm(fin)}`, `${pn}: Client financial reporting is now with ${nm(fin)}`), myName(), pid);
+        if (added.length) tell(added, L(`اتضفت على مشروع ${pn}`, `You were added to ${pn}`), L(`الـ Project Owner: ${who}`, `Project Owner: ${who}`), pid);
+        if (removed.length) tell(removed, L(`مبقتش على مشروع ${pn}`, `You are no longer on ${pn}`), `${myName()}${why ? ' — ' + why : ''}`, pid);
+        if ((added.length || removed.length) && !poCh) tell(now, L(`${pn}: الفريق اتعدّل`, `${pn}: the team was updated`), [added.length ? '+ ' + added.map(nm).join('، ') : '', removed.length ? '− ' + removed.map(nm).join('، ') : ''].filter(Boolean).join(' · ') + ` (${myName()})`, pid);
+        const homes = {}; added.forEach(id => { const h = homeOf(id); if (h && !now.includes(h) && h !== id) (homes[h] = homes[h] || []).push(nm(id)); });
+        Object.keys(homes).forEach(h => tell([h], L(`للعلم: ${homes[h].join('، ')} على مشروع ${pn}`, `For your information: ${homes[h].join(', ')} on ${pn}`), L(`ضافتهم ${myName()} مع ${who}.`, `Added by ${myName()} with ${who}.`), pid));
+        toast(L('اتحفظ ✓', 'Saved ✓')); if (typeof rerender === 'function') rerender(); } });
+  };
+  window.okPmoEdit = editor;
+
+  document.addEventListener('click', ev => {
+    const t = ev.target.closest && ev.target.closest('[data-okpmo]'); if (!t) return; ev.preventDefault(); const [k, v] = t.dataset.okpmo.split(/:(.*)/s);
+    if (k === 'edit') return editor(v); if (k === 'by') ui.by = v; if (k === 'f') ui.f = v; if (typeof rerender === 'function') rerender();
+  });
+  document.addEventListener('input', ev => { const t = ev.target; if (!t || !t.matches || !t.matches('[data-okpmoq]')) return; ui.q = t.value; clearTimeout(window.__okpmoT); window.__okpmoT = setTimeout(() => { if (typeof rerender === 'function') rerender(); setTimeout(() => { const i = document.querySelector('[data-okpmoq]'); if (i) { i.focus(); const n = i.value.length; try { i.setSelectionRange(n, n); } catch (e) { /* */ } } }, 0); }, 220); });
+  /* the project page's «Change Project Owner» opens the same editor (Project Owner + team together) */
+  document.addEventListener('click', ev => { const t = ev.target.closest && ev.target.closest('[data-okown^="reown:"]'); if (!t || !can()) return; ev.preventDefault(); ev.stopImmediatePropagation(); editor(t.dataset.okown.split(':')[1]); }, true);
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    if (!can()) return; loadDir(); document.querySelectorAll('[data-okown^="reown:"] span').forEach(s => { const tx = L('الـ Project Owner والفريق', 'Project Owner & team'); if (s.textContent !== tx) s.textContent = tx; });
+  } catch (e) { /* ignore */ } });
+
+  /* ---------- the menu ---------- */
+  if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.okpmo = () => page();
+  if (typeof VIEW_TITLES === 'object') try { Object.defineProperty(VIEW_TITLES, 'okpmo', { configurable: true, enumerable: true, get: () => L('المشاريع والفرق', 'Projects & teams') }); } catch (e) { VIEW_TITLES.okpmo = 'المشاريع والفرق'; }
+  if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okpmo')) { const i = NAV.findIndex(n => n && n.id === 'okcrm'); NAV.splice(i >= 0 ? i + 1 : Math.min(2, NAV.length), 0, { id: 'okpmo', get label() { return L('المشاريع والفرق', 'Projects & teams'); }, get short() { return L('الفرق', 'Teams'); }, icon: 'layers' }); }
+  if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okpmo')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okpmo']); });
+  if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okpmo') return can(); return base.apply(this, arguments); })(canSee);
 })();
