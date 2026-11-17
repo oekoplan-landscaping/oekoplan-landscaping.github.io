@@ -4426,6 +4426,21 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
   };
 
   window.okDirReload = () => { dirAt = 0; loadDir(); };
+  /* 17 Nov 2026 — a person joins or leaves a project: he is told, and so are the Project Owners he works with
+     («X moves from A to B» when the same person joined another project in the last 2 hours). */
+  const recentJoin = (wid, notPid) => { let best = null; live().forEach(q => { if (q.id === notPid || !(q.team || []).includes(wid)) return; (q.okTeamLog || []).forEach(e => { if ((e.added || []).includes(wid) && e.byId === me() && Date.now() - new Date(e.at).getTime() < 2 * 3600e3 && (!best || e.at > best.at)) best = { p: q, at: e.at }; }); }); return best && best.p; };
+  window.okMoveTell = (kind, wid, p) => { try {
+    const who = nm(wid) || L('موظف', 'Someone'); const others = live().filter(q => q.id !== p.id && (q.team || []).includes(wid));
+    const home = (W(wid) || {}).managerId; const extra = home && W(home) ? [home] : [];
+    if (kind === 'add') {
+      const pos = uniq([].concat(...others.map(owners)).concat(extra)).filter(id => id !== wid && !owners(p).includes(id));
+      if (pos.length) tell(pos, L(`${who} انضم لمشروع ${p.name}`, `${who} joins ${p.name}`), L(`وهو معاك على: ${others.map(q => q.name).join('، ') || '—'} · ${myName()}`, `He also works with you on: ${others.map(q => q.name).join(', ') || '—'} · ${myName()}`), p.id);
+    } else {
+      const to = recentJoin(wid, p.id);
+      const pos = uniq(owners(p).concat(to ? owners(to) : [], extra)).filter(id => id !== wid);
+      tell([wid], to ? L(`اتنقلت من ${p.name} لـ ${to.name}`, `You move from ${p.name} to ${to.name}`) : L(`مبقتش على مشروع ${p.name}`, `You are no longer on ${p.name}`), myName(), (to || p).id);
+      if (pos.length) tell(pos, to ? L(`${who} هيتنقل من ${p.name} لـ ${to.name}`, `${who} moves from ${p.name} to ${to.name}`) : L(`${who} خرج من مشروع ${p.name}`, `${who} leaves ${p.name}`), myName(), (to || p).id);
+    } } catch (e) { /* best effort */ } };
   /* ---------- notices ---------- */
   const tell = (ids, title, body, pid) => { ids = uniq(ids || []).filter(id => id !== me()); if (!ids.length) return;
     ids.forEach(id => { try { Store.save('tasks', { id: 'okn_' + uid(), title, desc: body || '', assigneeId: id, deptId: null, status: 'open', kind: 'notice', source: 'okpmo', priority: 'normal', createdBy: (S.session && S.session.id) || null, createdByName: myName(), createdAt: nowISO(), link: '#/projects/' + pid }, { silent: true }); } catch (e) { /* best effort */ } });
@@ -4542,10 +4557,8 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
         if (poCh) tell(uniq(old.concat(now, [fin])), L(`${pn}: الـ Project Owner بقى ${who}`, `${pn}: the Project Owner is now ${who}`), `${myName()}${why ? ' — ' + why : ''}`, pid);
         else if (finCh) tell([fin, finId(p)].concat(now), L(`${pn}: المتابعة المالية مع الـ Client بقت مع ${nm(fin)}`, `${pn}: Client financial reporting is now with ${nm(fin)}`), myName(), pid);
         if (added.length) tell(added, L(`اتضفت على مشروع ${pn}`, `You were added to ${pn}`), L(`الـ Project Owner: ${who}`, `Project Owner: ${who}`), pid);
-        if (removed.length) tell(removed, L(`مبقتش على مشروع ${pn}`, `You are no longer on ${pn}`), `${myName()}${why ? ' — ' + why : ''}`, pid);
+        const p2 = byId('projects', pid) || Object.assign({}, p, patch); added.forEach(w => window.okMoveTell('add', w, p2)); removed.forEach(w => window.okMoveTell('rm', w, p2));
         if ((added.length || removed.length) && !poCh) tell(now, L(`${pn}: الفريق اتعدّل`, `${pn}: the team was updated`), [added.length ? '+ ' + added.map(nm).join('، ') : '', removed.length ? '− ' + removed.map(nm).join('، ') : ''].filter(Boolean).join(' · ') + ` (${myName()})`, pid);
-        const homes = {}; added.forEach(id => { const h = homeOf(id); if (h && !now.includes(h) && h !== id) (homes[h] = homes[h] || []).push(nm(id)); });
-        Object.keys(homes).forEach(h => tell([h], L(`للعلم: ${homes[h].join('، ')} على مشروع ${pn}`, `For your information: ${homes[h].join(', ')} on ${pn}`), L(`ضافتهم ${myName()} مع ${who}.`, `Added by ${myName()} with ${who}.`), pid));
         toast(L('اتحفظ ✓', 'Saved ✓')); if (typeof rerender === 'function') rerender(); } });
   };
   window.okPmoEdit = editor;
@@ -4892,7 +4905,7 @@ html[data-theme="dark"] #oklock{background:#0d1719}
     if (k === 'team') { askTeam(p); return; }
     if (k === 'rm') { if (!onOther(p, x)) { askTeam(p); return; } if (!(await confirmDlg(L(`تشيل ${nm(x)} من مشروع ${p.name}؟ هيفضل على مشاريعك التانية.`, `Take ${nm(x)} off ${p.name}? He stays on your other projects.`), L('شيله', 'Remove'), false))) return;
       await save(p, { team: (p.team || []).filter(id => id !== x), okTeamLog: (p.okTeamLog || []).concat([{ at: nowISO(), by: myName(), byId: me(), added: [], removed: [x], why: 'Moved between his projects' }]).slice(-60) });
-      tell([x], L(`مبقتش على مشروع ${p.name}`, `You are no longer on ${p.name}`), myName(), p.id); toast(L('اتشال', 'Removed')); return; }
+      if (window.okMoveTell) window.okMoveTell('rm', x, byId('projects', p.id) || p); toast(L('اتشال', 'Removed')); return; }
   });
   const askTeam = p => {   /* the Head of PMO alone puts people on projects: the Project Owner asks her */
       const pid = p.id; const pmo = uniq(list('workers').filter(w => act(w) && /head of pmo/i.test(w.title || '')).map(w => w.id).concat((S.settings && S.settings.okDealViewers) || []));
@@ -4909,7 +4922,8 @@ html[data-theme="dark"] #oklock{background:#0d1719}
     const sel = ev.target; if (!sel || !sel.matches || !sel.matches('[data-okckadd]')) return; const pid = sel.dataset.okckadd, wid = sel.value; const p = byId('projects', pid); if (!p || !wid || !owners(p).includes(me())) return;
     if (!pool().includes(wid)) { toast(L('ده مش على مشاريعك — اطلبه من رئيسة الـ PMO', 'Not on your projects — ask the Head of PMO'), 'err'); return; }
     await save(p, { team: uniq((p.team || []).concat([wid])), okTeamLog: (p.okTeamLog || []).concat([{ at: nowISO(), by: myName(), byId: me(), added: [wid], removed: [], why: 'Moved between his projects' }]).slice(-60) });
-    tell([wid], L(`اتضفت على مشروع ${p.name}`, `You were added to ${p.name}`), L(`الـ Project Owner: ${owners(p).map(nm).join(' & ')}`, `Project Owner: ${owners(p).map(nm).join(' & ')}`), pid); toast(L('اتضاف ✓', 'Added ✓'));
+    tell([wid], L(`اتضفت على مشروع ${p.name}`, `You were added to ${p.name}`), L(`الـ Project Owner: ${owners(p).map(nm).join(' & ')}`, `Project Owner: ${owners(p).map(nm).join(' & ')}`), pid);
+    if (window.okMoveTell) window.okMoveTell('add', wid, byId('projects', pid) || p); toast(L('اتضاف ✓', 'Added ✓'));
   });
   /* his home pages: a line when projects wait for the weekly update */
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
