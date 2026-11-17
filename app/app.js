@@ -316,7 +316,7 @@ function persistLocal() {
 function loadLocal() {
   try { const raw = localStorage.getItem(LOCAL_KEY); if (!raw) return false; const j = JSON.parse(raw); if (!j || !j.data) return false; COLS.forEach(c => { S.data[c] = new Map((j.data[c] || []).map(x => [x.id, x])); }); S.settings = mergeSettings(j.settings || null); return true; } catch (e) { console.warn('local load failed', e); return false; }
 }
-const LOCAL_ADMIN = { id: 'local-admin', name: 'محمود', username: 'admin', role: 'admin', deptIds: [], active: true, salt: 'demo', passHash: 'e1d00a3e4b286c9f4dfa550746c683cf41374bca539719f7062c9fe2d3d4b767' }; // كلمة السر: admin
+const LOCAL_ADMIN = { id: 'local-admin', name: 'د. طارق صبحي', username: 'admin', role: 'admin', deptIds: [], active: true, salt: 'demo', passHash: 'e1d00a3e4b286c9f4dfa550746c683cf41374bca539719f7062c9fe2d3d4b767' }; // كلمة السر: admin
 function ensureLocalAdmin() { if (!S.data.staff.has(LOCAL_ADMIN.id)) S.data.staff.set(LOCAL_ADMIN.id, Object.assign({ createdAt: nowISO() }, LOCAL_ADMIN)); else { const a = S.data.staff.get(LOCAL_ADMIN.id); if (a && a.name === 'المدير') a.name = 'محمود'; } }
 function clearLocal() { try { localStorage.removeItem(LOCAL_KEY); localStorage.removeItem('nf.staff'); } catch (e) { /* ignore */ } }
 
@@ -343,7 +343,7 @@ function sessFromPerson(p) { return p.kind === 'worker' ? sessFromWorker(p.rec) 
 function resolveSession() {
   if (S.mode === 'memory') { S.session = { id: 'demo', name: 'محمود (وضع تجريبي)', role: 'admin', deptIds: [] }; return; }
   if (S.mode === 'local') { const rid = lsGet('nf.staff'); const p = rid ? personById(rid) : null; S.session = p ? sessFromPerson(p) : sessFromStaff(S.data.staff.get(LOCAL_ADMIN.id) || LOCAL_ADMIN); return; }
-  if (S.me && S.me.isOwner) { S.session = { id: 'owner', name: S.me.name || 'محمود', role: 'admin', deptIds: [], owner: true, avatar: S.me.avatarUrl }; return; }
+  if (S.me && S.me.isOwner) { S.session = { id: 'owner', name: S.me.name || 'د. طارق صبحي', role: 'admin', deptIds: [], owner: true, avatar: S.me.avatarUrl }; return; }
   if (S.me && S.me.id) { const p = loginPeople().find(x => x.rec.accountId === S.me.id); if (p) { S.session = sessFromPerson(p); return; } }
   const rid = lsGet('nf.staff');
   if (rid) { const p = personById(rid); if (p) { S.session = sessFromPerson(p); return; } }
@@ -673,7 +673,7 @@ document.addEventListener('submit', async ev => {
   } finally { btn.disabled = false; }
 });
 ACTIONS.viewer = () => { S.session = { id: 'viewer', name: 'مشاهد', role: 'viewer', deptIds: [] }; render(true); };
-ACTIONS.firstAdmin = () => { if (loginPeople().length) return; S.session = { id: 'setup', name: S.me?.name || 'محمود', role: 'admin', deptIds: [] }; render(true); go('settings'); };
+ACTIONS.firstAdmin = () => { if (loginPeople().length) return; S.session = { id: 'setup', name: S.me?.name || 'د. طارق صبحي', role: 'admin', deptIds: [] }; render(true); go('settings'); };
 const hasDemo = () => ['orders', 'clients', 'materials', 'workers'].some(x => list(x).some(y => y.demo));
 ACTIONS.changePassword = () => {
   const st = S.session; if (!st || !st.staff) return;
@@ -7700,7 +7700,7 @@ function demoV45(D, d) {
   D.workers.forEach(w => { if (w.role !== 'admin') w.managerId = mgrFor(w); });
   if (st('ds1')) st('ds1').managerId = 'dv3'; if (st('ds5')) st('ds5').managerId = 'dv3'; if (st('ds2')) st('ds2').managerId = 'role:admin'; if (st('ds3')) st('ds3').managerId = 'role:admin';
   /* ---------- settings side-effects (office + factory + fleet) ---------- */
-  const sset = S.settings; sset.ownerName = 'محمود';
+  const sset = S.settings; sset.ownerName = 'د. طارق صبحي';
   if (!sset.office || sset.office.lat == null) sset.office = { address: 'التجمع الخامس — شارع التسعين — مكتب Ninety', lat: 30.0217, lng: 31.4693, radius: 150 };
   sset.geo = Object.assign({}, sset.geo || {}, sset.geo && sset.geo.lat != null ? {} : { lat: 30.1145, lng: 31.3711, radius: 250 });
   sset.fleet = Object.assign({ fuelPrice: 17.25, maintPerKm: 1.5, consumption: 12, alertKm: 500, alertDays: 14 }, sset.fleet || {}, { octane: Object.assign({ account: 'NINETY-FLEET-0142' }, (sset.fleet || {}).octane || {}, { transfers: [{ id: 'oct_t1', date: d(-40), amount: 15000, ref: 'INSTA-77120', byName: 'أحمد سمير — مسؤول الحسابات (تجريبي)' }, { id: 'oct_t2', date: d(-12), amount: 10000, ref: 'INSTA-78455', byName: 'أحمد سمير — مسؤول الحسابات (تجريبي)' }] }) });
@@ -12294,7 +12294,7 @@ function nameEnChip() {
   document.querySelectorAll('#root .userchip .avatar, #root .me-avatar .avatar').forEach(a => { if (a.querySelector('img')) return; const t = txt(a); if (t) t.nodeValue = en.charAt(0).toUpperCase(); });
 }
 /* خانة «الاسم بالإنجليزي» في فورم الموظف وفورم الإداري */
-const nameEnHint = n => (typeof nfTranslit === 'function' && n && /[\u0600-\u06FF]/.test(n)) ? nfTranslit(n) : 'Mahmoud Fawzy';
+const nameEnHint = n => (typeof nfTranslit === 'function' && n && /[\u0600-\u06FF]/.test(n)) ? nfTranslit(n) : 'Tarek Sobhy';
 const NAME_EN_FIELD = x => field('الاسم بالإنجليزي (يظهر في النسخة الإنجليزية — تلقائي لو فاضي)', inp('nameEn', (x && x.nameEn) || '', `class="ltr" style="text-align:left" placeholder="${esc(nameEnHint(x && x.name))}"`));
 const nameEnInject = (html, x) => { const i = html.indexOf('name="name"'); if (i < 0) return html; const j = html.indexOf('</div>', i); return j < 0 ? html : html.slice(0, j + 6) + NAME_EN_FIELD(x) + html.slice(j + 6); };
 if (typeof workerFormBase === 'function') workerFormBase = (base => function (w) { return nameEnInject(base.apply(this, arguments), w); })(workerFormBase);
@@ -30927,7 +30927,7 @@ if (typeof STU_ON !== 'undefined' && STU_ON) (() => {
     revisions: ['التعديلات', 'Revisions'], qc: ['المراجعة النهائية', 'Final QC'], delivered: ['التسليم', 'Delivered'], closed: ['الإغلاق', 'Closing'],
   };
   const stepL = k => { const s = STEPS[k] || [k, k]; return isEn() ? s[1] : s[0]; };
-  const CEO = () => (isEn() ? 'Mahmoud Fawzy' : 'محمود فوزي');
+  const CEO = () => { const n = String((S.settings && S.settings.ownerName) || '').trim(); return isEn() ? ((S.settings && S.settings.ownerNameEn) || 'Dr. Tarek Sobhy') : (n && !/محمود/.test(n) ? n : 'د. طارق صبحي'); };
   const nameOf = (id, e) => { if (id === 'ceo') return CEO(); if (id === 'client') return (e && e.who && (typeof nfDevOk !== 'function' || nfDevOk()) ? e.who : '') || (isEn() ? 'Client' : 'العميل'); const p = typeof stuPerson === 'function' ? stuPerson(id) : null; const n = (p && p.name && p.name !== '—') ? p.name : ((byId('workers', id) || {}).name || '—'); return enNm(id, n); };
   /* v6.30: in English the names are written in English too (the saved English name, else a transliteration) */
   const enNm = (id, n) => { if (!isEn() || !/[\u0600-\u06FF]/.test(n || '')) return n; const w = byId('workers', id); return (w && typeof nameEnOf === 'function' && nameEnOf(w)) || (typeof nfTranslit === 'function' ? nfTranslit(n) : n) || n; };
@@ -31266,7 +31266,7 @@ if (typeof STU_ON !== 'undefined' && STU_ON) (() => {
   const fmtSize = b => { b = +b || 0; return b > 1048576 ? (b / 1048576).toFixed(1) + ' MB' : b > 1024 ? Math.round(b / 1024) + ' KB' : b + ' B'; };
   const COLORS = ['#06cf9c', '#53bdeb', '#ff8b8b', '#d4a5ff', '#ffbc38', '#7ed6c1', '#ff9ec7', '#a7c957', '#f79e5f', '#8fb4ff'];
   const col = id => COLORS[[...String(id || '?')].reduce((a, c) => a + c.charCodeAt(0), 0) % COLORS.length];
-  const CEO = () => L('محمود فوزي', 'Mahmoud Fawzy');
+  const CEO = () => { const n = String((S.settings && S.settings.ownerName) || '').trim(); return L(n && !/محمود/.test(n) ? n : 'د. طارق صبحي', (S.settings && S.settings.ownerNameEn) || 'Dr. Tarek Sobhy'); };
   const enName = w => { const n = w.name || ''; if (!en() || !/[\u0600-\u06FF]/.test(n)) return n; return (typeof nameEnOf === 'function' && nameEnOf(w)) || (typeof nfTranslit === 'function' ? nfTranslit(n) : n) || n; };
   const person = id => {
     id = String(id || '').replace(/^w:/, '');
@@ -31360,7 +31360,7 @@ if (typeof STU_ON !== 'undefined' && STU_ON) (() => {
     let h = esc(String(t || ''));
     h = h.replace(/```([\s\S]+?)```/g, '<code>$1</code>').replace(/(^|[\s(])\*([^*\n]+)\*(?=$|[\s).,!?])/g, '$1<b>$2</b>').replace(/(^|[\s(])_([^_\n]+)_(?=$|[\s).,!?])/g, '$1<i>$2</i>').replace(/(^|[\s(])~([^~\n]+)~(?=$|[\s).,!?])/g, '$1<s>$2</s>');
     h = h.replace(/\bhttps?:\/\/[^\s<>"']+/g, u => `<a href="${u}" target="_blank" rel="noopener" class="pclink">${u}</a>`);
-    (men || []).forEach(id => { const w = byId('workers', id); const ns = [...new Set([person(id).name, w && w.name, w && typeof nameEnOf === 'function' && nameEnOf(w), w && typeof nfTranslit === 'function' && nfTranslit(w.name), id === 'owner' ? 'محمود فوزي' : '', id === 'owner' ? 'Mahmoud Fawzy' : ''].filter(x => x && x !== '—'))]; ns.forEach(n0 => { const n = esc(n0); h = h.split('@' + n).join(`<span class="pcmen" data-action="pcWho" data-arg="${esc(id)}">@${n}</span>`); }); });
+    (men || []).forEach(id => { const w = byId('workers', id); const ns = [...new Set([person(id).name, w && w.name, w && typeof nameEnOf === 'function' && nameEnOf(w), w && typeof nfTranslit === 'function' && nfTranslit(w.name), id === 'owner' ? 'د. طارق صبحي' : '', id === 'owner' ? 'Dr. Tarek Sobhy' : '', id === 'owner' ? 'Tarek' : ''].filter(x => x && x !== '—'))]; ns.forEach(n0 => { const n = esc(n0); h = h.split('@' + n).join(`<span class="pcmen" data-action="pcWho" data-arg="${esc(id)}">@${n}</span>`); }); });
     return h.replace(/\n/g, '<br>');
   }
   const KIND_L = { img: () => '📷 ' + L('صورة', 'Photo'), video: () => '🎥 ' + L('فيديو', 'Video'), voice: () => '🎤 ' + L('رسالة صوتية', 'Voice message'), file: () => '📄 ' + L('ملف', 'File'), poll: () => '📊 ' + L('تصويت', 'Poll'), call: () => '📞 ' + L('مكالمة جماعية', 'Group call') };
@@ -32574,7 +32574,7 @@ if (typeof STU_ON !== 'undefined' && STU_ON) (() => {
     const n = byId('stuhome', 'notice'); const edit = canEditHome() ? `<button type="button" class="btn xs ghost" data-action="shNotice">${icon('edit')}${n && n.t ? L('تعديل', 'Edit') : L('اكتب كلمة', 'Write a note')}</button>` : '';
     if (!n || !n.t) return canEditHome() ? `<div class="shcard shnote empty"><div class="shh"><h3>${L('كلمة من الإدارة', 'A word from management')}</h3><div class="grow"></div>${edit}</div></div>` : '';
     const who = typeof stuPerson === 'function' ? stuPerson(n.by) : null;
-    return `<div class="shcard shnote"><div class="shh"><h3>${L('كلمة من الإدارة', 'A word from management')}</h3><div class="grow"></div>${edit}</div><p class="notr" dir="auto">${esc(n.t)}</p><small>${n.by === 'owner' || n.by === 'ceo' ? L('محمود فوزي', 'Mahmoud Fawzy') : esc((who && who.name) || '')} · ${esc(fmtDate(String(n.at || '').slice(0, 10)))}</small></div>`;
+    return `<div class="shcard shnote"><div class="shh"><h3>${L('كلمة من الإدارة', 'A word from management')}</h3><div class="grow"></div>${edit}</div><p class="notr" dir="auto">${esc(n.t)}</p><small>${n.by === 'owner' || n.by === 'ceo' ? L(String((S.settings && S.settings.ownerName) || '').replace(/^.*محمود.*$/, '') || 'د. طارق صبحي', (S.settings && S.settings.ownerNameEn) || 'Dr. Tarek Sobhy') : esc((who && who.name) || '')} · ${esc(fmtDate(String(n.at || '').slice(0, 10)))}</small></div>`;
   }
   function homeHTML(oldDash) {
     const h = new Date().getHours(); const greet = h < 12 ? L('صباح الخير', 'Good morning') : L('مساء الخير', 'Good evening'); const first = String((S.session && S.session.name) || '').trim().split(/\s+/)[0];
@@ -52350,7 +52350,7 @@ ${facts ? 'بيانات الموظف (ليه هو بس):\n' + facts + '\n' : ''}
   const aiOn = () => typeof aiAvailable === 'function' && aiAvailable() && typeof aiJson === 'function';
   const coOf = t => ({ factory: 'Ninety Fabrication', studio: 'Ökoplan Landscaping', construction: 'Ninety Construction', oekoplan: 'Ökoplan Landscaping' })[t._co || A.sysKey()] || '';
   function ctx(t) {
-    const th = (t.thread || []).filter(m => m.from !== 'sys').slice(-6).map(m => `${m.from === 'owner' ? 'محمود' : m.from === 'bot' ? 'البوت' : (t.byName || 'الموظف')}: ${clean(m.text || '').slice(0, 400)}${(m.files || []).filter(f => f && f.text).map(f => ` [${f.kind === 'video' ? 'فيديو' : 'صوت'}: ${clean(f.text).slice(0, 300)}]`).join('')}${(m.files || []).some(f => f && (!f.kind || f.kind === 'image')) ? ' [صورة]' : ''}`).join('\n');
+    const th = (t.thread || []).filter(m => m.from !== 'sys').slice(-6).map(m => `${m.from === 'owner' ? 'الدعم الفني' : m.from === 'bot' ? 'البوت' : (t.byName || 'الموظف')}: ${clean(m.text || '').slice(0, 400)}${(m.files || []).filter(f => f && f.text).map(f => ` [${f.kind === 'video' ? 'فيديو' : 'صوت'}: ${clean(f.text).slice(0, 300)}]`).join('')}${(m.files || []).some(f => f && (!f.kind || f.kind === 'image')) ? ' [صورة]' : ''}`).join('\n');
     return `الموظف: ${t.byName || ''} — الوظيفة: ${jobOf(t) || '—'} — القسم: ${t.dept || '—'} — مديره: ${mgrOf(t) || '—'} — الدور في السيستم: ${t.roleName || t.role || '—'} — السيستم: ${A.sysName(t._co || A.sysKey())}
 المشكلة: ${clean(t.subj || '')}${t.sum ? '\nالملخص: ' + clean(t.sum) : ''}${t.report ? '\nملخص الفيديو/الصوت:\n' + clean(t.report) : ''}
 النوع: ${t.kind || '—'} · الصفحة: ${(t.page && t.page.title) || '—'} · الجهاز: ${A.devTxt(t.dev) || '—'}

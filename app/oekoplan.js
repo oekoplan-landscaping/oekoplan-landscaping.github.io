@@ -84,7 +84,7 @@ html.apple[data-theme="light"] .side .userchip{background:#eef4f2!important}
 @media (max-width:760px){.smhero .smmark,.smmark{height:36px!important;width:36px!important;border-radius:10px!important;top:14px!important;inset-inline-start:14px!important}}
 /* no avatar badge in the showreel hero (it sat on the logo's corner on phones) — the person is in the side bar */
 .smhero .smav{display:none!important}
-/* the live-attendance dock lives in the side bar on computers (Mahmoud, 13 Oct), above the footer line */
+/* the live-attendance dock lives in the side bar on computers (13 Oct), above the footer line */
 @media (min-width:1001px){.topbar .tb-actions .nq-dock{position:static!important;transform:none!important;box-shadow:none!important;padding:4px 6px!important;border-radius:12px!important;gap:6px!important;flex-wrap:nowrap!important;max-width:none!important;font-size:12px;margin-inline-end:4px;order:-1}
   .topbar .tb-actions .nq-dock button{padding:5px 9px;border-radius:9px;white-space:nowrap}
   .topbar .tb-actions .nq-dock .nq-st{padding:0 4px}}
@@ -633,7 +633,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
   ACTIONS.oekoImportTeam = async () => { if (!(await confirmDlg(L('إضافة فريق أوكوبلان (57 شخص) من ملف الفريق؟ اللي موجود بنفس الموبايل مش هيتكرر.', 'Add the Ökoplan team (57 people) from the team file? People already there (same mobile) are skipped.'), L('إضافة', 'Add')))) return; await importTeam(); };
   window.oekoImportTeam = importTeam;
 
-  /* ---------------------------------------------------------------- the 2026 projects list (Mahmoud, 13 Oct — «Projects List 2026.xlsx», sheet «Ongoing Projects») */
+  /* ---------------------------------------------------------------- the 2026 projects list (13 Oct — «Projects List 2026.xlsx», sheet «Ongoing Projects») */
   /* [name, latest stage completed ('' = none), [responsible...], 'On Hold' | ''] — from «Projects List 2026», 13 Oct 2026 */
   const PROJECTS_2026 = [["El-Narges Extension Compound", "dd", ["Gina Seila"], ""], ["Boardwalk", "dd", ["Gina Seila"], ""], ["Peerage Residence", "schem", ["Gina Seila"], ""], ["South Of Gardenia Compound", "concept", ["Gina Seila"], ""], ["AJWAN", "concept", ["Gina Seila"], ""], ["LUMIA", "concept", ["Gina Seila"], "On Hold"], ["The Rift", "concept", ["Gina Seila"], ""], ["Rivers", "schem", ["Gina Seila"], ""], ["Raville", "schem", ["Gina Seila"], ""], ["Boho Hotel And Beach", "concept", ["Gina Seila"], ""], ["Valore", "concept", ["Gina Seila"], ""], ["IL MONTE GALALA Phase 2", "schem", ["Noura Saeed"], ""], ["One Ninety", "tender", ["Noura Saeed"], ""], ["KSP", "schem", ["Noura Saeed"], ""], ["IL BOSCO", "concept", ["Samah Wafa"], ""], ["Felo Resort", "dd", ["Samah Wafa"], "On Hold"], ["STAFF HOUSE", "tender", ["Samah Wafa"], ""], ["STEI8HT RESIDENTIAL", "schem", ["Samah Wafa"], ""], ["STEI8HT COMMERCIAL", "schem", ["Samah Wafa"], ""], ["SWAN LAKE PARCEL 5", "concept", ["Samah Wafa", "Asmaa Hassan"], ""], ["MEDIAN", "schem", ["Samah Wafa"], ""], ["Villa Mr. Othman", "concept", ["Samah Wafa"], ""], ["Fouka-Bay Phase 4", "tender", ["Samah Wafa"], ""], ["D-Bay", "concept", ["Asmaa Hassan"], ""], ["Palm Hills New Cairo", "tender", ["Asmaa Hassan"], ""], ["Elsabaa Mixed Use", "schem", ["Asmaa Hassan", "Dalia Hassan"], ""], ["Azha", "schem", ["Asmaa Hassan"], ""], ["Garden City Hurghada", "concept", ["Asmaa Hassan"], ""], ["Beta Egypt", "concept", ["Asmaa Hassan"], ""], ["Naia West", "dd", ["Asmaa Hassan"], ""], ["Nest", "concept", ["Asmaa Hassan"], "On Hold"], ["Bloomfields Phase 2", "tender", ["Rana Essam"], ""], ["Bloomfields Phase 1", "tender", ["Rana Essam"], ""], ["AVELIN /MASS", "schem", ["Rana Essam"], ""], ["El-Qamzy Eastshire", "tender", ["Maria Fayez"], ""], ["Creek Town", "schem", ["Maria Fayez"], ""], ["Mangroovy", "dd", ["Maria Fayez"], ""], ["Masaya", "concept", ["Maria Fayez"], ""], ["Boutique Hotel", "dd", ["Maria Fayez"], "On Hold"], ["Seazen", "tender", ["Patricia Edwar"], ""], ["Naia Bay", "tender", ["Patricia Edwar"], ""], ["Skywalk", "tender", ["Youstina Ghaly"], ""], ["Sharks Bay", "dd", ["Youstina Ghaly"], "On Hold"], ["Skywalk Oasis", "", ["Youstina Ghaly"], ""], ["AL-ZOHRIYA GARDEN", "concept", ["Youstina Ghaly"], ""], ["Salt", "concept", ["Aya Yasser"], ""], ["The Marq", "concept", ["Aya Yasser"], ""], ["GIZA ZOO", "dd", ["Salam Al Baik"], ""], ["YELLOW", "concept", ["Salam Al Baik"], ""], ["El MARABET", "concept", ["Nada TagEldien"], ""], ["EVORA / ASTER", "schem", ["Nada TagEldien"], ""], ["BETA", "concept", ["Nada TagEldien"], ""], ["EL MOSTAKBAL CITY", "tender", ["Haidy Alaa"], ""], ["SOLARE", "schem", ["Haidy Alaa"], ""], ["Masa Libiya", "tender", ["Haidy Alaa"], ""], ["Regent Hotel - Jeddah", "concept", ["Haidy Ehab"], ""], ["Zoya- North coast", "schem", ["Haidy Ehab"], ""], ["Raville 77", "concept", ["Haidy Ehab"], ""], ["Estates club house - Sodic", "concept", ["Haidy Ehab"], ""], ["El-marabet - Street", "concept", ["Haidy Ehab"], ""], ["El-marabet - roundabout", "concept", ["Haidy Ehab"], ""], ["Cornish el mokattam", "schem", ["Haidy Ehab"], ""], ["Mostakbal city", "concept", ["Haidy Ehab"], ""], ["Mesca Residence", "tender", ["Haidy Ehab"], ""], ["City Stars", "concept", ["Haidy Ehab"], ""], ["Benghazi - Libya", "concept", ["Haidy Ehab"], ""], ["Masa hotel - Tarablous", "concept", ["Haidy Ehab"], ""], ["Paradise - Ras Sedr phase 5", "dd", ["Haidy Ehab"], ""], ["Ever Roundabout", "concept", ["Haidy Ehab"], ""], ["ACA Roundabouts", "concept", ["Haidy Ehab"], ""], ["LMD roundabout", "concept", ["Haidy Ehab"], ""], ["Icity", "concept", ["Haidy Ehab"], ""]];
 
@@ -1021,7 +1021,7 @@ html[data-theme="dark"] .okn{background:var(--surface-2)}
 ;(function(){try{setInterval(function(){try{if(innerWidth<1001)return;var d=document.getElementById('nq-dock'),a=document.querySelector('.topbar .tb-actions');if(d&&a&&d.parentElement!==a)a.insertBefore(d,a.firstChild)}catch(e){}},700)}catch(e){}})();
 
 /* =====================================================================
-   Ökoplan — project state lights + personal order (Mahmoud, 15 Oct):
+   Ökoplan — project state lights + personal order (15 Oct):
    · every project card / page carries a state light: Active = green glow, On hold = amber, Stopped = red, Delivered = quiet grey.
      The state is set from the project page (managers, the team lead, the project owner); without one it is derived
      (blocked → on hold, delivered / closed → delivered, else active).
@@ -1124,7 +1124,7 @@ html[data-theme="dark"] .okpst{background:rgba(5,14,22,.82)}
 })();
 
 /* =====================================================================
-   Ökoplan (Mahmoud, 15 Oct): the projects list layout is his to choose — a list (one under the other), two or three side by side.
+   Ökoplan (15 Oct): the projects list layout is his to choose — a list (one under the other), two or three side by side.
    A small switch above the list; the choice is kept on the device (ok.pcols). «Auto» = the engine's own fit.
    ===================================================================== */
 (() => {
@@ -1132,7 +1132,7 @@ html[data-theme="dark"] .okpst{background:rgba(5,14,22,.82)}
   const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
   const L = (a, b) => (en() ? b : a);
   const KEY = 'ok.pcols'; let cols = ''; try { cols = localStorage.getItem(KEY) || ''; } catch (e) { cols = ''; }
-  /* no choice yet: on a phone three side by side (Mahmoud), on a computer the engine's own fit */
+  /* no choice yet: on a phone three side by side, on a computer the engine's own fit */
   const eff = () => cols || (innerWidth <= 760 ? '3' : '');
   document.head.insertAdjacentHTML('beforeend', `<style>
 .okcols{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:999px;background:var(--surface-2);margin-inline-end:8px}
@@ -1178,7 +1178,7 @@ html[data-theme="dark"] .okpst{background:rgba(5,14,22,.82)}
 })();
 
 /* =====================================================================
-   Ökoplan (Mahmoud, 15 Oct): in English, no Arabic on the screen. The engine shows some labels in both languages
+   Ökoplan (15 Oct): in English, no Arabic on the screen. The engine shows some labels in both languages
    («Design Development · تطوير التصميم», the stage steps) — in English mode the Arabic half is dropped.
    People's own text (names, notes) is left as written.
    ===================================================================== */
@@ -1205,7 +1205,7 @@ html[data-theme="dark"] .okpst{background:rgba(5,14,22,.82)}
 })();
 
 /* =====================================================================
-   Ökoplan — the consultancy pipeline, end to end (Mahmoud, 15 Oct, «ابدأ»):
+   Ökoplan — the consultancy pipeline, end to end (15 Oct, «ابدأ»):
    A) Enquiries (#/enquiries): Lead → Brief review (Go / No-Go) → Proposal → Negotiation → Won (becomes a project) / Lost.
       Seen by the owner, managers and the people in settings.okEnqViewers (server: nf_enq_vis). No money anywhere.
    B) On every project, under the stage steps, the «Project pipeline» card:
@@ -1448,9 +1448,9 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
 })();
 
 /* =====================================================================
-   Ökoplan — Pipeline editor (Mahmoud, 15 Oct): the office changes its own pipeline — add / remove / rename / reorder stages and
+   Ökoplan — Pipeline editor (15 Oct): the office changes its own pipeline — add / remove / rename / reorder stages and
    their steps, the setup checklist and the close-out checklist — from one page (#/okpipeedit), no code. For the owner and the
-   managers (Dr. Tarek, Mahmoud, Rawan) until the way of working settles. Saved in settings (okPipeline · okSetupItems · okCloseItems);
+   managers (Dr. Tarek, Rawan) until the way of working settles. Saved in settings (okPipeline · okSetupItems · okCloseItems);
    every project reads the live version. A stage that still has projects in it cannot be deleted. «Reset» brings the Ökoplan default back.
    ===================================================================== */
 (() => {
@@ -1546,7 +1546,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
 })();
 
 /* =====================================================================
-   Ökoplan — Smart layer (Mahmoud, 15 Oct «ابدأ في كله»): the system watches the office instead of people remembering.
+   Ökoplan — Smart layer (15 Oct «ابدأ في كله»): the system watches the office instead of people remembering.
    1 alerts (stalled projects · overdue gates · client waiting · enquiry follow-up)  2 weekly digest (server, Sunday)  3 workload per
    Project Owner + least-loaded suggestion  4 delay-risk prediction per project (🟠/🔴 before it is late)  5 issued deliverables →
    client-submission events automatically  6 assistant (🤖) over the office data  7 smart gate checklist  8 deliverables schedule +
@@ -1809,7 +1809,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
 })();
 
 /* =====================================================================
-   Ökoplan — Digital twin, phase 1 (Mahmoud, 15 Oct): the system remembers how the office works and how each person uses it.
+   Ökoplan — Digital twin, phase 1 (15 Oct): the system remembers how the office works and how each person uses it.
    · Event log → nf_events (RPC nf_ev_log, batched): page opened + time on it · action tapped · form opened / saved / abandoned ·
      record saved. Usage data is for easing the interface only — never a performance score; each person can switch it off.
    · Page #/oklearn «ما تعلّمه السيستم / What the system learned»: operations patterns, interface patterns, suggestions with evidence
@@ -1912,7 +1912,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
 })();
 
 /* =====================================================================
-   Ökoplan — Digital twin, phases 2–5 (Mahmoud, 15 Oct «ابدأ بكل المراحل»):
+   Ökoplan — Digital twin, phases 2–5 (15 Oct «ابدأ بكل المراحل»):
    · Rules engine (phase 3): an accepted suggestion becomes a rule that runs by itself — stage_tasks (open these tasks when a project
      enters a stage) · auto_schedule (deliverables schedule for every new project) · auto_assign (new project → least-loaded owner) ·
      remind_client (N days without a client answer) · escalate_stale (task open N days → Project Owner) · deadline_guard (client
@@ -2075,7 +2075,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
 })();
 
 /* =====================================================================
-   Ökoplan — Digital twin · project, task & timeline management (Mahmoud, 15 Oct «ابدأ»):
+   Ökoplan — Digital twin · project, task & timeline management (15 Oct «ابدأ»):
    · Project timeline (Gantt) on the project page: planned vs actual per stage, deliverables and tasks on the line, today marker.
      First plan saved as the BASELINE; later changes are re-plans with a reason (client / internal / scope) — that is what the office
      learns from. Stage dates editable by the owner / manager.
@@ -2253,7 +2253,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
   window.okTime = { plan, autoPlan, actual, drift, critical, accuracy, dayPlan, balance, loads };
 })();
 
-/* Ökoplan — menu names in English by meaning, not word for word (Mahmoud, 16 Oct) */
+/* Ökoplan — menu names in English by meaning, not word for word (16 Oct) */
 (() => { if (typeof OEKO_I18N !== 'object') return; Object.assign(OEKO_I18N, { 'المشاريع ومراحلها': 'Projects', 'المشاريع والمهام': 'Project boards', 'لوحة المهام': 'Project boards', 'لوحة التشغيل': 'Deliverables board', 'معرض المشاريع': 'Projects gallery', 'المعرض': 'Gallery', 'فريق المكتب': 'Team', 'التقييم ربع السنوي': 'Appraisals', 'عروض الأسعار والدفعات': 'Quotations & payments', 'المهام والتحديثات': 'Tasks & updates', 'الأجهزة عن بُعد': 'Remote computers', 'عن بُعد': 'Remote', 'تعديل البايب لاين': 'Pipeline editor', 'البايب لاين': 'Pipeline', 'الحضور اليومي': 'Attendance', 'الجزاءات والسلف': 'Penalties & advances', 'الرواتب': 'Payroll', 'مواقع البصمة (المكتب والمشاريع)': 'Punch locations', 'لوحة الحسابات': 'Accounts board', 'مشتريات المكتب': 'Office purchases', 'تكلفة المشاريع': 'Project costs', 'الهيكل التنظيمي': 'Org chart', 'سجل النشاط': 'Activity log', 'اللائحة الداخلية': 'Internal regulations', 'عن المكتب': 'About the office', 'المبيعات': 'Business development', 'تطوير الأعمال': 'Business development', 'الذكاء': 'AI', 'الفرص والعروض': 'Enquiries & proposals', 'كونسبت درووينج': 'Concept drawing', 'المحادثات': 'Chats', 'الاجتماعات': 'Meetings', 'البريد': 'Email', 'المساعد الذكي': 'AI assistant', 'العملاء': 'Clients', 'الطلبات': 'Requests', 'المصروفات': 'Expenses', 'الاشتراكات': 'Subscriptions', 'التقارير': 'Reports', 'الإعدادات': 'Settings', 'الدعم الفني': 'Support', 'الرئيسية': 'Home' }); })();
 
 /* v-site (16 Oct 2026): the engine grew its own AI layer (stusmart / nflearn / nfrules / nfuicheck / nfaiset / nftimeline).
@@ -2265,7 +2265,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
 })();
 
 /* =====================================================================
-   __OK_WEB__ — «الموقع» (Website): the public website's content, managed from the system (16 Oct 2026 — Mahmoud)
+   __OK_WEB__ — «الموقع» (Website): the public website's content, managed from the system (16 Oct 2026)
    Its own module, independent of the Projects gallery: col `website` —
      site          one doc: hero, about, vision / mission / values, the four numbers, contact
      svc           one doc: the seven stages + the eight specialisms
@@ -2574,7 +2574,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
 document.head.insertAdjacentHTML('beforeend', '<style id="ok-ngt">#nav .ngh .ngt{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.2;word-break:normal}#nav .ngh .ngc{flex:none;min-width:22px;max-width:44px;padding:0 7px}</style>');
 
 /* =====================================================================
-   18 Oct 2026 (Mahmoud: «the notes under the + button — exactly like Microsoft Sticky Notes, with full screen»)
+   18 Oct 2026 («the notes under the + button — exactly like Microsoft Sticky Notes, with full screen»)
    Private sticky notes: a notes list + each note is its own floating window (drag, resize, full screen) that stays over
    the app, with a coloured title bar (+ new · … colours · ✕) and a formatting bar (bold, italic, underline, strike, list,
    picture). Everything saves as you type. Table public.nf_notes (RLS: only the owner). Opened from the + dial («My notes»).
@@ -2757,7 +2757,7 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
 })();
 
 /* =====================================================================
-   12 Nov 2026 (Mahmoud): attendance by QR code.
+   12 Nov 2026: attendance by QR code.
    · «Punch station» (#/okqr, admin / manager / HR): the office computer shows a code that changes every 40 s.
    · The person opens the app on the phone → + → «Scan the QR» → camera → the code is checked on the server (oeko-qr)
      → the punch is recorded like any other (method 'qr', station in the record).
@@ -2803,9 +2803,9 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
   let scan = null;
   function stopScan() { if (!scan) return; try { scan.stream.getTracks().forEach(t => t.stop()); } catch (e) { /* ignore */ } cancelAnimationFrame(scan.raf); scan = null; }
   ACTIONS.okQrScan = async () => {
-    const w = me(); if (!w) return; if (w.noPunch) { toast(L('دورك مش محتاج بصمة', 'Your role needs no punch')); return; }
+    const w = me(); if (!w) return; /* everyone scans: the attendance code, or the key that opens his own computer (OKK) */
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toast(L('الكاميرا مش متاحة هنا — افتح التطبيق من الموبايل', 'No camera here — open the app on the phone'), 'err'); return; }
-    openModal({ title: L('امسح كود البصمة', 'Scan the attendance code'), sticky: true, footer: `<button type="button" class="btn" data-action="closemodal">${esc(L('إلغاء', 'Cancel'))}</button>`,
+    openModal({ title: L('امسح الكود', 'Scan the code'), sticky: true, footer: `<button type="button" class="btn" data-action="closemodal">${esc(L('إلغاء', 'Cancel'))}</button>`,
       body: `<div class="okqr-scan"><video id="okqr-v" autoplay muted playsinline></video><div class="okqr-frame"></div><div class="okqr-hint" id="okqr-hint">${esc(L('وجّه الكاميرا على الكود اللي على شاشة الكمبيوتر', 'Point the camera at the code on the computer screen'))}</div></div>` });
     const v = document.getElementById('okqr-v'); const hint = document.getElementById('okqr-hint');
     try {
@@ -2818,7 +2818,9 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
         try { let text = '';
           if (det) { const codes = await det.detect(v); if (codes && codes[0]) text = codes[0].rawValue || ''; }
           else { cv.width = v.videoWidth; cv.height = v.videoHeight; cx.drawImage(v, 0, 0); const img = cx.getImageData(0, 0, cv.width, cv.height); const r = window.jsQR && window.jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' }); if (r && r.data) text = r.data; }
-          if (text && /^OKQ\./.test(text)) { stopScan(); hint.textContent = L('بيتأكد من الكود…', 'Checking the code…'); await punchWith(text, w); }
+          if (text && /OKK\.[0-9a-f-]{36}\.[0-9a-f]{32,}/.test(text)) { stopScan(); closeModal(); if (window.okKeyApprove) window.okKeyApprove(text); }
+          else if (text && /^OKQ\./.test(text) && w.noPunch) { hint.textContent = L('دورك مش محتاج بصمة', 'Your role needs no punch'); }
+          else if (text && /^OKQ\./.test(text)) { stopScan(); hint.textContent = L('بيتأكد من الكود…', 'Checking the code…'); await punchWith(text, w); }
           else if (text && /NQ1\.[A-Za-z0-9_-]+\.[iobpe]\.\d+\.[0-9a-f]{12}/.test(text)) { /* the engine's own computer code (Check in / out / break on the person's computer) */ stopScan(); closeModal(); try { sessionStorage.setItem('nq.pending', JSON.stringify({ c: text, at: Date.now() })); } catch (e) { } rerender(); }
           else if (text) { hint.textContent = L('ده مش كود بصمة أوكوبلان', 'That is not an Ökoplan attendance code'); }
         } catch (e) { /* keep scanning */ } busy = false; };
@@ -2915,7 +2917,7 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
 } catch (e) { console.warn('oeko brand fix', e); } })();
 
 
-/* ============ Ökoplan working day (Nov 2026, Mahmoud) ============
+/* ============ Ökoplan working day (Nov 2026) ============
    · Flexible office day: 8 working hours + the break, counted from the punch-in. Punching in early is always fine.
    · Latest arrival: 10:00 for Landscape Architects and Junior Landscape Architects · 11:00 for Seniors, Leads and managers.
    · Leaving before (punch-in + 8 h + break) is an early leave; the fixed 16:30 no longer applies on flexible shifts.
@@ -2937,7 +2939,7 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
 } catch (e) { console.warn('oeko day', e); } })();
 
 /* =====================================================================
-   Ökoplan — Project Owners, teams and client claims (Mahmoud, 12 Nov 2026)
+   Ökoplan — Project Owners, teams and client claims (12 Nov 2026)
    · Every project has its Project Owner(s) (leadId + coOwnerIds), its team (people under the owner in the
      organisation chart) and a «client finance» person (financeId): the owner himself, or the senior owner he reports to.
    · Claim per stage, NO amounts anywhere:
@@ -3110,7 +3112,7 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
 
 
 /* =====================================================================
-   Ökoplan — who sees what (Mahmoud, 12 Nov 2026, by PIN)
+   Ökoplan — who sees what (12 Nov 2026, by PIN)
    · Salaries: the CEO and the Financial Manager only. Nobody else — no Project Owner, no head, no office manager,
      and no employee sees his own pay or day value on his portal.
    · Money screens of the shared engine (quotes, invoices, accounts, expenses, purchases, suppliers, stock, orders,
@@ -3191,7 +3193,7 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
 })();
 
 /* =====================================================================
-   Ökoplan — first sign-in: change the starter password (Mahmoud, 12 Nov 2026)
+   Ökoplan — first sign-in: change the starter password (12 Nov 2026)
    Everyone was activated with one starter password. After signing in and accepting the regulation, the person
    must choose his own password before anything else opens (workers.mustChangePw). Nothing can be skipped.
    ===================================================================== */
@@ -3768,7 +3770,7 @@ ${done}${office}${boqRows()}</div>`;
 
 
   /* =====================================================================
-     Offers and agreements from the office templates (16 Nov 2026, Mahmoud — for Rawan).
+     Offers and agreements from the office templates (16 Nov 2026 — for Rawan).
      · Clients live in this collection as 'cl:…' records (same audience as the CRM: the CEO + settings.okDealViewers).
      · An offer version keeps its whole content in o.doc (every variable part of «Technical and Financial Offer Rev 0»);
        the agreement of a deal lives in d.agreement.doc (every variable part of «Consultancy Agreement»).
@@ -4024,7 +4026,7 @@ ${done}${office}${boqRows()}</div>`;
 })();
 
 /* =====================================================================
-   System look: «Light blue» (12 Nov 2026, Mahmoud) — the CEO's colours across the whole system.
+   System look: «Light blue» (12 Nov 2026) — the CEO's colours across the whole system.
    · The light blue of the identity (#50b1e7) leads: buttons, the active menu item, links, the big round button,
      the sign-in button; the blue → teal gradient (#50b1e7 → #38a599) replaces the green → teal one.
    · Status colours stay what they mean (green = done / present, amber = late, red = urgent).
@@ -4081,7 +4083,7 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
 })();
 
 /* =====================================================================
-   People, salaries and project money — who sees what (13 Nov 2026, Mahmoud — approved by PIN)
+   People, salaries and project money — who sees what (13 Nov 2026 — approved by PIN)
    · settings.okPeopleAll (the accounts manager): every employee's file, salaries (Payroll) and attendance.
    · settings.okFinPay (the same person): every project, to follow its stage claims and record what comes in.
    · Payroll is closed for everyone else but the CEO.
@@ -4112,7 +4114,7 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
 })();
 
 /* =====================================================================
-   «Roles guide — for review» (16 Nov 2026, Mahmoud, approved with the PIN): the interactive who-does-what guide,
+   «Roles guide — for review» (16 Nov 2026, approved with the PIN): the interactive who-does-what guide,
    shown only to the people listed in its own record (Rawan) so she can review it and send notes.
    · The page lives in the CRM collection as okdeal/'guide:roles' { kind:'guide', html, viewers:[workerId], notes:[] } —
      not in the public app files; the database lets only the CRM audience read it, and the menu shows it only to its viewers.
@@ -4160,7 +4162,7 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
 
 
 /* =====================================================================
-   Ökoplan — no activation codes (Mahmoud, 17 Nov 2026: «كل الناس يبقى ليهم باسورد من غير كود تفعيل»)
+   Ökoplan — no activation codes (17 Nov 2026: «كل الناس يبقى ليهم باسورد من غير كود تفعيل»)
    · everyone signs in with his mobile number and the starter password; the first-sign-in gate (__OK_PWGATE__) then makes him choose his own
    · «Forgot password» sends a request to the office (no code); HR / the admin puts the person back on the starter password
      (RPC nf_reset_to_starter — admin and hr only — the starter is kept on the server as a bcrypt hash, admin_config.ok_starter_hash)
@@ -4217,7 +4219,7 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
 })();
 
 /* =====================================================================
-   Ökoplan — the Project Owner runs his team (Mahmoud, 17 Nov 2026 «ابدأ»)
+   Ökoplan — the Project Owner runs his team (17 Nov 2026 «ابدأ»)
    · his people = the ones on his projects (Project Owner / second Project Owner) + the ones he manages on the org chart;
      the office role can't read worker records, so theirs come from nf_ok_my_team (no pay, no secrets, no HR notes);
    · he decides the «head» step of their leave / permission / punch requests and is the one notified of them;
@@ -4294,7 +4296,7 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
 
 
 /* =====================================================================
-   Ökoplan — forgot password by email code (Mahmoud, 17 Nov 2026)
+   Ökoplan — forgot password by email code (17 Nov 2026)
    · the login screen: mobile number → a 6-digit code to the work email on file, or to the personal email when it matches
      the one saved on the account (typing an address is never enough) → the code + the new password twice;
    · or ask the office (HR puts the password back on the starter one);
@@ -4379,7 +4381,7 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
 })();
 
 /* =====================================================================
-   Ökoplan — Projects & teams, for the Head of PMO (Mahmoud, 17 Nov 2026)
+   Ökoplan — Projects & teams, for the Head of PMO (17 Nov 2026)
    Rawan makes the offers and the contracts, puts the projects in and decides who runs them:
    · one page with every live project of the office: its Project Owner, second Project Owner, the Client Financial
      Reporting Responsible and the team — by project or by Project Owner, with search;
@@ -4563,7 +4565,7 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
 })();
 
 /* =====================================================================
-   Ökoplan — structure & job descriptions (Mahmoud, 17 Nov 2026)
+   Ökoplan — structure & job descriptions (17 Nov 2026)
    The organisation chart for the CEO and the Head of PMO, and each person's job title and job description:
    tap a person on the chart → his title, department, direct manager and job description; the CEO and the Head of PMO edit
    the title and the description (server: nf_ok_set_job — the titles that carry access, «Head of PMO» and «Financial Manager»,
@@ -4637,4 +4639,155 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
   if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okorgjd')) { const i = NAV.findIndex(n => n && n.id === 'okpmo'); NAV.splice(i >= 0 ? i + 1 : Math.min(2, NAV.length), 0, { id: 'okorgjd', get label() { return L('الهيكل والوصف الوظيفي', 'Structure & job descriptions'); }, get short() { return L('الهيكل', 'Structure'); }, icon: 'workers' }); }
   if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okorgjd')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okorgjd']); });
   if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okorgjd') return can(); return base.apply(this, arguments); })(canSee);
+})();
+
+/* =====================================================================
+   Ökoplan — the phone is the key (17 Nov 2026)
+   1) Project money: for a Project Owner (anyone but the CEO and the Financial Manager) a project's amounts open only with his
+      own phone — on a computer the page shows a QR (one-time, 2 minutes) that he scans from the phone (the QR icon at the top
+      of the app on the phone); on his registered phone it opens directly. It closes the moment he leaves that project page
+      or switches tab/window, and asks again next time. Server: nf_ok_key_new / _approve / _status, nf_ok_fin_view (the money
+      no longer syncs to the Project Owners), ok_phones (the first phone that scans becomes his phone; the CEO can reset it).
+   2) The computer locks itself after 5 idle minutes; it opens with a QR scanned from the person's own phone, or the password.
+      Not on phones, not on the kiosk / the QR station.
+   ===================================================================== */
+(() => {
+  if (window.__OK_KEY__) return; window.__OK_KEY__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const isFinMgr = () => !!(window.okAccess && window.okAccess.isFinMgr && window.okAccess.isFinMgr());
+  const gated = () => !!S.session && !isAdmin() && !isFinMgr();
+  const phone = () => { try { return matchMedia('(pointer:coarse)').matches && Math.min(screen.width, screen.height) < 900; } catch (e) { return false; } };
+  const rpc = (fn, a) => Promise.resolve(S.sb && S.sb.rpc ? S.sb.rpc(fn, a || {}) : { error: { message: 'offline' } }).then(r => (r && !r.error ? r.data : { __err: (r && r.error && r.error.message) || 'error' })).catch(e => ({ __err: String(e && e.message || e) }));
+  const devKey = () => { let k = ''; try { k = localStorage.getItem('ok.phoneKey') || ''; } catch (e) { /* */ } if (k.length < 32) { const a = new Uint8Array(24); crypto.getRandomValues(a); k = Array.from(a, b => b.toString(16).padStart(2, '0')).join(''); try { localStorage.setItem('ok.phoneKey', k); } catch (e) { /* */ } } return k; };
+  const keyURL = (id, nonce) => { let base = 'https://oekoplan-landscaping.github.io/app/'; try { base = new URL('./', location.href).href.split('#')[0]; } catch (e) { /* */ } return `${base}#/okkey/OKK.${id}.${nonce}`; };
+  const KBASE = (() => { try { const s = document.currentScript && document.currentScript.src; return s ? s.replace(/[^/]*$/, '') : './'; } catch (e) { return './'; } })();
+  const needQR = () => (typeof qrcode === 'function' ? Promise.resolve() : new Promise((res, rej) => { const src = KBASE + 'vendor/qrcode.js'; const old = document.querySelector(`script[src="${src}"]`); if (old && typeof qrcode === 'function') return res(); const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }));
+  const qrSVG = text => { try { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); } catch (e) { return ''; } };
+  document.head.insertAdjacentHTML('beforeend', `<style>
+.okkey{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}.okkey .qr{width:240px;height:240px;background:#fff;border-radius:16px;padding:10px;box-shadow:0 6px 24px rgba(0,0,0,.08)}.okkey .qr svg{width:100%;height:100%}
+.okkey p{margin:0;color:var(--muted);font-size:14px;line-height:1.55;max-width:340px}.okkey b.t{font-size:16px}.okkey .st{font-size:13px;font-weight:600;color:#2b8fc7}.okkey .st.bad{color:var(--crit-ink)}
+#oklock{position:fixed;inset:0;z-index:99995;background:linear-gradient(160deg,#eef8fd,#f4f8f6);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;font-family:var(--font,system-ui)}
+html[data-theme="dark"] #oklock{background:#0d1719}
+#oklock .box{width:100%;max-width:760px;background:var(--surface,#fff);border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,.12);padding:28px;display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:center}
+@media (max-width:720px){#oklock .box{grid-template-columns:1fr}}
+#oklock .who{grid-column:1/-1;display:flex;align-items:center;gap:12px}#oklock .who img{height:40px}#oklock .who .grow{flex:1}#oklock h2{margin:0;font-size:20px}#oklock .who small{color:var(--muted)}
+#oklock .okls{display:flex;flex-direction:column;gap:10px}#oklock .okls h3{margin:0;font-size:15px}#oklock .okls p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.5}
+#oklock input{height:48px;border-radius:14px;border:1.5px solid var(--line);padding:0 14px;font-size:16px;background:var(--surface-2);color:var(--ink);direction:ltr}
+#oklock .go{height:48px;border:0;border-radius:14px;background:#50b1e7;color:#fff;font-size:16px;font-weight:700;cursor:pointer}#oklock .err{min-height:18px;color:var(--crit-ink);font-size:13px}
+#oklock .qr{width:220px;height:220px;background:#fff;border-radius:16px;padding:8px;align-self:center;box-shadow:0 6px 24px rgba(0,0,0,.08)}#oklock .qr svg{width:100%;height:100%}#oklock .out{all:unset;cursor:pointer;color:var(--muted);font-size:13px;text-decoration:underline}
+.okqrtop{display:inline-grid;place-items:center;width:38px;height:38px;border-radius:12px;border:0;background:var(--surface-2);color:var(--ink);cursor:pointer;margin-inline-end:6px}.okqrtop svg{width:20px;height:20px}
+</style>`);
+  const QRI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg>';
+
+  /* ---------------- the phone approves a key (scan in the app, or the phone camera opening the link) ---------------- */
+  window.okKeyApprove = async text => {
+    const m = /OKK\.([0-9a-f-]{36})\.([0-9a-f]{32,})/.exec(String(text || '')); if (!m) return;
+    const r = await rpc('nf_ok_key_approve', { p_id: m[1], p_nonce: m[2], p_device: devKey() });
+    const msg = { ok: L('اتفتح على الكمبيوتر ✓', 'Opened on the computer ✓'), done: L('الكود ده اتستخدم قبل كده', 'That code was already used'), expired: L('الكود خلص — اعمل سكان للكود الجديد', 'The code expired — scan the new one'),
+      other_person: L('الكود ده لحساب حد تاني', 'That code belongs to another account'), other_phone: L('ده مش الموبايل المتسجّل بتاعك — كلّم إدارة المكتب لو غيّرت موبايلك', 'This is not your registered phone — talk to the office if you changed phones'), no_device: L('الموبايل ده مش جاهز — جرّب تاني', 'This phone is not ready — try again') }[r] || L('الكود مش صالح', 'Invalid code');
+    toast(msg, r === 'ok' ? undefined : 'err');
+  };
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    if (!S.session || !(S.route && S.route.view === 'okkey')) return; const h = location.hash || ''; if (window.__okkeyDone === h) return; window.__okkeyDone = h;
+    const t = decodeURIComponent(h.replace(/^#\/okkey\//, '')); setTimeout(() => { location.hash = '#/me'; window.okKeyApprove(t); }, 50);
+  } catch (e) { /* ignore */ } });
+  if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.okkey = () => `<div class="empty"><b>${esc(L('بيتأكد من الكود…', 'Checking the code…'))}</b></div>`;
+  if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okkey') return !!S.session; return base.apply(this, arguments); })(canSee);
+  /* the QR icon at the top of the app, on phones */
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    if (!S.session || !phone() || (typeof role === 'function' && role() === 'kiosk')) return; const bell = document.querySelector('#topbar .bellbtn'); if (!bell || bell.parentElement.querySelector('.okqrtop')) return;
+    bell.insertAdjacentHTML('beforebegin', `<button type="button" class="okqrtop" data-action="okQrScan" title="${esc(L('امسح الكود', 'Scan the code'))}" aria-label="${esc(L('امسح الكود', 'Scan the code'))}">${QRI}</button>`);
+  } catch (e) { /* ignore */ } });
+
+  /* ---------------- a key on the computer: show the QR and wait for the phone ---------------- */
+  let waiting = null;
+  const stopWait = () => { if (waiting) { clearInterval(waiting.t); waiting = null; } };
+  const keyFlow = (purpose, project, host, onOk) => {
+    stopWait(); const my = { t: 0 }; waiting = my;
+    const draw = async () => {
+      try { await needQR(); } catch (e) { /* drawn below as an error */ }
+      const k = await rpc('nf_ok_key_new', { p_purpose: purpose, p_project: project || null }); if (waiting !== my) return;
+      if (!k || k.status !== 'ok') { host.innerHTML = `<p class="st bad">${esc(k && k.status === 'rate' ? L('طلبت أكواد كتير — استنى شوية', 'Too many codes — wait a little') : L('مقدرتش أعمل الكود — اتأكد من الإنترنت', 'Could not make the code — check the internet'))}</p>`; return; }
+      host.innerHTML = `<div class="qr">${qrSVG(keyURL(k.id, k.nonce))}</div><p class="st" data-okst>${esc(L('مستني الموبايل…', 'Waiting for your phone…'))}</p>`;
+      const until = Date.now() + 2 * 60e3; clearInterval(my.t);
+      my.t = setInterval(async () => {
+        if (waiting !== my || !document.body.contains(host)) { clearInterval(my.t); return; }
+        if (Date.now() > until) { clearInterval(my.t); host.innerHTML = `<p class="st bad">${esc(L('الكود خلص', 'The code expired'))}</p><button type="button" class="btn sm" data-oknew>${esc(L('كود جديد', 'New code'))}</button>`; host.querySelector('[data-oknew]').onclick = draw; return; }
+        const st = await rpc('nf_ok_key_status', { p_id: k.id }); if (st === 'approved') { clearInterval(my.t); if (waiting === my) waiting = null; onOk(k.id); }
+      }, 1500);
+    };
+    draw();
+  };
+
+  /* ---------------- 1) project money ---------------- */
+  let open = null;   /* { pid, fin: injected?, pays: [ids] } */
+  const close = () => { if (!open) return; const o = open; open = null;
+    try { if (o.fin && S.data.okfin) S.data.okfin.delete(o.pid); (o.pays || []).forEach(id => S.data.okpay && S.data.okpay.delete(id)); } catch (e) { /* */ }
+    if (typeof rerender === 'function') rerender(); };
+  const inject = (pid, d) => { const o = { pid, fin: false, pays: [] }; S.data.okfin = S.data.okfin || new Map(); S.data.okpay = S.data.okpay || new Map();
+    if (d.fin && !S.data.okfin.has(pid)) { S.data.okfin.set(pid, d.fin); o.fin = true; }
+    (d.pays || []).forEach(x => { if (x && x.id && !S.data.okpay.has(x.id)) { S.data.okpay.set(x.id, x); o.pays.push(x.id); } }); open = o; };
+  const isOpen = pid => !!open && open.pid === pid;
+  const unlockMoney = (pid, again) => {
+    const done = d => { if (!d || d.status !== 'ok') { toast(d && d.status === 'other_phone' ? L('ده مش الموبايل المتسجّل بتاعك — افتحها من الكمبيوتر واعمل سكان من موبايلك', 'This is not your registered phone — open it on the computer and scan from your phone') : d && d.status === 'denied' ? L('الفلوس دي مش من صلاحيتك', 'This money is not yours to see') : L('مااتفتحتش — جرّب تاني', 'Did not open — try again'), 'err'); return; }
+      inject(pid, d); if (typeof again === 'function') again(); else if (typeof rerender === 'function') rerender(); };
+    if (phone()) { rpc('nf_ok_fin_view', { p_project: pid, p_key: null, p_device: devKey() }).then(done); return; }
+    const p = byId('projects', pid) || {};
+    openModal({ title: L(`فلوس ${p.name || 'المشروع'}`, `${p.name || 'Project'} money`), footer: `<button type="button" class="btn" data-action="closemodal">${esc(L('إلغاء', 'Cancel'))}</button>`,
+      body: `<div class="okkey"><b class="t">🔒 ${esc(L('افتحها من موبايلك', 'Open it with your phone'))}</b><p>${esc(L('افتح تطبيق Ökoplan على موبايلك، دوس على أيقونة الـ QR فوق، واعمل سكان للكود ده. بتفضل مفتوحة لحد ما تخرج من صفحة المشروع.', 'Open the Ökoplan app on your phone, tap the QR icon at the top and scan this code. It stays open until you leave the project page.'))}</p><div data-okhost></div></div>`,
+      onOpen: f => { const host = (f || document).querySelector('[data-okhost]'); keyFlow('fin', pid, host, async kid => { const d = await rpc('nf_ok_fin_view', { p_project: pid, p_key: kid, p_device: null }); try { closeModal(); } catch (e) { /* */ } done(d); }); } });
+  };
+  /* the money buttons of a project: «Show amounts» on the claims card, «Contract values» */
+  document.addEventListener('click', ev => {
+    if (!gated() || window.__okBypass) return; const t = ev.target.closest && ev.target.closest('[data-okamt], [data-okd^="mc:"]'); if (!t) return;
+    const pid = t.dataset.okamt || String(t.dataset.okd || '').split(':')[1]; if (!pid || isOpen(pid)) return;
+    ev.preventDefault(); ev.stopImmediatePropagation(); unlockMoney(pid, () => { setTimeout(() => { const b = document.querySelector(t.dataset.okamt ? `[data-okamt="${pid}"]` : `[data-okd="mc:${pid}"]`); if (b) b.click(); }, 60); });
+  }, true);
+  /* leaving the project page, or another tab / window → closed again */
+  window.addEventListener('hashchange', () => { if (open && !(S.route && S.route.view === 'projects' && S.route.id === open.pid) && location.hash.indexOf('#/projects/' + open.pid) !== 0) close(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) close(); });
+  window.addEventListener('blur', () => { if (open && !phone()) close(); });
+  /* while closed: say how to open it */
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    if (!gated() || !(S.route && S.route.view === 'projects' && S.route.id)) return; const pid = S.route.id; if (isOpen(pid)) return;
+    document.querySelectorAll(`.okpo[data-pid="${pid}"] [data-okamt]`).forEach(b => { if (/اخفي|Hide/.test(b.textContent)) { window.__okBypass = true; try { b.click(); } finally { window.__okBypass = false; } return; } const tx = '🔒 ' + L('اعرض المبالغ', 'Show amounts'); if (b.textContent !== tx) b.textContent = tx; });
+    document.querySelectorAll(`.okpo[data-pid="${pid}"] .tiny.muted`).forEach(x => { if (/لسه ما اتدخلتش|not entered yet/.test(x.textContent)) x.textContent = '🔒 ' + L('المبالغ بتتفتح من موبايلك — دوس «اعرض المبالغ»', 'The amounts open with your phone — tap «Show amounts»'); });
+  } catch (e) { /* ignore */ } });
+
+  /* ---------------- 2) the computer locks itself ---------------- */
+  const IDLE = 5 * 60e3; let last = Date.now(), lockedNow = false;
+  const lockable = () => !!S.session && !phone() && !(typeof role === 'function' && role() === 'kiosk') && !(S.route && S.route.view === 'okqr');
+  const bump = () => { if (!lockedNow) last = Date.now(); };
+  ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart', 'scroll'].forEach(e => window.addEventListener(e, bump, { passive: true, capture: true }));
+  const unlock = () => { lockedNow = false; last = Date.now(); stopWait(); try { sessionStorage.removeItem('ok.locked'); } catch (e) { /* */ } const g = document.getElementById('oklock'); if (g) g.remove(); };
+  const lock = () => {
+    if (lockedNow || !lockable()) return; lockedNow = true; close(); try { sessionStorage.setItem('ok.locked', '1'); } catch (e) { /* */ }
+    let logo = '_src/brand/lockup.png'; try { logo = new URL('_src/brand/lockup.png', document.baseURI).href; } catch (e) { /* */ }
+    const nm = (S.session && S.session.name) || '';
+    document.body.insertAdjacentHTML('beforeend', `<div id="oklock" dir="${en() ? 'ltr' : 'rtl'}"><div class="box">
+      <div class="who"><img src="${esc(logo)}" alt="Ökoplan Landscaping" onerror="this.style.display='none'"><div class="grow"><h2>${esc(L('السيستم اتقفل', 'The system is locked'))}</h2><small>${esc(nm)} · ${esc(L('اتقفل لوحده بعد 5 دقايق من غير استخدام', 'Locked by itself after 5 idle minutes'))}</small></div></div>
+      <div class="okls"><h3>${esc(L('اعمل سكان من موبايلك', 'Scan with your phone'))}</h3><p>${esc(L('افتح تطبيق Ökoplan على موبايلك ← أيقونة الـ QR فوق ← سكان.', 'Open the Ökoplan app on your phone → the QR icon at the top → scan.'))}</p><div class="okkey" data-okhost></div></div>
+      <form class="okls" autocomplete="off"><h3>${esc(L('أو كلمة السر', 'Or your password'))}</h3><input type="password" name="pw" autocomplete="current-password" placeholder="${esc(L('كلمة السر', 'Password'))}"><div class="err"></div><button type="submit" class="go">${esc(L('افتح', 'Unlock'))}</button><button type="button" class="out" data-out>${esc(L('تسجيل خروج', 'Sign out'))}</button></form></div></div>`);
+    const g = document.getElementById('oklock'); const f = g.querySelector('form'); const err = f.querySelector('.err');
+    keyFlow('unlock', null, g.querySelector('[data-okhost]'), async kid => { const r = await rpc('nf_ok_key_use', { p_id: kid, p_purpose: 'unlock' }); if (r === 'ok') { unlock(); toast(L('اتفتح ✓', 'Unlocked ✓')); } else err.textContent = L('مااتفتحش — جرّب كود جديد أو كلمة السر', 'Did not unlock — try a new code or the password'); });
+    f.addEventListener('submit', async ev => { ev.preventDefault(); const pw = f.querySelector('[name=pw]').value; if (!pw) return; const b = f.querySelector('.go'); b.disabled = true; err.textContent = '';
+      try { const email = (S.sbUser && S.sbUser.email) || ''; const r = await S.sb.auth.signInWithPassword({ email, password: pw }); if (r.error) throw r.error; unlock(); }
+      catch (e) { err.textContent = L('كلمة السر غلط', 'Wrong password'); } b.disabled = false; });
+    f.querySelector('[data-out]').addEventListener('click', () => { unlock(); const o = document.querySelector('[data-action="logout"]'); if (o) o.click(); else if (ACTIONS.logout) ACTIONS.logout(); });
+    setTimeout(() => { try { f.querySelector('[name=pw]').focus(); } catch (e) { /* */ } }, 80);
+  };
+  setInterval(() => { if (!lockedNow && lockable() && Date.now() - last > IDLE) lock(); }, 15e3);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && !lockedNow && lockable() && Date.now() - last > IDLE) lock(); });
+  /* a refresh does not open it */
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try { let s0 = null; try { s0 = sessionStorage.getItem('ok.locked'); } catch (e) { /* */ } if (s0 && !lockedNow && lockable()) lock(); if (!S.session && lockedNow) unlock(); } catch (e) { /* ignore */ } });
+  window.okLockNow = lock;
+
+  /* ---------------- the CEO: reset someone's registered phone (from the job description card) ---------------- */
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    if (!isAdmin()) return; const jd = document.querySelector('.okjd'); if (!jd || jd.querySelector('[data-okphreset]')) return; const nmEl = jd.querySelector('.hdr b'); const w = list('workers').find(x => x.name === (nmEl && nmEl.textContent)); if (!w) return;
+    jd.insertAdjacentHTML('beforeend', `<p class="meta" style="margin-top:12px"><button type="button" class="btn sm ghost" data-okphreset="${esc(w.id)}">📱 ${esc(L('امسح الموبايل المتسجّل (لو غيّر موبايله)', 'Reset the registered phone (if he changed phones)'))}</button></p>`);
+  } catch (e) { /* ignore */ } });
+  document.addEventListener('click', async ev => { const t = ev.target.closest && ev.target.closest('[data-okphreset]'); if (!t || !isAdmin()) return; ev.preventDefault();
+    const r = await rpc('nf_ok_phone_reset', { p_worker: t.dataset.okphreset }); toast(r === 'ok' ? L('اتمسح — أول موبايل يعمل سكان هيتسجّل', 'Reset — the next phone that scans is registered') : L('مااتمسحش', 'Not reset'), r === 'ok' ? undefined : 'err'); });
 })();
