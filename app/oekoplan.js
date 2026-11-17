@@ -488,7 +488,8 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
       <label class="slchk"><input type="checkbox" id="lg-remember" name="remember" checked> ${L('افتكرني على الجهاز ده', 'Remember me on this device')}</label>
       <p id="lg-err" class="slerr"></p>
       <button type="submit" class="slbtn">${L('دخول', 'Sign in')}</button>
-      <div class="slalt"><button type="button" data-action="activate">${L('أول مرة؟ فعّل حسابك', 'First time? Activate your account')}</button><button type="button" data-action="forgotPw">${L('نسيت كلمة السر', 'Forgot password')}</button></div>
+      <p class="slhint">${L('أول مرة؟ ادخل برقم موبايلك وكلمة السر المبدئية اللي إدارة المكتب إدّتهالك — وبعدها على طول هتختار كلمة سرك.', 'First time? Sign in with your mobile number and the starter password the office gave you — you will choose your own right after.')}</p>
+      <div class="slalt"><button type="button" data-action="forgotPw">${L('نسيت كلمة السر', 'Forgot password')}</button></div>
     </form>`}
     ${sb && S.sbBootstrap ? `<button type="button" class="slbtn" data-action="sbBootstrap">${icon('star')}${L('إنشاء حساب المدير الأول (مرة واحدة)', 'Create the first admin account (once)')}</button>` : ''}
     ${!sb && S.staffReady && !loginPeople().length && S.canWrite !== false ? `<button type="button" class="slbtn" data-action="firstAdmin">${L('الدخول كمدير لإعداد النظام', 'Enter as admin to set up')}</button>` : ''}`;
@@ -4144,4 +4145,62 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
   if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okguide')) { const i = NAV.findIndex(n => n && n.id === 'okcrm'); NAV.splice(i >= 0 ? i : Math.min(2, NAV.length), 0, { id: 'okguide', label: 'دليل الأدوار — للمراجعة', short: 'الدليل', icon: 'star', count: () => { try { const d = doc(); return vis() && !d.seenAt ? 1 : 0; } catch (e) { return 0; } }, countCls: 'warn' }); }
   if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okguide')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okguide']); });
   if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okguide') return vis(); return base.apply(this, arguments); })(canSee);
+})();
+
+
+/* =====================================================================
+   Ökoplan — no activation codes (Mahmoud, 17 Nov 2026: «كل الناس يبقى ليهم باسورد من غير كود تفعيل»)
+   · everyone signs in with his mobile number and the starter password; the first-sign-in gate (__OK_PWGATE__) then makes him choose his own
+   · «Forgot password» sends a request to the office (no code); HR / the admin puts the person back on the starter password
+     (RPC nf_reset_to_starter — admin and hr only — the starter is kept on the server as a bcrypt hash, admin_config.ok_starter_hash)
+   ===================================================================== */
+(() => {
+  if (window.__OK_NOCODE__) return; window.__OK_NOCODE__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const srv = () => !!(S.sb && S.sb.rpc);
+  const st = document.createElement('style');
+  st.textContent = '.okcard .slhint{margin:12px 0 0;font-size:12.5px;line-height:1.6;color:var(--muted,#6b7a76);text-align:center}';
+  document.head.appendChild(st);
+  const said = s => ({
+    ok: L('رجعت لكلمة السر المبدئية — يدخل بيها وهيختار كلمة سره على طول', 'Back on the starter password — he signs in with it and chooses his own right away'),
+    forbidden: L('ده لإدارة المكتب بس', 'Only the office admin can do this'),
+    no_account: L('مالوش حساب لسه — لازم رقم موبايله يتسجّل الأول', 'No account yet — his mobile number has to be added first'),
+    no_starter: L('كلمة السر المبدئية مش مضبوطة على السيرفر', 'The starter password is not set on the server'),
+  }[s] || String(s || ''));
+  const toStarter = async w => { const r = await S.sb.rpc('nf_reset_to_starter', { p_worker: w.id }); if (r.error) throw r.error; return r.data; };
+
+  /* HR / admin: the person's «code» button now puts him back on the starter password */
+  const baseCode = ACTIONS.actCode;
+  ACTIONS.actCode = async arg => {
+    const a = String(arg || ''); if (a.startsWith('staff:') || !srv()) return baseCode && baseCode(arg);
+    const w = byId('workers', a); if (!w) return;
+    openModal({ title: L(`كلمة السر — ${w.name}`, `Password — ${w.name}`), submitLabel: L('رجّعها للمبدئية', 'Back to the starter password'),
+      body: `<p style="margin:0;line-height:1.7">${esc(L('هترجع كلمة سره للمبدئية. يدخل برقم موبايله وبيها، والسيستم هيطلب منه يختار كلمة سر جديدة قبل أي حاجة.', 'His password goes back to the starter one. He signs in with his mobile number and it, and the system asks him to choose a new password before anything else.'))}</p>`,
+      onSubmit: async () => { try { const s = await toStarter(w); toast(said(s), s === 'ok' ? undefined : 'err'); return s === 'ok'; } catch (e) { toast((e && e.message) || L('ماتمّش — جرّب تاني', 'Not done — try again'), 'err'); return false; } } });
+  };
+  /* approving a «forgot password» request: the starter password, not a code */
+  if (typeof sbApplyPasswordRequest === 'function') sbApplyPasswordRequest = async (r, w) => { const s = await toStarter(w); if (s !== 'ok') { toast(said(s), 'err'); throw new Error(s); } toast(said(s)); };
+
+  /* login screen: «forgot password» asks the office — no code */
+  const baseForgot = ACTIONS.forgotPw;
+  ACTIONS.forgotPw = () => {
+    if (!srv()) return baseForgot && baseForgot();
+    const pre = (document.getElementById('lg-user') || {}).value || '';
+    openModal({ title: L('نسيت كلمة السر', 'Forgot password'), submitLabel: L('ابعت لإدارة المكتب', 'Send to the office'),
+      body: `<div class="form"><div class="banner info full" style="margin:0">${icon('info')}<span>${esc(L('ابعت طلب، وإدارة المكتب هترجّع كلمة سرك للمبدئية. بعدها ادخل بيها واختار كلمة سر جديدة.', 'Send a request and the office will put your password back on the starter one. Then sign in with it and choose a new password.'))}</span></div>${field(L('رقم الموبايل', 'Mobile number'), inp('phone', pre, 'inputmode="tel" class="ltr" required placeholder="01xxxxxxxxx"'), 'full')}</div>`,
+      onSubmit: async f => {
+        const login = typeof sbLoginId === 'function' ? sbLoginId(formData(f).phone) : String(formData(f).phone || '').trim();
+        if (!login) { toast(L('اكتب رقم الموبايل', 'Type your mobile number'), 'err'); return false; }
+        const r = await S.sb.rpc('nf_request_reset', { p_login: login });
+        if (r.error) { toast(typeof sbErrText === 'function' ? sbErrText(r.error) : r.error.message, 'err'); return false; }
+        if (r.data === 'not_found') { toast(L('الرقم ده مش متسجّل في السيستم', 'This number is not registered in the system'), 'err'); return false; }
+        toast(L('اتبعت — أول ما ترجع للمبدئية ادخل بيها', 'Sent — once it is back on the starter password, sign in with it'));
+      } });
+  };
+  /* an old «activate» link: there is nothing to activate any more */
+  ACTIONS.activate = () => openModal({ title: L('أول مرة', 'First time'), footer: `<button type="button" class="btn p" data-action="closemodal">${esc(L('تمام', 'OK'))}</button>`,
+    body: `<p style="margin:0;line-height:1.7">${esc(L('مفيش كود تفعيل. ادخل برقم موبايلك وكلمة السر المبدئية اللي إدارة المكتب إدّتهالك، وبعدها هتختار كلمة سرك.', 'There is no activation code. Sign in with your mobile number and the starter password the office gave you, then choose your own.'))}</p>` });
+  /* the «Code» button on a person reads as what it does now */
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try { document.querySelectorAll('[data-action="actCode"]:not([data-okpw])').forEach(b => { b.dataset.okpw = '1'; b.title = L('رجّع كلمة السر للمبدئية', 'Back to the starter password'); const ic = b.querySelector('svg'); b.textContent = L('كلمة السر', 'Password'); if (ic) b.prepend(ic); }); } catch (e) { /* ignore */ } });
 })();
