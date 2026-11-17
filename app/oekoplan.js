@@ -4840,6 +4840,10 @@ html[data-theme="dark"] #oklock{background:#0d1719}
   const tell = (ids, title, body, pid) => { ids = uniq(ids || []).filter(id => id !== me()); if (!ids.length) return;
     ids.forEach(id => { try { Store.save('tasks', { id: 'okn_' + uid(), title, desc: body || '', assigneeId: id, deptId: null, status: 'open', kind: 'notice', source: 'okcheck', priority: 'normal', createdBy: (S.session && S.session.id) || null, createdByName: myName(), createdAt: nowISO(), link: '#/projects/' + pid }, { silent: true }); } catch (e) { /* */ } });
     try { if (typeof pushSend === 'function') { const r = pushSend(ids.concat(ids.map(i => 'w:' + i)), title, body || '', '#/projects/' + pid, 'ok-check'); if (r && r.catch) r.catch(() => { }); } } catch (e) { /* */ } };
+  /* 17 Nov 2026: a Project Owner moves people between HIS OWN projects without the Head of PMO — the people already on
+     one of his projects. Someone new to his projects, or off all of them, is asked from the Head of PMO. */
+  const pool = () => uniq([].concat(...mine().map(p => (p.team || []).filter(id => !owners(p).includes(id)))));
+  const onOther = (p, wid) => mine().some(q => q.id !== p.id && (q.team || []).includes(wid));
   const save = async (p, patch) => { await Store.update('projects', p.id, Object.assign({ okCheckAt: nowISO(), okCheckBy: me(), updatedAt: nowISO() }, patch)); if (typeof rerender === 'function') rerender(); };
 
   document.head.insertAdjacentHTML('beforeend', `<style>
@@ -4863,7 +4867,8 @@ html[data-theme="dark"] #oklock{background:#0d1719}
       <div class="seg">${['active', 'hold', 'stopped', 'done'].filter(k => S0[k]).map(k => `<button type="button" class="${st === k ? 'on' : ''}" style="--okc:${S0[k].c}" data-okck="st:${esc(p.id)}:${k}"><i></i>${esc(L(S0[k].ar, S0[k].en))}</button>`).join('')}</div>
       ${why[p.id] ? `<div class="reason"><input data-okckwhy="${esc(p.id)}" maxlength="160" dir="auto" placeholder="${esc(L('السبب؟ (مثلاً: مستنيين رد الـ Client)', 'Why? (e.g. waiting for the Client)'))}" value="${esc(p.okStateNote || '')}"><button type="button" class="btn sm p" data-okck="why:${esc(p.id)}:${why[p.id]}">${esc(L('احفظ', 'Save'))}</button></div>` : (st !== 'active' && p.okStateNote ? `<div class="when">${esc(L('السبب: ', 'Reason: '))}${esc(p.okStateNote)}</div>` : '')}
       ${hs.map(h => `<div class="hint">💡 <span>${esc(h)}</span></div>`).join('')}
-      <div class="ch">${os.map(id => `<span class="c o">${esc(nm(id) || '—')}</span>`).join('')}${team.map(id => `<span class="c">${esc(nm(id) || '—')}</span>`).join('')}
+      <div class="ch">${os.map(id => `<span class="c o">${esc(nm(id) || '—')}</span>`).join('')}${team.map(id => `<span class="c">${esc(nm(id) || '—')}${onOther(p, id) ? `<button type="button" title="${esc(L('شيله من المشروع ده (هو على مشاريعك التانية)', 'Take off this project (he stays on your other projects)'))}" data-okck="rm:${esc(p.id)}:${esc(id)}">×</button>` : ''}</span>`).join('')}
+        ${(() => { const can2 = pool().filter(id => !(p.team || []).includes(id) && !os.includes(id)); return can2.length ? `<select data-okckadd="${esc(p.id)}"><option value="">${esc(L('+ ضيف حد من مشاريعك', '+ Add someone from your projects'))}</option>${can2.map(id => `<option value="${esc(id)}">${esc(nm(id) || '—')}</option>`).join('')}</select>` : ''; })()}
         <button type="button" class="btn sm ghost" data-okck="team:${esc(p.id)}">${icon('edit')}<span>${esc(L('اطلب تعديل في الفريق', 'Ask for a team change'))}</span></button></div>
       <div class="ft"><button type="button" class="btn sm ${late ? 'p' : 'ghost'}" data-okck="ok:${esc(p.id)}">${icon('check')}<span>${esc(L('مفيش تغيير ✓', 'Nothing changed ✓'))}</span></button></div></div>`;
   };
@@ -4885,6 +4890,9 @@ html[data-theme="dark"] #oklock{background:#0d1719}
       const pmo = uniq(list('workers').filter(w => act(w) && /head of pmo/i.test(w.title || '')).map(w => w.id).concat((S.settings && S.settings.okDealViewers) || [], [p.financeId])); tell(pmo, L(`${p.name}: ${x === 'hold' ? 'متوقف مؤقتًا' : 'واقف'}`, `${p.name}: ${x === 'hold' ? 'on hold' : 'stopped'}`), `${myName()} — ${note}`, pid); toast(L('اتحفظ ✓', 'Saved ✓')); return; }
     if (k === 'ok') { await save(p, {}); toast(L('اتأكد ✓', 'Confirmed ✓')); return; }
     if (k === 'team') { askTeam(p); return; }
+    if (k === 'rm') { if (!onOther(p, x)) { askTeam(p); return; } if (!(await confirmDlg(L(`تشيل ${nm(x)} من مشروع ${p.name}؟ هيفضل على مشاريعك التانية.`, `Take ${nm(x)} off ${p.name}? He stays on your other projects.`), L('شيله', 'Remove'), false))) return;
+      await save(p, { team: (p.team || []).filter(id => id !== x), okTeamLog: (p.okTeamLog || []).concat([{ at: nowISO(), by: myName(), byId: me(), added: [], removed: [x], why: 'Moved between his projects' }]).slice(-60) });
+      tell([x], L(`مبقتش على مشروع ${p.name}`, `You are no longer on ${p.name}`), myName(), p.id); toast(L('اتشال', 'Removed')); return; }
   });
   const askTeam = p => {   /* the Head of PMO alone puts people on projects: the Project Owner asks her */
       const pid = p.id; const pmo = uniq(list('workers').filter(w => act(w) && /head of pmo/i.test(w.title || '')).map(w => w.id).concat((S.settings && S.settings.okDealViewers) || []));
@@ -4897,6 +4905,12 @@ html[data-theme="dark"] #oklock{background:#0d1719}
   /* the project page's «Ask for someone from another team»: for a Project Owner it is the same request to the Head of PMO */
   document.addEventListener('click', ev => { const t = ev.target.closest && ev.target.closest('[data-okown^="join:"]'); if (!t) return; if (isAdmin() || (window.okAccess && window.okAccess.isPMO && window.okAccess.isPMO())) return;
     const p = byId('projects', t.dataset.okown.split(':')[1]); if (!p) return; ev.preventDefault(); ev.stopImmediatePropagation(); askTeam(p); }, true);
+  document.addEventListener('change', async ev => {
+    const sel = ev.target; if (!sel || !sel.matches || !sel.matches('[data-okckadd]')) return; const pid = sel.dataset.okckadd, wid = sel.value; const p = byId('projects', pid); if (!p || !wid || !owners(p).includes(me())) return;
+    if (!pool().includes(wid)) { toast(L('ده مش على مشاريعك — اطلبه من رئيسة الـ PMO', 'Not on your projects — ask the Head of PMO'), 'err'); return; }
+    await save(p, { team: uniq((p.team || []).concat([wid])), okTeamLog: (p.okTeamLog || []).concat([{ at: nowISO(), by: myName(), byId: me(), added: [wid], removed: [], why: 'Moved between his projects' }]).slice(-60) });
+    tell([wid], L(`اتضفت على مشروع ${p.name}`, `You were added to ${p.name}`), L(`الـ Project Owner: ${owners(p).map(nm).join(' & ')}`, `Project Owner: ${owners(p).map(nm).join(' & ')}`), pid); toast(L('اتضاف ✓', 'Added ✓'));
+  });
   /* his home pages: a line when projects wait for the weekly update */
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
     const v = S.route && S.route.view; const view = document.getElementById('view'); const old = document.getElementById('okckbar');
@@ -5021,7 +5035,7 @@ html[data-theme="dark"] #oklock{background:#0d1719}
       t: L('«تحديث مشاريعي» — مرة في الأسبوع', '«Update my projects» — once a week'),
       s: [L('حالة كل مشروع بدوسة: شغّال · متوقف مؤقتًا · واقف · اتسلّم (ولو متوقف اكتب السبب).', 'Each project\'s state in one tap: Ongoing · On hold · Stopped · Delivered (write why when on hold).'),
         L('«مفيش تغيير ✓» لو المشروع زي ما هو.', '«Nothing changed ✓» when the project is as it was.'),
-        L('محتاج حد يتضاف أو يتشال من الفريق؟ «اطلب تعديل في الفريق» — بيروح لرئيسة الـ PMO.', 'Need someone added or removed? «Ask for a team change» — it goes to the Head of PMO.')] },
+        L('تنقل ناس بين مشاريعك بنفسك (× أو «ضيف حد من مشاريعك»). حد جديد على مشاريعك؟ «اطلب تعديل في الفريق» — بيروح لرئيسة الـ PMO.', 'Move people between your own projects yourself (× or «Add someone from your projects»). Someone new to your projects? «Ask for a team change» — it goes to the Head of PMO.')] },
     { id: 'money', show: () => finPO(), art: 'money', go: '#/okcheck',
       t: L('فلوس المشروع بتتفتح من موبايلك', 'Project money opens with your phone'),
       s: [L('على الكمبيوتر دوس «اعرض المبالغ» — هيظهر QR.', 'On the computer tap «Show amounts» — a QR shows.'),
