@@ -4452,10 +4452,11 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
 </style>`);
 
   /* ---------- the page ---------- */
-  const ui = { q: '', by: 'proj', f: 'all' };
+  const ui = { q: '', by: 'proj', f: 'all' }; let mode = 'all';   /* all = Project List · mine = My Projects (where she is a Project Owner or holds the finance) */
   const match = p => { const q = ui.q.trim().toLowerCase(); if (!q) return true; return [p.name, p.code, p.client].concat(owners(p).map(nm), [nm(finId(p))], (p.team || []).map(nm)).some(x => String(x || '').toLowerCase().includes(q)); };
   const split = p => !owners(p).includes(finId(p));
-  const shown = () => live().filter(p => (ui.f === 'all' || (ui.f === 'hold' ? p.okState === 'hold' : ui.f === 'split' ? split(p) : ui.f === 'same' ? !split(p) : p.okState !== 'hold')) && match(p)).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  const isMine = p => owners(p).includes(me()) || finId(p) === me();
+  const shown = () => live().filter(p => (mode !== 'mine' || isMine(p)) && (ui.f === 'all' || (ui.f === 'hold' ? p.okState === 'hold' : ui.f === 'split' ? split(p) : ui.f === 'same' ? !split(p) : p.okState !== 'hold')) && match(p)).sort((a, b) => String(a.name).localeCompare(String(b.name)));
   /* who does what on a project: technical (the Project Owners) and finance with the Client (financeId, else the Project Owner) */
   const rolesOf = p => { const os = owners(p); const f = finId(p); return uniq(os.concat([f])).map(id => ({ id, t: os.includes(id), f: id === f })); };
   const TAG = r => r.t && r.f ? [L('تكنيكال وفاينانس', 'Technical & finance'), 'tf'] : r.t ? [L('تكنيكال بس', 'Technical only'), 't'] : [L('فاينانس بس', 'Finance only'), 'f'];
@@ -4472,13 +4473,14 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
       const cnt = k => list2.filter(([, r]) => r.id && TAG(r)[1] === k).length; const parts = [['tf', L('تكنيكال وفاينانس', 'technical & finance')], ['t', L('تكنيكال بس', 'technical only')], ['f', L('فاينانس بس', 'finance only')]].filter(([k]) => cnt(k)).map(([k, t]) => `${cnt(k)} ${t}`);
       return `<div class="po"><h3>${esc(nm(o) || L('من غير Project Owner', 'No Project Owner'))}</h3><div class="sub">${esc((w && w.title) || '')}${w && w.title ? ' · ' : ''}${esc(L(`${list2.length} مشروع`, `${list2.length} projects`))}${parts.length ? ' · ' + esc(parts.join(' · ')) : ''} · ${esc(L(`${folks.length} شخص`, `${folks.length} people`))}</div>
         ${list2.map(([p, r]) => { const t = (p.team || []).filter(id => !owners(p).includes(id)); return `<div class="row"><a class="grow" href="#/projects/${esc(p.id)}"><b>${esc(p.name || '—')}</b></a>${r.id ? tagHTML(r) : ''}${p.okState === 'hold' ? `<span class="pill">On hold</span>` : ''}<span class="muted">${esc(L(`فريق ${t.length}`, `Team ${t.length}`))}</span><button type="button" class="btn sm ghost" data-okpmo="edit:${esc(p.id)}">${icon('edit')}<span>${esc(L('عدّل', 'Edit'))}</span></button></div>`; }).join('')}</div>`; }).join(''); };
-  const page = () => {
+  const page = m => {
+    mode = m || 'all';
     if (!can()) return `<div class="empty"><b>${esc(L('الصفحة دي لرئيسة الـ PMO والمدير التنفيذي', 'This page is for the Head of PMO and the CEO'))}</b></div>`;
     loadDir();
-    const all = live(); const ps = shown(); const pos = uniq([].concat(...all.map(owners))); const onP = new Set([].concat(...all.map(p => (p.team || []).concat(owners(p)))));
+    const all = mode === 'mine' ? live().filter(isMine) : live(); const ps = shown(); const pos = uniq([].concat(...all.map(owners))); const onP = new Set([].concat(...all.map(p => (p.team || []).concat(owners(p)))));
     const free = ppl().filter(w => !onP.has(w.id) && !w.noPunch);
-    return `<div class="okpmo"><div class="hd"><div class="grow"><h1>${esc(L('المشاريع والفرق', 'Projects & teams'))}</h1><p>${esc(L('مين الـ Project Owner على كل مشروع، ومين شغال معاه.', 'Who is the Project Owner on each project, and who works with him.'))}</p></div>
-        <a class="btn" href="#/okcrm">${icon('quote')}<span>CRM</span></a></div>
+    return `<div class="okpmo"><div class="hd"><div class="grow"><h1>${esc(mode === 'mine' ? L('مشاريعي', 'My Projects') : L('قائمة المشاريع', 'Project List'))}</h1><p>${esc(mode === 'mine' ? L('المشاريع اللي إنتي Project Owner عليها أو ماسكة الفاينانس بتاعها — مين تكنيكال ومين فاينانس، ومين في الفريق.', 'The projects you own or hold the finance of — who is technical, who handles finance, and who is on the team.') : L('كل مشاريع المكتب: الـ Project Owner التكنيكال، ومين ماسك الفاينانس، ومين في الفريق.', 'Every project of the office: the technical Project Owner, who handles finance, and who is on the team.'))}</p></div>
+        <a class="btn" href="#/${mode === 'mine' ? 'okpmo' : 'okmyproj'}">${icon('layers')}<span>${esc(mode === 'mine' ? L('قائمة المشاريع', 'Project List') : L('مشاريعي', 'My Projects'))}</span></a><a class="btn" href="#/okcrm">${icon('quote')}<span>CRM</span></a></div>
       <div class="kp"><div><b>${all.length}</b><small>${esc(L('مشروع شغال', 'Live projects'))}</small></div><div><b>${pos.length}</b><small>Project Owners</small></div><div><b>${onP.size}</b><small>${esc(L('شخص على المشاريع', 'People on projects'))}</small></div><div title="${esc(free.map(w => w.name).join('، '))}"><b>${free.length}</b><small>${esc(L('مش على أي مشروع', 'On no project'))}</small></div></div>
       <div class="tb"><input type="search" data-okpmoq value="${esc(ui.q)}" placeholder="${esc(L('دوّري باسم مشروع أو شخص…', 'Search a project or a person…'))}">
         <div class="seg">${[['proj', L('بالمشروع', 'By project')], ['po', L('بالـ Project Owner', 'By Project Owner')]].map(([k, t]) => `<button type="button" data-okpmo="by:${k}" class="${ui.by === k ? 'on' : ''}">${esc(t)}</button>`).join('')}</div>
@@ -4560,11 +4562,11 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
   } catch (e) { /* ignore */ } });
 
   /* ---------- the menu ---------- */
-  if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.okpmo = () => page();
-  if (typeof VIEW_TITLES === 'object') try { Object.defineProperty(VIEW_TITLES, 'okpmo', { configurable: true, enumerable: true, get: () => L('المشاريع والفرق', 'Projects & teams') }); } catch (e) { VIEW_TITLES.okpmo = 'المشاريع والفرق'; }
-  if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okpmo')) { const i = NAV.findIndex(n => n && n.id === 'okcrm'); NAV.splice(i >= 0 ? i + 1 : Math.min(2, NAV.length), 0, { id: 'okpmo', get label() { return L('المشاريع والفرق', 'Projects & teams'); }, get short() { return L('الفرق', 'Teams'); }, icon: 'layers' }); }
-  if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okpmo')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okpmo']); });
-  if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okpmo') return can(); return base.apply(this, arguments); })(canSee);
+  if (typeof EXTRA_VIEWS === 'object') { EXTRA_VIEWS.okpmo = () => page('all'); EXTRA_VIEWS.okmyproj = () => page('mine'); }
+  if (typeof VIEW_TITLES === 'object') try { Object.defineProperty(VIEW_TITLES, 'okpmo', { configurable: true, enumerable: true, get: () => L('قائمة المشاريع', 'Project List') }); Object.defineProperty(VIEW_TITLES, 'okmyproj', { configurable: true, enumerable: true, get: () => L('مشاريعي', 'My Projects') }); } catch (e) { VIEW_TITLES.okpmo = 'قائمة المشاريع'; VIEW_TITLES.okmyproj = 'مشاريعي'; }
+  if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okpmo')) { const i = NAV.findIndex(n => n && n.id === 'okcrm'); NAV.splice(i >= 0 ? i + 1 : Math.min(2, NAV.length), 0, { id: 'okpmo', get label() { return L('قائمة المشاريع', 'Project List'); }, get short() { return L('المشاريع', 'Projects'); }, icon: 'layers' }, { id: 'okmyproj', get label() { return L('مشاريعي', 'My Projects'); }, get short() { return L('مشاريعي', 'Mine'); }, icon: 'star' }); }
+  if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r])) ['okpmo', 'okmyproj'].forEach(v => { if (!ROLE_VIEWS[r].includes(v)) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat([v]); }); });
+  if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okpmo') return can(); if (v === 'okmyproj') return isPMO(); return base.apply(this, arguments); })(canSee);
 })();
 
 /* =====================================================================
@@ -4905,7 +4907,7 @@ html[data-theme="dark"] #oklock{background:#0d1719}
   } catch (e) { /* ignore */ } });
   /* Projects & teams (Head of PMO): when each project was last updated */
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
-    if (!(S.route && S.route.view === 'okpmo')) return;
+    if (!(S.route && ['okpmo', 'okmyproj'].includes(S.route.view))) return;
     document.querySelectorAll('.okpmo .pc').forEach(c => { if (c.querySelector('.okckw')) return; const a = c.querySelector('.t a[href^="#/projects/"]'); if (!a) return; const p = byId('projects', a.getAttribute('href').slice(11)); if (!p) return;
       const d = checkedAt(p) ? days(ago(checkedAt(p))) : null; const st = stOf(p); const S0 = ST()[st] || {};
       c.querySelector('.t').insertAdjacentHTML('afterend', `<div class="okckw" style="font-size:12px;color:${stale(p) ? '#9a5b00' : 'var(--muted)'}">${S0.ar ? `<b style="color:rgb(${S0.c})">●</b> ${esc(L(S0.ar, S0.en))} · ` : ''}${esc(d == null ? L('الـ Project Owner لسه ما حدّثهوش', 'Not updated by the Project Owner yet') : d === 0 ? L('اتحدّث النهارده', 'Updated today') : L(`اتحدّث من ${d} يوم`, `Updated ${d} days ago`))}${p.okStateNote && st !== 'active' ? ' · ' + esc(p.okStateNote) : ''}</div>`); });
