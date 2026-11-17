@@ -214,7 +214,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
     { id: 'mgmt', name: 'إدارة المكتب', en: 'Office Management', admin: true },
     { id: 'acct', name: 'الحسابات والموارد البشرية', en: 'Accounts & HR', admin: true },
   ];
-  const TITLES = ['Associate Partner', 'Landscape Design Manager', 'Lead Landscape Architect', 'Senior Landscape Architect', 'Landscape Architect', 'Junior Landscape Architect', 'Senior Lead Irrigation Engineer', 'Irrigation Engineer', 'Agricultural Engineer', 'Senior 3D Visualizing Architect', 'PMO Coordinator', 'Site Engineer', 'Senior Site Engineer', 'Office Manager', 'Accountant', 'HR Specialist', 'Office Boy', 'Driver'];
+  const TITLES = ['Associate Partner', 'Landscape Manager', 'Landscape Design Manager', 'Lead Landscape Architect', 'Senior Landscape Architect', 'Landscape Architect', 'Junior Landscape Architect', 'Senior Lead Irrigation Engineer', 'Irrigation Engineer', 'Agricultural Engineer', 'Senior 3D Visualizing Architect', 'PMO Coordinator', 'Site Engineer', 'Senior Site Engineer', 'Office Manager', 'Accountant', 'HR Specialist', 'Office Boy', 'Driver'];
   /* shifts = the regulation: office 8 h effective + 30 min break, flexible arrival 08:00–11:00 (grace 180 min from 08:00; the day
      ends 8.5 h after the punch-in — see policy.flexEnd) · site 09:00–17:00 six days · home / hybrid punch from anywhere · part time */
   const SHIFTS = [
@@ -364,7 +364,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
 
   /* roles of the office (the studio keys stay; the names change) */
   if (typeof ROLES === 'object') Object.assign(ROLES, {
-    admin: 'CEO', manager: 'مدير التصميم — Landscape Design Manager', hr: 'مدير المكتب — الشؤون الإدارية والموارد البشرية', acc: 'الحسابات',
+    admin: 'CEO', manager: 'مدير التصميم — Head of Design', hr: 'مدير المكتب — الشؤون الإدارية والموارد البشرية', acc: 'الحسابات',
     head: 'شريك / رئيس قسم — Associate Partner', office: 'مهندس — Landscape Architect', employee: 'موظف — بوابة الموبايل', viewer: 'مشاهد',
   });
   if (typeof ROLE_HINTS === 'object') Object.assign(ROLE_HINTS, {
@@ -549,7 +549,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
     ['Manal Hussien', 2007, 'Associate Partner | Head of Landscape Coordination', 'manal.hussein@oekoplanlandscaping.com', '0100378228', 'full', 'رقم الموبايل ناقص رقم — يُراجع', 'coord', 'head'],
     ['Rawan Kamal El-Dein', 2009, 'Associate Partner | Head of PMO', 'rawan.kamal@oekoplanlandscaping.com', '01002490111', 'home', '', 'pmo', 'head'],
     ['Reem Elsayed', 2010, 'Associate Partner | Head of Business Development', 'reem.elsayed@oekoplanlandscaping.com', '01068505773', 'home', '', 'bd', 'head'],
-    ['Asmaa Hassan', 2012, 'Landscape Design Manager', 'asmaa.hassan@oekoplanlandscaping.com', '01099377479', 'full', '', 'tech', 'manager'],
+    ['Asmaa Hassan', 2012, 'Landscape Manager', 'asmaa.hassan@oekoplanlandscaping.com', '01099377479', 'full', '', 'tech', 'manager'],
     ['Aya Yasser', 2014, 'Lead Landscape Architect', 'aya.yasser@oekoplanlandscaping.com', '01116999103', 'home', '', '', 'office'],
     ['Sarah El Sayed', 2014, 'Lead Landscape Architect', 'sarah.elsayed@oekoplanlandscaping.com', '01011922386', 'home', 'إجازة وضع', '', 'office'],
     ['Hoda Abdelrahim', 2017, 'Senior Lead Irrigation Engineer', 'hoda.abdelrahim@oekoplanlandscaping.com', '01001298246', 'full', '', 'coord', 'office'],
@@ -707,7 +707,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
   /* ---------------------------------------------------------------- language: the add-on's Arabic ↔ English (the page pack covers the engine) */
   const OEKO_I18N = {
     'معرض المشاريع': 'Projects Gallery', 'المعرض': 'Gallery', 'من معرض المشاريع': 'From the projects gallery', 'عن المكتب': 'About the office', 'البروفايل': 'The profile', 'مشاريع المكتب': 'The office\'s projects', 'إضافة مشروع': 'Add project',
-    'CEO': 'CEO', 'مدير التصميم — Landscape Design Manager': 'Landscape Design Manager', 'مدير المكتب — الشؤون الإدارية والموارد البشرية': 'Office Manager — Admin & HR', 'الحسابات': 'Accounts',
+    'CEO': 'CEO', 'مدير التصميم — Head of Design': 'Head of Design', 'مدير المكتب — الشؤون الإدارية والموارد البشرية': 'Office Manager — Admin & HR', 'الحسابات': 'Accounts',
     'شريك / رئيس قسم — Associate Partner': 'Associate Partner — Head of Department', 'مهندس — Landscape Architect': 'Landscape Architect', 'موظف — بوابة الموبايل': 'Employee — mobile portal', 'مشاهد': 'Viewer', 'كشك الحضور': 'Attendance kiosk',
     'CEO (د. طارق صبحي): يرى كل شيء ويعتمد نهائيًا — المشاريع، الفريق، الحضور، الإجازات، المرتبات، العملاء وعروض الأسعار.': 'CEO (Dr. Tarek Sobhy): sees everything and gives the final approval — projects, team, attendance, leave, payroll, clients and fee proposals.',
     'الشريك / رئيس القسم: يدير قسمه وفرقه — يوزّع المهام ويتابع المشاريع ويعتمد إجازات وأذونات وبصمات فريقه (الاعتماد النهائي).': 'Associate partner / head of department: runs the department and its teams — assigns tasks, follows projects and gives the final approval on the team\'s leave, permissions and punches.',
@@ -951,7 +951,7 @@ html[data-theme="dark"] .okn{background:var(--surface-2)}
   const okOrgCan = () => !!S.session && (typeof writable !== 'function' || writable()) && ['admin', 'hr', 'manager'].includes(typeof role === 'function' ? role() : '');
   const okOrgPhoto = w => { const u = (w && (w.avatar || w.photo)) || (typeof nfPhoto === 'function' ? nfPhoto(w.id) : null); return u; };
   const okIni = n => String(n || '').trim().split(/\s+/).slice(0, 2).map(x => x[0] || '').join('').toUpperCase();
-  const okDept = id => { const d = DEPTS.find(x => x.id === id); return d ? L(d.name, d.en) : ''; };
+  const okDept = id => { const d = DEPTS.find(x => x.id === id); return d ? L(d.name, d.en) : ''; }; window.okDeptName = okDept;
   const okOrgChart = () => {
     const ws = list('workers').filter(w => w.status !== 'inactive' && w.active !== false);
     const byIdW = new Map(ws.map(w => [w.id, w]));
@@ -971,6 +971,7 @@ html[data-theme="dark"] .okn{background:var(--surface-2)}
       ${can && pool.length ? `<div class="okorg-bar"><span class="small muted">${L('من غير مدير مباشر:', 'No direct manager yet:')}</span><div class="okpool">${pool.map(w => `<div class="okn" draggable="true" data-okp="${w.id}">${okOrgPhoto(w) ? `<img class="okav" src="${esc(okOrgPhoto(w))}" alt="">` : `<span class="okav">${esc(okIni(w.name))}</span>`}<a class="okm" href="#/workers/${w.id}">${esc(w.name)}</a></div>`).join('')}</div></div>` : ''}
       <div class="okorg"><ul><li>${root}${(() => { seen.add('owner'); const ks = sortK((kids.get('owner') || []).filter(w => !pool.includes(w))); return ks.length ? `<ul>${ks.map(k => `<li>${card(k, 1)}${tree(k.id, 2)}</li>`).join('')}</ul>` : ''; })()}</li></ul></div></div>`;
   };
+  window.okOrgChart = () => okOrgChart();
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { const org = document.querySelector('.okorg'); const root = org && org.querySelector('.okn.root'); if (!org || !root || org.dataset.okc) return; org.dataset.okc = 1; const r = root.getBoundingClientRect(), o = org.getBoundingClientRect(); org.scrollLeft += (r.left + r.width / 2) - (o.left + o.width / 2); });
   if (typeof vOrg === 'function') vOrg = (base => function () {
     let h = base.apply(this, arguments);
@@ -4416,9 +4417,10 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
     if (!can() || isAdmin() || dirBusy || !S.sb || typeof S.sb.rpc !== 'function' || Date.now() - dirAt < 10 * 60e3) return;
     dirAt = Date.now(); dirBusy = true;
     Promise.resolve(S.sb.rpc('nf_ok_directory')).then(r => { dirBusy = false; const a = r && Array.isArray(r.data) ? r.data : []; if (!(S.data && S.data.workers instanceof Map)) return; let ch = false;
-      a.forEach(x => { if (x && x.id && !S.data.workers.has(x.id)) { S.data.workers.set(x.id, x); ch = true; } }); if (ch) setTimeout(() => { try { rerender(); } catch (e) { /* */ } }, 0); }).catch(() => { dirBusy = false; });
+      a.forEach(x => { if (!x || !x.id) return; const cur = S.data.workers.get(x.id); if (!cur || cur._lite) { if (!cur || JSON.stringify(cur) !== JSON.stringify(x)) { S.data.workers.set(x.id, x); ch = true; } } }); if (ch) setTimeout(() => { try { rerender(); } catch (e) { /* */ } }, 0); }).catch(() => { dirBusy = false; });
   };
 
+  window.okDirReload = () => { dirAt = 0; loadDir(); };
   /* ---------- notices ---------- */
   const tell = (ids, title, body, pid) => { ids = uniq(ids || []).filter(id => id !== me()); if (!ids.length) return;
     ids.forEach(id => { try { Store.save('tasks', { id: 'okn_' + uid(), title, desc: body || '', assigneeId: id, deptId: null, status: 'open', kind: 'notice', source: 'okpmo', priority: 'normal', createdBy: (S.session && S.session.id) || null, createdByName: myName(), createdAt: nowISO(), link: '#/projects/' + pid }, { silent: true }); } catch (e) { /* best effort */ } });
@@ -4434,6 +4436,8 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
 .okpmo .pc .t{display:flex;gap:10px;align-items:center}.okpmo .pc .lg{flex:none;width:44px;height:44px;border-radius:12px;background:#e9eef0;display:grid;place-items:center;overflow:hidden}.okpmo .pc .lg img{max-width:78%;max-height:78%;object-fit:contain;filter:grayscale(1);opacity:.85;mix-blend-mode:multiply}.okpmo .pc:hover .lg img{filter:none;opacity:1}.okpmo .pc .lg b{font-size:12px;letter-spacing:.06em;color:#5c6b72;text-transform:uppercase}.okpmo .pc .t a{font-weight:600;font-size:15.5px;color:var(--ink);text-decoration:none;overflow-wrap:anywhere}.okpmo .pc .t small{display:block;color:var(--muted);font-size:12px;font-weight:400}
 .okpmo .kv{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:13px}.okpmo .kv span{color:var(--muted)}.okpmo .kv b{font-weight:600;overflow-wrap:anywhere}
 .okpmo .ch,.okpe .ch{display:flex;flex-wrap:wrap;gap:5px}.okpmo .c,.okpe .c{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12.5px;background:var(--surface-2);color:var(--ink)}.okpmo .c.o,.okpe .c.o{border-color:var(--kb,#50b1e7);color:#2b8fc7;font-weight:600;background:#eef8fd}
+.okpmo .who{display:flex;flex-direction:column;gap:5px}.okpmo .who>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13.5px}
+.okpmo .tg,.okpe .tg{display:inline-flex;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:600;white-space:nowrap}.okpmo .tg.tf,.okpe .tg.tf{background:#e6f4f1;color:#227a6f}.okpmo .tg.t,.okpe .tg.t{background:#eaf6fc;color:#2b8fc7}.okpmo .tg.f,.okpe .tg.f{background:#fdf3e2;color:#9a5b00}
 .okpmo .pill{display:inline-flex;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:600;background:var(--warn-soft);color:var(--warn-ink);white-space:nowrap}
 .okpmo .ft{display:flex;gap:8px;margin-top:auto;padding-top:4px}.okpmo .po{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px 16px;margin-bottom:12px}.okpmo .po h3{margin:0 0 2px;font-size:16.5px}.okpmo .po .sub{color:var(--muted);font-size:12.5px;margin-bottom:8px}
 .okpmo .row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px;flex-wrap:wrap}.okpmo .row:first-of-type{border-top:0}.okpmo .row .grow{min-width:140px}.okpmo .row a{color:var(--ink);text-decoration:none}.okpmo .muted{color:var(--muted)}
@@ -4445,18 +4449,24 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
   /* ---------- the page ---------- */
   const ui = { q: '', by: 'proj', f: 'all' };
   const match = p => { const q = ui.q.trim().toLowerCase(); if (!q) return true; return [p.name, p.code, p.client].concat(owners(p).map(nm), [nm(finId(p))], (p.team || []).map(nm)).some(x => String(x || '').toLowerCase().includes(q)); };
-  const shown = () => live().filter(p => (ui.f === 'all' || (ui.f === 'hold' ? p.okState === 'hold' : p.okState !== 'hold')) && match(p)).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  const split = p => !owners(p).includes(finId(p));
+  const shown = () => live().filter(p => (ui.f === 'all' || (ui.f === 'hold' ? p.okState === 'hold' : ui.f === 'split' ? split(p) : ui.f === 'same' ? !split(p) : p.okState !== 'hold')) && match(p)).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  /* who does what on a project: technical (the Project Owners) and finance with the Client (financeId, else the Project Owner) */
+  const rolesOf = p => { const os = owners(p); const f = finId(p); return uniq(os.concat([f])).map(id => ({ id, t: os.includes(id), f: id === f })); };
+  const TAG = r => r.t && r.f ? [L('تكنيكال وفاينانس', 'Technical & finance'), 'tf'] : r.t ? [L('تكنيكال بس', 'Technical only'), 't'] : [L('فاينانس بس', 'Finance only'), 'f'];
+  const tagHTML = r => { const t = TAG(r); return `<span class="tg ${t[1]}">${esc(t[0])}</span>`; };
   const chips = (ids, max, cls) => { const a = ids.slice(0, max); return a.map(id => `<span class="c ${cls || ''}">${esc(nm(id) || '—')}</span>`).join('') + (ids.length > max ? `<span class="c">+${ids.length - max}</span>` : ''); };
-  const card = p => { const os = owners(p); const team = (p.team || []).filter(id => !os.includes(id)); const f = finId(p);
+  const card = p => { const os = owners(p); const f = finId(p); const team = (p.team || []).filter(id => !os.includes(id) && id !== f);
     const lg = window.okLogoOf ? window.okLogoOf(p) : null;
     return `<div class="pc"><div class="t"><span class="lg">${lg && lg.src ? `<img src="${esc(lg.src)}" alt="" loading="lazy">` : `<b>${esc(lg && lg.name ? lg.name.slice(0, 3) : String(p.name || '?').slice(0, 2))}</b>`}</span><div class="grow"><a href="#/projects/${esc(p.id)}">${esc(p.name || '—')}</a><small>${esc([p.code, p.client].filter(Boolean).join(' · '))}</small></div>${p.okState === 'hold' ? `<span class="pill">On hold</span>` : ''}</div>
-      <div class="kv"><span>Project Owner</span><b>${esc(os.map(nm).filter(Boolean).join(' & ') || '—')}</b>${f && !os.includes(f) ? `<span>${esc(L('المالي', 'Finance'))}</span><b>${esc(nm(f) || '—')}</b>` : ''}</div>
+      <div class="who">${rolesOf(p).map(r => `<div><b>${esc(nm(r.id) || '—')}</b>${tagHTML(r)}</div>`).join('') || `<div class="muted">${esc(L('من غير Project Owner', 'No Project Owner'))}</div>`}</div>
       <div><div class="muted" style="font-size:12px;margin-bottom:4px">${esc(L('الفريق', 'Team'))} · ${team.length}</div><div class="ch">${team.length ? chips(team, 6) : `<span class="muted" style="font-size:12.5px">${esc(L('لسه مفيش حد', 'Nobody yet'))}</span>`}</div></div>
       <div class="ft"><button type="button" class="btn sm p" data-okpmo="edit:${esc(p.id)}">${icon('edit')}<span>${esc(L('الـ Project Owner والفريق', 'Project Owner & team'))}</span></button></div></div>`; };
-  const byPO = ps => { const m = new Map(); ps.forEach(p => { const os = owners(p); (os.length ? os : ['']).forEach(o => { if (!m.has(o)) m.set(o, []); m.get(o).push(p); }); });
-    return Array.from(m.keys()).sort((a, b) => String(nm(a) || 'zz').localeCompare(String(nm(b) || 'zz'))).map(o => { const list2 = m.get(o); const folks = uniq([].concat(...list2.map(p => p.team || []))).filter(id => id !== o); const w = W(o);
-      return `<div class="po"><h3>${esc(nm(o) || L('من غير Project Owner', 'No Project Owner'))}</h3><div class="sub">${esc((w && w.title) || '')}${w && w.title ? ' · ' : ''}${esc(L(`${list2.length} مشروع · ${folks.length} شخص`, `${list2.length} projects · ${folks.length} people`))}</div>
-        ${list2.map(p => { const t = (p.team || []).filter(id => !owners(p).includes(id)); return `<div class="row"><a class="grow" href="#/projects/${esc(p.id)}"><b>${esc(p.name || '—')}</b></a>${p.okState === 'hold' ? `<span class="pill">On hold</span>` : ''}<span class="muted">${esc(L(`فريق ${t.length}`, `Team ${t.length}`))}</span><button type="button" class="btn sm ghost" data-okpmo="edit:${esc(p.id)}">${icon('edit')}<span>${esc(L('عدّل', 'Edit'))}</span></button></div>`; }).join('')}</div>`; }).join(''); };
+  const byPO = ps => { const m = new Map(); ps.forEach(p => { const rs = rolesOf(p); (rs.length ? rs : [{ id: '' }]).forEach(r => { if (!m.has(r.id)) m.set(r.id, []); m.get(r.id).push([p, r]); }); });
+    return Array.from(m.keys()).sort((a, b) => String(nm(a) || 'zz').localeCompare(String(nm(b) || 'zz'))).map(o => { const list2 = m.get(o); const folks = uniq([].concat(...list2.map(([p]) => p.team || []))).filter(id => id !== o); const w = W(o);
+      const cnt = k => list2.filter(([, r]) => r.id && TAG(r)[1] === k).length; const parts = [['tf', L('تكنيكال وفاينانس', 'technical & finance')], ['t', L('تكنيكال بس', 'technical only')], ['f', L('فاينانس بس', 'finance only')]].filter(([k]) => cnt(k)).map(([k, t]) => `${cnt(k)} ${t}`);
+      return `<div class="po"><h3>${esc(nm(o) || L('من غير Project Owner', 'No Project Owner'))}</h3><div class="sub">${esc((w && w.title) || '')}${w && w.title ? ' · ' : ''}${esc(L(`${list2.length} مشروع`, `${list2.length} projects`))}${parts.length ? ' · ' + esc(parts.join(' · ')) : ''} · ${esc(L(`${folks.length} شخص`, `${folks.length} people`))}</div>
+        ${list2.map(([p, r]) => { const t = (p.team || []).filter(id => !owners(p).includes(id)); return `<div class="row"><a class="grow" href="#/projects/${esc(p.id)}"><b>${esc(p.name || '—')}</b></a>${r.id ? tagHTML(r) : ''}${p.okState === 'hold' ? `<span class="pill">On hold</span>` : ''}<span class="muted">${esc(L(`فريق ${t.length}`, `Team ${t.length}`))}</span><button type="button" class="btn sm ghost" data-okpmo="edit:${esc(p.id)}">${icon('edit')}<span>${esc(L('عدّل', 'Edit'))}</span></button></div>`; }).join('')}</div>`; }).join(''); };
   const page = () => {
     if (!can()) return `<div class="empty"><b>${esc(L('الصفحة دي لرئيسة الـ PMO والمدير التنفيذي', 'This page is for the Head of PMO and the CEO'))}</b></div>`;
     loadDir();
@@ -4467,7 +4477,7 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
       <div class="kp"><div><b>${all.length}</b><small>${esc(L('مشروع شغال', 'Live projects'))}</small></div><div><b>${pos.length}</b><small>Project Owners</small></div><div><b>${onP.size}</b><small>${esc(L('شخص على المشاريع', 'People on projects'))}</small></div><div title="${esc(free.map(w => w.name).join('، '))}"><b>${free.length}</b><small>${esc(L('مش على أي مشروع', 'On no project'))}</small></div></div>
       <div class="tb"><input type="search" data-okpmoq value="${esc(ui.q)}" placeholder="${esc(L('دوّري باسم مشروع أو شخص…', 'Search a project or a person…'))}">
         <div class="seg">${[['proj', L('بالمشروع', 'By project')], ['po', L('بالـ Project Owner', 'By Project Owner')]].map(([k, t]) => `<button type="button" data-okpmo="by:${k}" class="${ui.by === k ? 'on' : ''}">${esc(t)}</button>`).join('')}</div>
-        <div class="seg">${[['all', L('الكل', 'All')], ['active', L('شغال', 'Active')], ['hold', 'On hold']].map(([k, t]) => `<button type="button" data-okpmo="f:${k}" class="${ui.f === k ? 'on' : ''}">${esc(t)}</button>`).join('')}</div></div>
+        <div class="seg">${[['all', L('الكل', 'All')], ['same', L('تكنيكال وفاينانس مع نفس الشخص', 'Technical & finance together')], ['split', L('الفاينانس مع Project Owner تاني', 'Finance with another Project Owner')], ['hold', 'On hold']].map(([k, t]) => `<button type="button" data-okpmo="f:${k}" class="${ui.f === k ? 'on' : ''}">${esc(t)}</button>`).join('')}</div></div>
       ${!ps.length ? `<div class="empty"><b>${esc(L('مفيش مشاريع بالبحث ده', 'No project matches'))}</b></div>` : ui.by === 'po' ? byPO(ps) : `<div class="gr">${ps.map(card).join('')}</div>`}</div>`;
   };
 
@@ -4477,9 +4487,11 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
     const old = owners(p); const oldTeam = uniq(p.team || []);
     const ed = { team: new Set(oldTeam) };   /* a Project Owner who is replaced stays on the team until he is removed */
     const opts = (v, blank) => `${blank ? `<option value="">—</option>` : ''}${ppl().map(w => `<option value="${esc(w.id)}" ${w.id === v ? 'selected' : ''}>${esc(w.name)}${w.title ? ' — ' + esc(w.title) : ''}</option>`).join('')}`;
-    const body = `<div class="okpe"><div class="g3"><div><label>Project Owner</label><select name="lead" required>${opts(p.leadId || p.ownerId || '', true)}</select></div>
-        <div><label>${esc(L('Project Owner تاني (اختياري)', 'Second Project Owner (optional)'))}</label><select name="co">${opts((p.coOwnerIds || [])[0] || '', true)}</select></div>
-        <div><label>${esc(L('المسؤول عن المتابعة المالية مع الـ Client', 'Client Financial Reporting Responsible'))}</label><select name="fin">${opts(p.financeId || '', true)}</select></div></div>
+    const fin0 = p.financeId && p.financeId !== (p.leadId || p.ownerId) ? p.financeId : '';
+    const body = `<div class="okpe"><div class="g3"><div><label>${esc(L('Project Owner — تكنيكال', 'Project Owner — technical'))}</label><select name="lead" required>${opts(p.leadId || p.ownerId || '', true)}</select></div>
+        <div><label>${esc(L('Project Owner تاني — تكنيكال (اختياري)', 'Second Project Owner — technical (optional)'))}</label><select name="co">${opts((p.coOwnerIds || [])[0] || '', true)}</select></div>
+        <div><label>${esc(L('الفاينانس مع الـ Client (بيبعت المطالبات)', 'Finance with the Client (sends the claims)'))}</label><select name="fin"><option value="">${esc(L('نفس الـ Project Owner — تكنيكال وفاينانس', 'The Project Owner — technical & finance'))}</option>${opts(fin0, false)}</select></div></div>
+      <div class="who" data-okpe="who" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
       <h4><span data-okpe="tc"></span><span class="grow"></span></h4><div class="ch" data-okpe="team"></div>
       <h4><span data-okpe="sh"></span><span class="grow"></span><button type="button" class="btn sm ghost" data-okpe-all>${icon('plus')}<span>${esc(L('ضيفهم كلهم', 'Add them all'))}</span></button></h4><div class="ch" data-okpe="sug"></div><p class="hint">${esc(L('دول الناس اللي تحت الـ Project Owner في الهيكل — الفريق الافتراضي بتاعه.', 'These are the people under the Project Owner on the organisation chart — his default team.'))}</p>
       <h4>${esc(L('ضيفي حد تاني', 'Add someone else'))}</h4><div class="add"><select data-okpe="pick"></select><button type="button" class="btn sm" data-okpe-add>${icon('plus')}<span>${esc(L('ضيف', 'Add'))}</span></button></div><p class="hint">${esc(L('لو من تيم Project Owner تاني، هيوصله إشعار للعلم.', 'If he is on another Project Owner\'s team, that Project Owner is told, for information.'))}</p>
@@ -4487,6 +4499,8 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
     let f0 = null;
     const val = n => ((f0 && f0.querySelector(`[name=${n}]`)) || {}).value || '';
     const draw = () => { if (!f0) return; const lead = val('lead'), co = val('co'); const os = uniq([lead, co]);
+      const fin = val('fin') || lead; const rs = uniq(os.concat([fin])).map(id => ({ id, t: os.includes(id), f: id === fin }));
+      f0.querySelector('[data-okpe=who]').innerHTML = rs.map(r => { const tg = r.t && r.f ? [L('تكنيكال وفاينانس', 'Technical & finance'), 'tf'] : r.t ? [L('تكنيكال بس', 'Technical only'), 't'] : [L('فاينانس بس', 'Finance only'), 'f']; return `<span class="c">${esc(nm(r.id) || '—')} <span class="tg ${tg[1]}">${esc(tg[0])}</span></span>`; }).join('');
       const t = Array.from(ed.team).filter(id => !os.includes(id)).sort((a, b) => String(nm(a)).localeCompare(String(nm(b))));
       f0.querySelector('[data-okpe=tc]').textContent = L(`الفريق · ${t.length}`, `Team · ${t.length}`);
       f0.querySelector('[data-okpe=team]').innerHTML = os.map(id => `<span class="c o">${esc(nm(id))} · PO</span>`).join('') + t.map(id => { const n = projOf(id).filter(x => x.id !== pid).length; return `<span class="c" title="${esc(L(`على ${n} مشروع تاني`, `On ${n} other projects`))}">${esc(nm(id) || '—')}<button type="button" data-okpe-rm="${esc(id)}" aria-label="${esc(L('شيل', 'Remove'))}">×</button></span>`; }).join('');
@@ -4499,7 +4513,7 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
     };
     openModal({ title: L(`الـ Project Owner والفريق — ${p.name}`, `Project Owner & team — ${p.name}`), wide: true, submitLabel: L('احفظ', 'Save'), body,
       onOpen: f => { f0 = f; draw();
-        ['lead', 'co'].forEach(n => { const s = f.querySelector(`[name=${n}]`); if (s) s.addEventListener('change', () => { if (n === 'lead') { const fs = f.querySelector('[name=fin]'); if (fs && !fs.value) fs.value = s.value; } draw(); }); });
+        ['lead', 'co', 'fin'].forEach(n => { const s = f.querySelector(`[name=${n}]`); if (s) s.addEventListener('change', () => draw()); });
         f.addEventListener('click', ev => { const rm = ev.target.closest('[data-okpe-rm]'), sg = ev.target.closest('[data-okpe-sug]'), all = ev.target.closest('[data-okpe-all]'), add = ev.target.closest('[data-okpe-add]');
           if (rm) { ev.preventDefault(); ed.team.delete(rm.dataset.okpeRm); draw(); }
           else if (sg) { ev.preventDefault(); ed.team.add(sg.dataset.okpeSug); draw(); }
@@ -4546,4 +4560,81 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
   if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okpmo')) { const i = NAV.findIndex(n => n && n.id === 'okcrm'); NAV.splice(i >= 0 ? i + 1 : Math.min(2, NAV.length), 0, { id: 'okpmo', get label() { return L('المشاريع والفرق', 'Projects & teams'); }, get short() { return L('الفرق', 'Teams'); }, icon: 'layers' }); }
   if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okpmo')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okpmo']); });
   if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okpmo') return can(); return base.apply(this, arguments); })(canSee);
+})();
+
+/* =====================================================================
+   Ökoplan — structure & job descriptions (Mahmoud, 17 Nov 2026)
+   The organisation chart for the CEO and the Head of PMO, and each person's job title and job description:
+   tap a person on the chart → his title, department, direct manager and job description; the CEO and the Head of PMO edit
+   the title and the description (server: nf_ok_set_job — the titles that carry access, «Head of PMO» and «Financial Manager»,
+   stay with the CEO). Everyone reads his own job description on «My page».
+   ===================================================================== */
+(() => {
+  if (window.__OK_JD__) return; window.__OK_JD__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const W = id => (id ? byId('workers', id) : null);
+  const nm = id => { const w = W(id); return (w && w.name) || ''; };
+  const isPMO = () => !!(window.okAccess && window.okAccess.isPMO && window.okAccess.isPMO());
+  const can = () => !!S.session && (isAdmin() || isPMO());
+  const KEY = /head of pmo|financial manager/i;
+  const dept = id => { if (!id) return ''; try { return (window.okDeptName && window.okDeptName(id)) || (typeof deptName === 'function' ? deptName(id) : '') || ''; } catch (e) { return ''; } };
+  const lines = t => String(t || '').split(/\n+/).map(x => x.replace(/^\s*[-•·*]\s*/, '').trim()).filter(Boolean);
+  document.head.insertAdjacentHTML('beforeend', `<style>
+.okjdv .okorg .okn[data-okp]:not(.root){cursor:pointer}.okorg .okn .okm{background:none!important;padding:0!important;border:0!important;box-shadow:none!important;border-radius:0!important;display:block;max-width:100%;color:inherit;text-align:center}.okorg .okn.root .okm{color:#fff}.okjdv .okorg .okn .okjdd{position:absolute;top:6px;inset-inline-start:6px;width:7px;height:7px;border-radius:50%;background:#38a599}
+.okjd .hdr{display:flex;gap:12px;align-items:center;margin-bottom:12px}.okjd .av{width:52px;height:52px;border-radius:50%;background:#e9f5fb;color:#2b8fc7;display:grid;place-items:center;font-weight:600;font-size:18px;flex:none}
+.okjd .hdr b{display:block;font-size:17px}.okjd .hdr small{color:var(--muted);font-size:13px}.okjd .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13.5px;margin-bottom:12px}.okjd .kv span{color:var(--muted)}
+.okjd ul{margin:6px 0 0;padding-inline-start:20px}.okjd li{margin:3px 0;font-size:14px;line-height:1.5}.okjd label{display:block;font-size:12.5px;font-weight:600;margin:10px 0 5px}.okjd textarea{width:100%;min-height:190px;box-sizing:border-box;font:inherit;line-height:1.55}
+.okjd .hint,.okjd .meta{color:var(--muted);font-size:12.5px;margin:4px 0 0}.okmyjd ul{margin:6px 0 0;padding-inline-start:20px}.okmyjd li{margin:3px 0;line-height:1.5}
+</style>`);
+
+  const show = wid => {
+    const w = W(wid); if (!w) return; const edit = can() && !(KEY.test(w.title || '') && !isAdmin());
+    const items = lines(w.jobDesc); const titles = Array.from(new Set(list('workers').map(x => x.title).filter(Boolean))).sort();
+    const body = `<div class="okjd"><div class="hdr"><span class="av">${esc(String(w.name || '?').split(/\s+/).map(x => x[0]).slice(0, 2).join('').toUpperCase())}</span><div><b>${esc(w.name || '')}</b><small>${esc(w.title || '')}</small></div></div>
+      <div class="kv"><span>${esc(L('القسم', 'Department'))}</span><b>${esc(dept(w.deptId) || '—')}</b><span>${esc(L('المدير المباشر', 'Direct manager'))}</span><b>${esc(nm(w.managerId) || (w.managerId ? 'CEO' : '—'))}</b></div>
+      ${edit ? `<label>${esc(L('المسمّى الوظيفي', 'Job title'))}</label><input name="title" list="okjdtl" value="${esc(w.title || '')}" maxlength="120" dir="ltr"><datalist id="okjdtl">${titles.filter(t => isAdmin() || !KEY.test(t)).map(t => `<option value="${esc(t)}">`).join('')}</datalist>
+        <label>${esc(L('الوصف الوظيفي — كل مسؤولية في سطر', 'Job description — one responsibility per line'))}</label><textarea name="jd" dir="auto" maxlength="6000" placeholder="${esc(L('مثال:\nيستلم الداتا من الـ Project Owner ويرسم المخطط العام\nيراجع الرسومات قبل ما تطلع للـ Client', 'e.g.\nTakes the data from the Project Owner and draws the master plan\nChecks the drawings before they go to the Client'))}">${esc(w.jobDesc || '')}</textarea>
+        <p class="hint">${esc(L('المسمّى ده بيظهر للشخص وفي الهيكل. «Head of PMO» و«Financial Manager» بيتغيّروا من المدير التنفيذي بس.', 'The title shows to the person and on the chart. «Head of PMO» and «Financial Manager» are changed by the CEO only.'))}</p>`
+      : `<b style="font-size:14px">${esc(L('الوصف الوظيفي', 'Job description'))}</b>${items.length ? `<ul>${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p class="meta">${esc(L('لسه ما اتكتبش.', 'Not written yet.'))}</p>`}`}
+      ${w.jobDescAt ? `<p class="meta">${esc(L('آخر تعديل: ', 'Last edited: '))}${esc(w.jobDescBy || '')} · ${esc(fmtDate(String(w.jobDescAt).slice(0, 10)))}</p>` : ''}</div>`;
+    openModal({ title: L('الوصف الوظيفي', 'Job description'), body, wide: true, submitLabel: edit ? L('احفظ', 'Save') : L('تمام', 'OK'),
+      onSubmit: async f => { if (!edit) return;
+        const t = String((f.querySelector('[name=title]') || {}).value || '').trim(), jd = String((f.querySelector('[name=jd]') || {}).value || '').trim();
+        if (!t) { toast(L('اكتب المسمّى الوظيفي', 'Write the job title'), 'err'); return false; }
+        if (!isAdmin() && KEY.test(t)) { toast(L('المسمّى ده بيتغيّر من المدير التنفيذي بس', 'Only the CEO gives this title'), 'err'); return false; }
+        if (t === (w.title || '') && jd === (w.jobDesc || '')) { toast(L('مفيش تغيير', 'Nothing changed')); return; }
+        const r = await S.sb.rpc('nf_ok_set_job', { p_worker: w.id, p_title: t, p_jd: jd }); const res = r && !r.error ? r.data : (r && r.error && r.error.message) || 'error';
+        if (res !== 'ok') { toast(res === 'protected' ? L('المسمّى ده بيتغيّر من المدير التنفيذي بس', 'Only the CEO gives this title') : res === 'denied' ? L('مش مسموح', 'Not allowed') : L('ما اتحفظش — جرّب تاني', 'Not saved — try again'), 'err'); return false; }
+        const cur = S.data.workers.get(w.id) || w; S.data.workers.set(w.id, Object.assign({}, cur, { title: t, jobDesc: jd, jobDescAt: nowISO(), jobDescBy: (S.session && S.session.name) || '' }));
+        if (window.okDirReload) window.okDirReload(); toast(L('اتحفظ ✓', 'Saved ✓')); if (typeof rerender === 'function') rerender(); } });
+  };
+  window.okJobDesc = show;
+
+  const page = () => {
+    if (!can()) return `<div class="empty"><b>${esc(L('الصفحة دي لرئيسة الـ PMO والمدير التنفيذي', 'This page is for the Head of PMO and the CEO'))}</b></div>`;
+    const ws = list('workers').filter(w => w.status !== 'inactive' && w.status !== 'left'); const done = ws.filter(w => String(w.jobDesc || '').trim()).length;
+    const chart = typeof window.okOrgChart === 'function' ? window.okOrgChart() : '';
+    return `<div class="okjdv stack"><div class="card"><div class="cardhead"><h3 style="margin:0">${esc(L('الهيكل والوصف الوظيفي', 'Structure & job descriptions'))}</h3><div class="grow"></div><span class="small muted">${esc(L(`${done} من ${ws.length} ليهم وصف وظيفي`, `${done} of ${ws.length} have a job description`))}</span></div>
+      <p class="small muted" style="margin:0">${esc(L('دوسي على أي شخص في الهيكل عشان تشوفي أو تعدّلي المسمّى والوصف الوظيفي بتاعه. النقطة الخضرا = عنده وصف وظيفي.', 'Tap anyone on the chart to see or edit his job title and job description. The green dot = he has a job description.'))}</p></div>${chart}</div>`;
+  };
+  /* on this page a tap on a person opens his job description (also on the chart of the org page, for the CEO) */
+  document.addEventListener('click', ev => {
+    const n = ev.target.closest && ev.target.closest('.okjdv .okorg .okn[data-okp], .okjdv .okorg-bar .okn[data-okp]'); if (!n || n.dataset.okp === 'owner' || ev.target.closest('[data-okout]')) return;
+    if (ev.target.closest('a.okm') && isAdmin() && (ev.ctrlKey || ev.metaKey)) return; ev.preventDefault(); ev.stopPropagation(); show(n.dataset.okp);
+  }, true);
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    const v = S.route && S.route.view; if (v === 'okorgjd') { if (window.okDirReload && !isAdmin() && !window.__okjdDir) { window.__okjdDir = 1; window.okDirReload(); }
+      document.querySelectorAll('.okjdv .okorg .okn[data-okp]').forEach(n => { const w = W(n.dataset.okp); const has = !!(w && String(w.jobDesc || '').trim()); const d = n.querySelector('.okjdd'); if (has && !d) n.insertAdjacentHTML('afterbegin', '<span class="okjdd"></span>'); else if (!has && d) d.remove(); }); }
+    /* «My page»: my own job description */
+    if (v === 'me' && S.session && S.session.workerId) { const w = W(S.session.workerId); const view = document.getElementById('view'); if (!w || !view) return; const items = lines(w.jobDesc); const old = view.querySelector('.okmyjd'); if (!items.length) { if (old) old.remove(); return; }
+      const html = `<div class="card okmyjd" style="margin-top:12px"><div class="cardhead"><h3 style="margin:0">${esc(L('الوصف الوظيفي بتاعي', 'My job description'))}</h3><div class="grow"></div><span class="small muted">${esc(w.title || '')}</span></div><ul>${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`;
+      if (!old) { const rec = view.querySelector('.okrec'); if (rec) rec.insertAdjacentHTML('beforebegin', html); else view.insertAdjacentHTML('beforeend', html); } else if (old.outerHTML !== html) old.outerHTML = html; }
+  } catch (e) { /* ignore */ } });
+
+  if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.okorgjd = () => page();
+  if (typeof VIEW_TITLES === 'object') try { Object.defineProperty(VIEW_TITLES, 'okorgjd', { configurable: true, enumerable: true, get: () => L('الهيكل والوصف الوظيفي', 'Structure & job descriptions') }); } catch (e) { VIEW_TITLES.okorgjd = 'الهيكل والوصف الوظيفي'; }
+  if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okorgjd')) { const i = NAV.findIndex(n => n && n.id === 'okpmo'); NAV.splice(i >= 0 ? i + 1 : Math.min(2, NAV.length), 0, { id: 'okorgjd', get label() { return L('الهيكل والوصف الوظيفي', 'Structure & job descriptions'); }, get short() { return L('الهيكل', 'Structure'); }, icon: 'workers' }); }
+  if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okorgjd')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okorgjd']); });
+  if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okorgjd') return can(); return base.apply(this, arguments); })(canSee);
 })();
