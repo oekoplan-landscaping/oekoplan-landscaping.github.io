@@ -6141,5 +6141,11 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
     finally { b.disabled = false; } }; }
   if (typeof flagSuspect === 'function') flagSuspect = (base => async function (w0) { if (isFlex(w0 && byId('workers', w0.id) || w0)) return; return base.apply(this, arguments); })(flagSuspect);
   if (typeof bioCard === 'function') bioCard = (base => function (w) { if (isFlex(w)) return ''; return base.apply(this, arguments); })(bioCard);
+  /* the computer-QR punch (qrp-v1): the scanned personal code already proves who it is — a person marked «punch without face / finger»
+     (punchNoBio) is not asked for the finger or the face after the scan (an iPhone used to ask, and a «no» ended in «we could not verify you») */
+  if (typeof punchVerify === 'function') punchVerify = (base => async function (w) { try { if (S._nqQR && w && (byId('workers', w.id) || w).punchNoBio) return { ok: true, verify: { qr: 1 } }; } catch (e) { /* the normal check */ } return base.apply(this, arguments); })(punchVerify);
+  /* the office, not «the factory», in the punch messages */
+  if (typeof factoryZone === 'function') factoryZone = (base => function () { const z = base.apply(this, arguments); return z ? Object.assign({}, z, { name: L('المكتب', 'The office') }) : z; })(factoryZone);
+  if (typeof punchGeoBase === 'function') punchGeoBase = (base => async function () { const r = await base.apply(this, arguments); try { if (r && r.msg && /موقع المصنع غير محدد/.test(r.msg)) r.msg = L('موقع المكتب لسه مش متحدد في السيستم — البصمة موقوفة لحد ما الإدارة تحدده', 'The office location is not set in the system yet — punching is paused until management sets it'); } catch (e) { /* keep */ } return r; })(punchGeoBase);
   if (typeof OEKO_I18N === 'object') OEKO_I18N['مواعيد مرنة — بصمة من الموبايل في أي وقت ومن أي مكان'] = 'Flexible hours — punch from the phone any time, from anywhere';
 } catch (e) { console.warn('oeko flex punch', e); } })();
