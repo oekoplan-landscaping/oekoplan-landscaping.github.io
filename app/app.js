@@ -18013,7 +18013,7 @@ if (typeof STU_ON !== 'undefined' && STU_ON) {
   if (typeof stuProjectVisible === 'function') { const baseVis = stuProjectVisible; window.stuProjectVisible = p => baseVis(p) || isOwner(p); }
   /* new projects start in the operating system (intake = management only) */
   Store.save = (base => function (col, doc, opt) { if (col === 'projects' && doc && !doc.flow && (!doc.id || !byId('projects', doc.id))) doc = Object.assign({}, doc, { flow: 'os', osStatus: 'data', camReq: 'req' }); return base.call(this, col, doc, opt); })(Store.save);
-  const baseNew = ACTIONS.stuProjectNew; ACTIONS.stuProjectNew = () => { if (!isAD()) { toast('دخول المشروع من الإدارة (المدير التنفيذي أو مدير التصميم)', 'err'); return; } return baseNew(); };
+  const baseNew = ACTIONS.stuProjectNew; ACTIONS.stuProjectNew = () => { /* Ökoplan 18 Nov (PIN): the Head of PMO puts the projects in too */ const pmo = !!(window.okAccess && window.okAccess.isPMO && window.okAccess.isPMO()); if (!isAD() && !pmo) { toast((typeof I18N !== 'undefined' && I18N.lang === 'en') ? 'New projects are entered by the CEO, the Head of Design or the Head of PMO' : 'المشروع الجديد بيدخل من المدير التنفيذي أو مدير التصميم أو رئيسة الـ PMO', 'err'); return; } return baseNew(); };
 
   /* ---------- operations board: approvals, delays, blocked, my shots ---------- */
   function osBoard() {
