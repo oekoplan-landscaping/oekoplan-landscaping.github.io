@@ -1869,7 +1869,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
   const page = () => {
     const o = office(); const p = mine(); const sw = (key, label) => `<label class="oksw"><input type="checkbox" data-oklsw="${key}" ${(key === 'learn' ? on() : adapt()) ? 'checked' : ''}><span>${esc(label)}</span></label>`;
     const head = `<div class="oklhead">${o ? `<span class="okpill"><b>${(o.ui || {}).events || 0}</b>${esc(L('حدث استخدام آخر 30 يوم', 'usage events, last 30 days'))}</span><span class="okpill"><b>${(o.ui || {}).people || 0}</b>${esc(L('شخص', 'people'))}</span><span class="okpill"><b>${(o.suggestions || []).length}</b>${esc(L('مقترح', 'suggestions'))}</span><span class="okpill small muted">${esc(L('آخر تعلّم', 'Last pass'))} ${esc(fmtDate(String(o.at || '').slice(0, 10)))}</span>` : `<span class="okpill small muted">${esc(L('أول تعلّم بيتم الليلة — السيستم لسه بيجمّع.', 'The first pass runs tonight — the system is still collecting.'))}</span>`}<div class="grow"></div>${sw('learn', L('سجّل استخدامي لتحسين الواجهة', 'Record my usage to improve the interface'))}${sw('adapt', L('خصّص واجهتي', 'Personalise my interface'))}</div>`;
-    const note = `<div class="small muted" style="margin:-6px 0 12px">${esc(L('بيانات الاستخدام بتتجمع عشان نسهّل الشغل والواجهة بس — مش لتقييم حد. كل واحد يقدر يقفلها من هنا.', 'Usage data is collected only to ease the work and the interface — never to evaluate anyone. Anyone can switch it off here.'))}</div>`;
+    const note = `<div class="small muted" style="margin:-6px 0 12px">${esc(L('بيانات الاستخدام بتتجمع عشان نسهّل الشغل والواجهة، وبقت كمان جزء من تقييم الأداء مع الحضور والتاسكات والتحديث الأسبوعي (من 18 نوفمبر). لو قفلتها من هنا، استخدامك مش هيتسجّل.', 'Usage data is collected to ease the work and the interface, and is now also part of the performance evaluation with attendance, tasks and the weekly update (from 18 November). If you switch it off here, your usage is not recorded.'))}</div>`;
     const myH = `<div class="card"><h3>👤 ${esc(L('استخدامي أنا', 'My usage'))}</h3>${p ? `<div class="small muted">${esc(L(`${p.events} حدث · ${p.phoneShare}% من الموبايل · أكتر الساعات: ${(p.peakHours || []).map(h => h + ':00').join(' · ')}`, `${p.events} events · ${p.phoneShare}% on the phone · peak hours: ${(p.peakHours || []).map(h => h + ':00').join(' · ')}`))}</div><table><thead><tr><th>${esc(L('الصفحة', 'Page'))}</th><th>${esc(L('مرات', 'Opens'))}</th></tr></thead><tbody>${(p.topViews || []).map(v => `<tr><td>${esc(vname(v.view))}</td><td><span class="okbar" style="width:${Math.min(100, v.n * 3)}px"></span>${v.n}</td></tr>`).join('')}</tbody></table>${(p.abandoned || []).length ? `<div class="small" style="margin-top:8px">${esc(L('فورمات بتسيبها كتير من غير حفظ: ', 'Forms you often leave unsaved: '))}${p.abandoned.map(f => esc(f.form)).join(' · ')}</div>` : ''}` : `<div class="small muted">${esc(L('لسه مفيش بروفايل — بيتبني بعد أول يوم استخدام.', 'No profile yet — it is built after the first day of use.'))}</div>`}</div>`;
     if (!o) return head + note + `<div class="okl">${myH}</div>`;
     const dec = o.decisions || {}; const sugs = (o.suggestions || []); const open = sugs.filter(s => !dec[s.id] || dec[s.id].d === 'try'), closed = sugs.filter(s => dec[s.id] && dec[s.id].d !== 'try');
@@ -5155,6 +5155,11 @@ html[data-theme="dark"] #oklock{background:#0d1719}
       s: [L('بيوصلك إشعار: «من يوم كذا هتشتغل في مشروع كذا».', 'You get a notice: «From day … you work on project …».'),
         L('وفيه مين الـ Project Owner اللي هتتابع معاه، ولحد إمتى.', 'With the Project Owner you follow up with, and until when.'),
         L('الإشعارات بتوصل على الموبايل — فعّلها من الجرس فوق.', 'Notices reach your phone — turn them on from the bell at the top.')] },
+    { id: 'brainuse', show: () => !!S.session && !!me() && !isAdmin(), art: 'status', go: '#/oklearn',
+      t: L('السيستم بقى بيقيس الأداء', 'The system now measures performance'),
+      s: [L('كل أسبوع السيستم بيراجع الشغل: الحضور، التاسكات وهل خلصت في ميعادها، التحديث الأسبوعي للمشاريع، وتاسكات الاجتماعات.', 'Every week the system reviews the work: attendance, tasks and whether they finished on time, the weekly project update, and meeting tasks.'),
+        L('استخدامك للسيستم كمان بقى جزء من التقييم — سجّل شغلك عليه أول بأول.', 'Your use of the system is now part of the evaluation too — log your work as you go.'),
+        L('اللي مش متسجّل مبيتحسبش لك ولا عليك. تقدر تشوف استخدامك في «ما تعلّمه السيستم».', 'What is not recorded counts neither for nor against you. See your usage in «Learning».')] },
     { id: 'meets', show: () => !!S.session && !!me(), art: 'meet', go: '#/okmeets',
       t: L('اجتماعات Zoom وGoogle Meet من جوه السيستم', 'Zoom & Google Meet meetings from inside the system'),
       s: [L('التواصل ← «اجتماعات Zoom وMeet» ← «اجتماع جديد»: لينك Zoom بيتعمل لوحده، أو حط لينك Meet أو لينك العميل.', 'Communication → «Zoom & Meet» → «New meeting»: the Zoom link is made for you, or paste a Meet link or a client\'s link.'),
@@ -5326,11 +5331,11 @@ html[data-theme="dark"] .okmt-note{background:#12303f;color:#cfe9f7}
     const rows = ts.map((t, i) => { const fixed = t.taskId || t.skipped;
       const sel = `<select class="inp" data-okmt-who="${i}" ${fixed || !can ? 'disabled' : ''}><option value="">${esc(L('— مين؟ —', '— who? —'))}</option>${ppl.map(w => `<option value="${esc(w.id)}" ${w.id === t.whoId ? 'selected' : ''}>${esc(w.name)}</option>`).join('')}</select>`;
       return `<div class="okmt-tk"><div>${fixed ? '' : `<input type="checkbox" data-okmt-pick="${i}" ${t.whoId && can ? 'checked' : ''} ${can ? '' : 'disabled'}>`}</div>
-        <div><div class="w" dir="auto">${esc(t.what)}</div><div class="small muted" dir="auto">${esc(t.who || '')}${t.whoId ? '' : ` · ${L('مش من المكتب — اختار مين يتابع', 'not from the office — pick who follows up')}`}</div>${t.taskId ? `<div class="done">✓ ${esc(L(`اتعمل تاسك — ${t.okBy || ''}`, `Task made — ${t.okBy || ''}`))}</div>` : t.skipped ? `<div class="skip">${esc(L('اتشال', 'Skipped'))}</div>` : ''}</div>
+        <div><div class="w notr" dir="auto">${esc(t.what)}</div><div class="small muted" dir="auto">${esc(t.who || '')}${t.whoId ? '' : ` · ${L('مش من المكتب — اختار مين يتابع', 'not from the office — pick who follows up')}`}</div>${t.taskId ? `<div class="done">✓ ${esc(L(`اتعمل تاسك — ${t.okBy || ''}`, `Task made — ${t.okBy || ''}`))}</div>` : t.skipped ? `<div class="skip">${esc(L('اتشال', 'Skipped'))}</div>` : ''}</div>
         ${sel}<input type="date" class="inp" data-okmt-due="${i}" value="${esc(t.due || '')}" ${fixed || !can ? 'disabled' : ''}></div>`; }).join('');
     const open = ts.some(t => !t.taskId && !t.skipped);
     return `${rows}${can && open ? `<div class="row" style="margin-top:12px;gap:8px"><button type="button" class="btn p" data-okmt="approve" data-id="${esc(m.id)}">${esc(L('اعمل المختار تاسكات', 'Make the ticked ones tasks'))}</button><button type="button" class="btn ghost" data-okmt="skip" data-id="${esc(m.id)}">${esc(L('شيل اللي مش متعلّم', 'Drop the unticked ones'))}</button></div>` : ''}${!can && open ? `<p class="small muted" style="margin-top:8px">${esc(L('اللي عامل الاجتماع أو الـ Project Owner هو اللي بيوافق على التاسكات.', 'The meeting\'s creator or the Project Owner approves the tasks.'))}</p>` : ''}`; };
-  const ul = xs => (xs && xs.length ? `<ul dir="auto">${xs.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p class="muted small">—</p>`);
+  const ul = xs => (xs && xs.length ? `<ul class="notr" dir="auto">${xs.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p class="muted small">—</p>`);
   const docPage = id => {
     const m = byId(COL, id); if (!m) return `<div class="empty"><b>${esc(L('الاجتماع ده مش موجود', 'This meeting is not here'))}</b><p><a href="#/okmeets">${esc(L('كل الاجتماعات', 'All meetings'))}</a></p></div>`;
     const p = m.projectId && byId('projects', m.projectId); const can = canRun(m); const mi = m.minutes || {};
@@ -5348,12 +5353,12 @@ html[data-theme="dark"] .okmt-note{background:#12303f;color:#cfe9f7}
       return `<div class="okmt-doc">${head}${wait ? `<div class="okmt-note" style="margin-top:14px">${icon('clock')}<span>${esc(wait)}</span></div>` : ''}</div>`; }
     if (mi.empty) return `<div class="okmt-doc">${head}<div class="okmt-note" style="margin-top:14px">${icon('info')}<span>${esc(L('الاجتماع اتسجّل بس مكانش فيه كلام كفاية لمحضر.', 'The meeting was recorded but there was not enough talk for minutes.'))}</span></div></div>`;
     return `<div class="okmt-doc">${head}
-      <h3>${esc(L('الملخص', 'Summary'))}</h3><div class="card"><div class="sum" dir="auto">${esc(mi.summary || '—')}</div></div>
+      <h3>${esc(L('الملخص', 'Summary'))}</h3><div class="card"><div class="sum notr" dir="auto">${esc(mi.summary || '—')}</div></div>
       <h3>${esc(L('أهم النقاط', 'Key points'))}</h3>${ul(mi.points)}
       <h3>${esc(L('القرارات', 'Decisions'))}</h3>${ul(mi.decisions)}
       <h3>${esc(L('التاسكات', 'Tasks'))}</h3><div class="card">${tasksBlock(m, can)}</div>
       <h3>${esc(L('أسئلة مفتوحة', 'Open questions'))}</h3>${ul(mi.questions)}
-      ${mi.next ? `<h3>${esc(L('الخطوة الجاية', 'Next step'))}</h3><p dir="auto">${esc(mi.next)}</p>` : ''}
+      ${mi.next ? `<h3>${esc(L('الخطوة الجاية', 'Next step'))}</h3><p class="notr" dir="auto">${esc(mi.next)}</p>` : ''}
       ${(m.attendees || []).length ? `<p class="small muted" style="margin-top:16px">${esc(L('اللي اتكلموا:', 'Speakers:'))} ${esc(m.attendees.join('، '))}${m.talkMinutes ? ` · ${esc(L(`${m.talkMinutes} دقيقة`, `${m.talkMinutes} min`))}` : ''}</p>` : ''}
       ${isAdmin() ? `<div class="card" style="margin-top:16px"><div class="cardhead"><h3 style="margin:0">${esc(L('ليك إنت بس', 'For you only'))}</h3></div><p class="small muted">${esc(m.hasMoney ? L('فيه نقاط مالية اتقالت في الاجتماع.', 'Money points were said in the meeting.') : L('مفيش نقاط مالية.', 'No money points.'))}</p><div data-okmt-x></div><button type="button" class="btn sm" data-okmt="text" data-id="${esc(m.id)}">${esc(L('النقاط المالية والتفريغ الكامل', 'Money points & full transcript'))}</button></div>` : ''}
     </div>`;
@@ -5445,4 +5450,136 @@ html[data-theme="dark"] .okmt-note{background:#12303f;color:#cfe9f7}
     host.insertAdjacentHTML('beforebegin', `<div class="okmt-note" data-okmt-jump>${icon('meet')}<span>${esc(L('اجتماع على Zoom أو Google Meet، أو لينك من عميل؟ ', 'A Zoom or Google Meet meeting, or a client\'s link? '))}<a href="#/okmeets">${esc(L('اجتماعات Zoom وGoogle Meet ←', 'Zoom & Google Meet meetings →'))}</a></span></div>`);
   } catch (e) { /* */ } });
   window.okMeetNew = newModal;
+})();
+
+/* =====================================================================
+   Ökoplan — «عقل Ökoplan» (18 Nov 2026) — the CEO's page.
+   Mahmoud: «a brain that analyses everything — the people, their work and KPIs, whether the way of working is right, what to
+   improve, what to automate — the system has a mind, with Claude». The CEO only (his choice).
+   · every Sunday 06:00 (server, ok-brain) or «Analyse now»: office health · KPIs with the change since last time · what works /
+     what is wrong · where work waits · recommendations (small automations switch on by themselves; bigger ones: «Turn it on» /
+     «Make it a task» / «Not now») · every person: commitment index + its parts + Claude's notes · what the system cannot see yet.
+   · reads RPC nf_ok_brain (CEO only); the run: Edge function ok-brain.
+   ===================================================================== */
+(() => {
+  if (window.__OK_BRAIN__) return; window.__OK_BRAIN__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const B = { cur: null, prev: null, at: 0, busy: false, running: 0, open: {}, q: '', lvl: '' };
+  const KIND = { remind_client: L('تذكير العميل لو مردّش', 'Remind the client when he does not answer'), escalate_stale: L('تصعيد التاسك المتأخر للـ Project Owner', 'Escalate a stale task to the Project Owner'), deadline_guard: L('تنبيه قبل ميعاد تسليم العميل', 'Warn before the client deadline'), stage_tasks: L('فتح تاسكات المرحلة لوحدها', 'Open the stage tasks by themselves'), auto_assign: L('توزيع المشروع الجديد تلقائي', 'Assign new projects automatically'), auto_schedule: L('جدول التسليمات لكل مشروع جديد', 'A deliverables schedule for every new project') };
+  const LV = { strong: [L('ممتاز', 'Strong'), '#1f8a4c', '#e6f6ec'], ok: [L('كويس', 'Good'), '#2b8fc7', '#e8f5fd'], watch: [L('محتاج متابعة', 'Watch'), '#b26a00', '#fff4e0'], support: [L('محتاج دعم', 'Needs support'), '#b42318', '#fdecea'], unknown: [L('مش متقاس', 'Not measured'), '#6b7480', '#f1f3f5'] };
+  const IMP = { high: [L('أهمية عالية', 'High impact'), '#b42318', '#fdecea'], medium: [L('متوسطة', 'Medium'), '#b26a00', '#fff4e0'], low: [L('بسيطة', 'Low'), '#6b7480', '#f1f3f5'] };
+  const pill = (t, c, bg) => `<span class="okb-pill" style="color:${c};background:${bg}">${esc(t)}</span>`;
+  const rpc = async (fn, a) => { try { const r = await S.sb.rpc(fn, a || {}); return r && !r.error ? r.data : null; } catch (e) { return null; } };
+  const load = async (id) => { if (B.busy || !isAdmin() || !S.sb) return; B.busy = true; const d = await rpc('nf_ok_brain', { p_id: id || null }); B.busy = false; B.at = Date.now();
+    B.cur = d && d.status === 'ok' ? d : (d && d.status === 'none' ? { status: 'none' } : B.cur);
+    B.prev = null; if (B.cur && B.cur.list && B.cur.list.length > 1) { const i = B.cur.list.findIndex(x => x.id === B.cur.id); const pv = B.cur.list[i + 1]; if (pv) { const p = await rpc('nf_ok_brain', { p_id: pv.id }); B.prev = p && p.status === 'ok' ? p : null; } }
+    rerender(); };
+  window.okBrainReload = () => { B.at = 0; load(); };
+
+  document.head.insertAdjacentHTML('beforeend', `<style id="ok-brain-css">
+.okb{max-width:1180px}.okb-hd{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}.okb-hd .grow{flex:1;min-width:240px}.okb-hd h2{margin:0 0 4px;font-size:22px}.okb-hd p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.55}
+.okb-pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.okb-hero{display:grid;grid-template-columns:150px 1fr;gap:18px;align-items:center;border:1px solid var(--line);background:var(--surface);border-radius:20px;padding:18px 20px;margin-bottom:14px}
+@media (max-width:720px){.okb-hero{grid-template-columns:1fr}}
+.okb-ring{width:130px;height:130px;position:relative}.okb-ring svg{width:100%;height:100%;transform:rotate(-90deg)}.okb-ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:34px;font-weight:800}.okb-ring small{position:absolute;bottom:22px;left:0;right:0;text-align:center;font-size:11px;color:var(--muted)}
+.okb-hero h3{margin:0 0 6px;font-size:18px;line-height:1.45}.okb-hero p{margin:0;color:var(--muted);font-size:14px;line-height:1.6}
+.okb-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:16px}
+.okb-k{border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:12px 14px}.okb-k .v{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}.okb-k .t{font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.4}.okb-k .d{font-size:12px;font-weight:700;margin-top:4px}.okb-k .d.up{color:#1f8a4c}.okb-k .d.dn{color:#b42318}.okb-k .d.eq{color:var(--muted)}
+.okb-two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}@media (max-width:820px){.okb-two{grid-template-columns:1fr}}
+.okb-box{border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:14px 16px}.okb-box h3{margin:0 0 8px;font-size:15px}.okb-box ul{margin:0;padding-inline-start:18px;line-height:1.75;font-size:14px}
+.okb-box.ok{border-color:#bfe3cc}.okb-box.bad{border-color:#f3c7c2}
+.okb-sec{margin:20px 0 10px;font-size:16px;font-weight:800}
+.okb-rec{border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:14px 16px;margin-bottom:10px}.okb-rec .t{font-weight:700;font-size:15px;line-height:1.45;margin:6px 0 4px}.okb-rec .w{font-size:13.5px;color:var(--ink);line-height:1.6}.okb-rec .e{font-size:12.5px;color:var(--muted);margin-top:4px}
+.okb-rec .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}.okb-rec .done{font-size:12.5px;font-weight:700;color:#1f8a4c}
+.okb-ppl{width:100%;border-collapse:collapse;font-size:13.5px}.okb-ppl th{text-align:start;font-size:12px;color:var(--muted);font-weight:600;padding:8px 6px;border-bottom:1px solid var(--line);white-space:nowrap}.okb-ppl td{padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+.okb-ppl tr.row{cursor:pointer}.okb-ppl tr.row:hover td{background:var(--surface-2)}.okb-bar{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden;min-width:70px}.okb-bar i{display:block;height:100%;border-radius:4px}
+.okb-det td{background:var(--surface-2)}.okb-det .g{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:6px 2px}@media (max-width:820px){.okb-det .g{grid-template-columns:1fr}}.okb-det h4{margin:0 0 4px;font-size:12.5px;color:var(--muted)}.okb-det ul{margin:0;padding-inline-start:16px;line-height:1.6}
+.okb-raw{font-size:12px;color:var(--muted);line-height:1.7;margin-top:6px}
+.okb-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}.okb-tools input{max-width:240px}
+.okb-run{display:flex;gap:10px;align-items:center;border-radius:14px;padding:12px 14px;background:#f1edfb;color:#4a3796;font-size:14px;margin-bottom:12px}
+html[data-theme="dark"] .okb-run{background:#2a2346;color:#d9d0fb}
+.okb-gap{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:13.5px;line-height:1.55}.okb-gap b{font-weight:700}@media (max-width:720px){.okb-gap{grid-template-columns:1fr}}
+</style>`);
+
+  const delta = (k, cur, prev, better = 'up', unit = '') => { if (prev == null || cur == null || typeof cur !== 'number' || typeof prev !== 'number') return `<div class="d eq">${esc(B.prev ? '—' : L('أول قياس', 'First reading'))}</div>`; const d = Math.round((cur - prev) * 10) / 10; if (!d) return `<div class="d eq">= ${esc(L('زي المرة اللي فاتت', 'same as last time'))}</div>`; const good = better === 'up' ? d > 0 : d < 0; return `<div class="d ${good ? 'up' : 'dn'}">${d > 0 ? '▲' : '▼'} ${Math.abs(d)}${unit}</div>`; };
+  const kpiTiles = (k, p) => { p = p || {}; const n = v => (v == null ? '—' : v);
+    const T = [
+      [n(k.activeUsers) + ' / ' + n(k.people), L('استخدموا السيستم آخر 30 يوم', 'used the system in 30 days'), delta('au', k.activeUsers, p.activeUsers)],
+      [n(k.usageEvents), L('حركة على السيستم', 'actions in the system'), delta('ue', k.usageEvents, p.usageEvents)],
+      [k.attendanceMeasurable ? n(k.attendanceRatePct) + '%' : '—', k.attendanceMeasurable ? L('نسبة الحضور', 'attendance rate') : L('الحضور لسه مش متسجّل كفاية', 'attendance not recorded enough yet'), delta('ar', k.attendanceRatePct, p.attendanceRatePct, 'up', '%')],
+      [k.lateSharePct == null ? '—' : k.lateSharePct + '%', L('أيام تأخير من أيام الحضور', 'late days of present days'), delta('lt', k.lateSharePct, p.lateSharePct, 'down', '%')],
+      [n(k.weeklyUpdatePct) + '%', L('مشاريع اتحدّثت الأسبوع ده', 'projects updated this week'), delta('wu', k.weeklyUpdatePct, p.weeklyUpdatePct, 'up', '%')],
+      [`${n(k.projects && k.projects.active)} · ${n(k.projects && k.projects.hold)} · ${n(k.projects && k.projects.stopped)}`, L('مشاريع شغالة · متوقفة مؤقتًا · واقفة', 'projects ongoing · on hold · stopped'), ''],
+      [`${n(k.tasks && k.tasks.logged30)} / ${n(k.tasks && k.tasks.done30)}`, L('تاسكات اتسجّلت / اتقفلت (30 يوم)', 'tasks logged / closed (30 days)'), delta('tl', k.tasks && k.tasks.logged30, p.tasks && p.tasks.logged30)],
+      [n(k.tasks && k.tasks.overdue), L('تاسكات متأخرة مفتوحة', 'overdue open tasks'), delta('to', k.tasks && k.tasks.overdue, p.tasks && p.tasks.overdue, 'down')],
+      [n(k.meetings && k.meetings.withMinutes), L('اجتماعات ليها محضر', 'meetings with minutes'), ''],
+      [n(k.commitmentAvg), L('متوسط مؤشر الالتزام', 'average commitment index'), delta('ci', k.commitmentAvg, p.commitmentAvg)],
+    ];
+    return `<div class="okb-kpis">${T.map(t => `<div class="okb-k"><div class="v">${esc(String(t[0]))}</div><div class="t">${esc(t[1])}</div>${t[2]}</div>`).join('')}</div>`; };
+  const ring = s => { const v = Math.max(0, Math.min(100, Number(s) || 0)); const c = v >= 70 ? '#1f8a4c' : v >= 45 ? '#d98a00' : '#c0392b'; const C = 2 * Math.PI * 52; return `<div class="okb-ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="var(--surface-2)" stroke-width="12"/><circle cx="60" cy="60" r="52" fill="none" stroke="${c}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${(C * v / 100).toFixed(1)} ${C.toFixed(1)}"/></svg><b style="color:${c}">${v}</b><small>${esc(L('صحة المكتب', 'office health'))}</small></div>`; };
+  const ul = xs => (xs && xs.length ? `<ul class="notr" dir="auto">${xs.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p class="small muted">—</p>`);
+  const recCard = (r, d) => { const dec = (d.decisions || {})[r.id]; const ap = (d.applied || []).find(a => a.rec === r.id); const im = IMP[r.impact] || IMP.medium;
+    const OWN = { rawan: L('رئيسة الـ PMO', 'Head of PMO'), ceo: L('د. طارق', 'Dr. Tarek'), po: 'Project Owners', hr: L('الموارد البشرية', 'HR'), team: L('الفريق', 'The team') };
+    let acts = '';
+    if (ap) acts = `<span class="done">✓ ${esc(L('اشتغل لوحده:', 'Switched on by itself:'))} ${esc(KIND[ap.kind] || ap.kind)}${ap.params && ap.params.days ? ` (${esc(L(`${ap.params.days} يوم`, `${ap.params.days} days`))})` : ''}</span><a class="btn sm ghost" href="#/okrules">${esc(L('القواعد', 'Rules'))}</a>`;
+    else if (dec) acts = `<span class="done">${esc({ auto: L('✓ اتشغّل', '✓ Switched on'), task: L('✓ اتعمل تاسك', '✓ Made a task'), no: L('اتشال', 'Dropped'), later: L('بعدين', 'Later') }[dec.d] || dec.d)}</span>`;
+    else acts = `${r.automation ? `<button type="button" class="btn sm p" data-okb="auto" data-rec="${esc(r.id)}">${esc(L('شغّله أوتوماتيك', 'Turn it on'))} — ${esc(KIND[r.automation.kind] || r.automation.kind)}</button>` : ''}<button type="button" class="btn sm" data-okb="task" data-rec="${esc(r.id)}">${esc(L('اعمله تاسك لروان', 'Make it a task for Rawan'))}</button><button type="button" class="btn sm ghost" data-okb="no" data-rec="${esc(r.id)}">${esc(L('مش مناسب', 'Not for us'))}</button>`;
+    return `<div class="okb-rec"><div>${pill(im[0], im[1], im[2])} ${pill(r.effort === 'big' ? L('شغل كبير', 'Big effort') : L('شغل صغير', 'Small effort'), '#6b7480', '#f1f3f5')} ${pill(OWN[r.owner] || r.owner, '#2b8fc7', '#e8f5fd')}</div><div class="t notr" dir="auto">${esc(r.title)}</div><div class="w notr" dir="auto">${esc(r.why)}</div>${r.evidence ? `<div class="e notr" dir="auto">${esc(L('الدليل:', 'Evidence:'))} ${esc(r.evidence)}</div>` : ''}<div class="acts">${acts}</div></div>`; };
+  const PART = { attendance: L('الحضور', 'Attendance'), system: L('استخدام السيستم', 'System use'), tasks: L('التاسكات في ميعادها', 'Tasks on time'), updates: L('التحديث الأسبوعي', 'Weekly update'), meetings: L('تاسكات الاجتماعات', 'Meeting tasks') };
+  const peopleTable = d => { const q = B.q.trim().toLowerCase(); const rows = (d.people || []).filter(p => (!q || String(p.name).toLowerCase().includes(q) || String(p.title).toLowerCase().includes(q)) && (!B.lvl || ((p.ai && p.ai.level) || 'unknown') === B.lvl));
+    const bar = v => { if (v == null) return `<span class="small muted">—</span>`; const c = v >= 70 ? '#1f8a4c' : v >= 45 ? '#d98a00' : '#c0392b'; return `<div style="display:flex;align-items:center;gap:6px"><div class="okb-bar" style="flex:1"><i style="width:${v}%;background:${c}"></i></div><b style="font-variant-numeric:tabular-nums">${v}</b></div>`; };
+    const lv = p => { const l = LV[(p.ai && p.ai.level) || 'unknown'] || LV.unknown; return pill(l[0], l[1], l[2]); };
+    const body = rows.map(p => { const open = !!B.open[p.wid]; const a = p.ai || {}; const att = p.att ? (p.att.workdays >= 5 ? `${p.att.rate}% · ${L(`${p.att.lateDays} تأخير`, `${p.att.lateDays} late`)}` : L('مش متسجّل كفاية', 'not enough yet')) : L('ملوش بصمة', 'no punch');
+      return `<tr class="row" data-okb-p="${esc(p.wid)}"><td><b dir="auto">${esc(p.name)}</b><div class="small muted" dir="auto">${esc(p.title || '')}</div></td><td style="min-width:140px">${bar(p.score)}</td><td>${lv(p)}</td><td class="small">${esc(att)}</td><td class="small">${esc(L(`${p.use.activeDays} يوم`, `${p.use.activeDays} days`))}</td><td class="small">${p.po ? esc(`${p.po.projects} · ${p.po.compliancePct}%`) : '—'}</td><td class="small">${p.tasks.onTimePct != null ? esc(p.tasks.onTimePct + '%') : esc(String(p.tasks.done30 || '—'))}</td></tr>
+      ${open ? `<tr class="okb-det"><td colspan="7"><div class="g"><div><h4>${esc(L('نقط القوة', 'Strengths'))}</h4>${ul(a.strengths)}</div><div><h4>${esc(L('المخاطر', 'Risks'))}</h4>${ul(a.risks)}</div><div><h4>${esc(L('إزاي يتطور', 'How to grow'))}</h4>${ul(a.coaching)}</div></div>${a.note ? `<p class="notr" dir="auto" style="margin:6px 2px 0"><b>${esc(L('ملاحظة:', 'Note:'))}</b> ${esc(a.note)}</p>` : ''}
+        <div class="okb-raw">${esc(L('مكوّنات المؤشر:', 'Index parts:'))} ${Object.entries(p.parts || {}).map(([k, v]) => `${esc(PART[k] || k)} ${v}`).join(' · ') || '—'}<br>${esc(L('الاستخدام:', 'Usage:'))} ${esc(`${p.use.events} · ${L('أكتر صفحات', 'top pages')}: ${(p.use.topViews || []).join('، ') || '—'}`)}${p.po ? `<br>${esc(L('مشاريعه:', 'His projects:'))} ${esc(`${p.po.projects} · ${L('اتحدّثت', 'updated')} ${p.po.updated7d} · ${L('متوقفة', 'on hold')} ${p.po.onHold}`)}` : ''}${p.manager ? `<br>${esc(L('المدير:', 'Manager:'))} ${esc(p.manager)}` : ''}</div></td></tr>` : ''}`; }).join('');
+    return `<div class="okb-tools"><input class="inp" data-okb-q placeholder="${esc(L('دوّر على اسم أو مسمى…', 'Search a name or title…'))}" value="${esc(B.q)}"><select class="inp" data-okb-lvl style="max-width:200px"><option value="">${esc(L('كل المستويات', 'All levels'))}</option>${Object.entries(LV).map(([k, v]) => `<option value="${k}" ${B.lvl === k ? 'selected' : ''}>${esc(v[0])}</option>`).join('')}</select><span class="small muted" style="align-self:center">${esc(L('دوس على أي اسم يفتح ملاحظات Claude', 'Tap a name for Claude\'s notes'))}</span></div>
+      <div class="okb-box" style="padding:4px 10px;overflow:auto"><table class="okb-ppl"><thead><tr><th>${esc(L('الشخص', 'Person'))}</th><th>${esc(L('مؤشر الالتزام', 'Commitment index'))}</th><th>${esc(L('التقييم', 'Level'))}</th><th>${esc(L('الحضور', 'Attendance'))}</th><th>${esc(L('أيام على السيستم', 'Days on the system'))}</th><th>${esc(L('مشاريعه · تحديث', 'Projects · updated'))}</th><th>${esc(L('التاسكات', 'Tasks'))}</th></tr></thead><tbody>${body || `<tr><td colspan="7" class="small muted">—</td></tr>`}</tbody></table></div>
+      <p class="small muted" style="margin-top:6px">${esc(L('مؤشر الالتزام = متوسط الأجزاء اللي ليها بيانات بس: الحضور (لو اتسجّل 5 أيام على الأقل) · أيام استخدام السيستم · التاسكات في ميعادها · التحديث الأسبوعي (بعد أسبوع من بدايته) · تاسكات الاجتماعات. اللي مش متقاس مبيتحسبش لحد ولا عليه.', 'Commitment index = the average of the parts that have data only: attendance (once 5 days are recorded) · days on the system · tasks on time · weekly update (a week after it started) · meeting tasks. What is not measured counts neither for nor against anyone.'))}</p>`; };
+  const page = () => {
+    if (!isAdmin()) return `<div class="empty"><b>${esc(L('الصفحة دي لد. طارق بس', 'This page is for the CEO only'))}</b></div>`;
+    if (!B.cur || Date.now() - B.at > 5 * 60e3) setTimeout(() => load(B.cur && B.cur.id), 0);
+    const d = B.cur; const running = B.running && Date.now() - B.running < 6 * 60e3;
+    const hd = `<div class="okb-hd"><div class="grow"><h2>🧠 ${esc(L('عقل Ökoplan', 'Ökoplan Brain'))}</h2><p>${esc(L('Claude بيراجع المكتب كله كل أحد الصبح: الشغل والناس والـ KPIs وطريقة الشغل، ويقول إيه الصح وإيه الغلط ونعمل إيه. الأوتوميشن الصغير بيشغّله لوحده ويبلّغ روان وإنت.', 'Claude reviews the whole office every Sunday morning: the work, the people, the KPIs and the way of working — what is right, what is wrong, what to do. Small automations switch on by themselves and Rawan and you are told.'))}</p></div>
+      <div class="row" style="gap:8px;align-items:center">${d && d.list && d.list.length > 1 ? `<select class="inp" data-okb-hist style="max-width:220px">${d.list.map(x => `<option value="${esc(x.id)}" ${x.id === d.id ? 'selected' : ''}>${esc(fmtDate(String(x.at).slice(0, 10)))}${x.score != null ? ` · ${x.score}/100` : ''}</option>`).join('')}</select>` : ''}<button type="button" class="btn p" data-okb="run" ${running ? 'disabled' : ''}>${esc(running ? L('بيحلل…', 'Analysing…') : L('حلّل دلوقتي', 'Analyse now'))}</button></div></div>
+      ${running ? `<div class="okb-run">⏳ <span>${esc(L('Claude بيحلل المكتب دلوقتي — بياخد من دقيقة لـ 3. الصفحة هتتحدّث لوحدها.', 'Claude is analysing the office — 1 to 3 minutes. The page refreshes by itself.'))}</span></div>` : ''}`;
+    if (!d) return `<div class="okb">${hd}<div class="empty">${esc(L('بيحمّل…', 'Loading…'))}</div></div>`;
+    if (d.status === 'none') return `<div class="okb">${hd}<div class="okb-box">${esc(L('لسه مفيش تحليل — دوس «حلّل دلوقتي».', 'No analysis yet — tap «Analyse now».'))}</div></div>`;
+    const A = d.analysis || {}; const k = d.kpis || {}; const pk = B.prev ? B.prev.kpis : null;
+    if (A.error) return `<div class="okb">${hd}<div class="okb-box bad">${esc(L('التحليل مكملش — جرّب تاني.', 'The analysis did not finish — try again.'))} <span class="small muted">${esc(A.error)}</span></div></div>`;
+    return `<div class="okb">${hd}
+      <div class="okb-hero">${ring(A.health && A.health.score)}<div><h3 class="notr" dir="auto">${esc(A.headline || '')}</h3><p class="notr" dir="auto">${esc((A.health && A.health.why) || '')}</p>${A.kpi_notes ? `<p class="notr" dir="auto" style="margin-top:6px"><b>${esc(L('عن المرة اللي فاتت:', 'Since last time:'))}</b> ${esc(A.kpi_notes)}</p>` : ''}<p class="small muted" style="margin-top:8px">${esc(fmtDate(String(d.at).slice(0, 10)))} · ${esc(k.window || '')} · ${esc(d.by === 'cron' ? L('التحليل الأسبوعي', 'weekly analysis') : L('اتعمل يدوي', 'run by hand'))}${A.secs ? ` · ${A.secs}s` : ''}</p></div></div>
+      ${kpiTiles(k, pk)}
+      <div class="okb-two"><div class="okb-box ok"><h3>✓ ${esc(L('ماشي صح', 'Working well'))}</h3>${ul(A.right)}</div><div class="okb-box bad"><h3>✗ ${esc(L('محتاج يتصلح', 'Needs fixing'))}</h3>${ul(A.wrong)}</div></div>
+      ${(A.bottlenecks || []).length ? `<div class="okb-box" style="margin-bottom:12px"><h3>⛔ ${esc(L('فين الشغل بيقف', 'Where work waits'))}</h3>${ul(A.bottlenecks)}</div>` : ''}
+      <div class="okb-sec">${esc(L('نعمل إيه', 'What to do'))}</div>${(A.recommendations || []).map(r => recCard(r, d)).join('') || `<p class="small muted">—</p>`}
+      <div class="okb-sec">${esc(L('الناس', 'The people'))} <span class="small muted" style="font-weight:400">— ${esc(L('ليك إنت بس', 'for you only'))}</span></div>${peopleTable(d)}
+      ${(A.data_gaps || []).length ? `<div class="okb-sec">${esc(L('اللي السيستم مش شايفه لسه', 'What the system cannot see yet'))}</div><div class="okb-box"><div class="okb-gap">${A.data_gaps.map(g => `<div class="notr"><b dir="auto">${esc(g.what)}</b></div><div dir="auto" class="small notr">${esc(g.fix)}</div>`).join('')}</div></div>` : ''}
+      <p class="small muted" style="margin-top:14px">${esc(L('مفيش أي فلوس في التحليل ده. البيانات: المشاريع وحالتها، التحديث الأسبوعي، التاسكات، الحضور، استخدام السيستم، الاجتماعات.', 'No money in this analysis. Data: projects and their state, weekly updates, tasks, attendance, system usage, meetings.'))}</p></div>`;
+  };
+  if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.okbrain = page;
+  if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okbrain')) { const i = NAV.findIndex(n => n && n.id === 'oksmart'); NAV.splice(i >= 0 ? i : NAV.length, 0, { id: 'okbrain', get label() { return L('عقل Ökoplan', 'Ökoplan Brain'); }, get short() { return L('العقل', 'Brain'); }, icon: 'star', roles: ['admin'] }); }
+  if (typeof ROLE_VIEWS === 'object' && Array.isArray(ROLE_VIEWS.admin) && !ROLE_VIEWS.admin.includes('okbrain')) ROLE_VIEWS.admin = ROLE_VIEWS.admin.concat(['okbrain']);
+  if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okbrain') return !!S.session && isAdmin(); return base.apply(this, arguments); })(canSee);
+  try { if (typeof VIEW_TITLES === 'object' && !Object.getOwnPropertyDescriptor(VIEW_TITLES, 'okbrain')) Object.defineProperty(VIEW_TITLES, 'okbrain', { get: () => L('عقل Ökoplan', 'Ökoplan Brain'), configurable: true, enumerable: true }); } catch (e) { /* */ }
+
+  /* clicks */
+  const pmoId = () => { const w = list('workers').find(x => /head of pmo/i.test(String(x.title || '')) && x.status !== 'inactive'); return w ? w.id : ''; };
+  document.addEventListener('click', async ev => {
+    const row = ev.target.closest && ev.target.closest('[data-okb-p]'); if (row) { const id = row.dataset.okbP; B.open[id] = !B.open[id]; rerender(); return; }
+    const b = ev.target.closest && ev.target.closest('[data-okb]'); if (!b || !isAdmin()) return; ev.preventDefault(); const a = b.dataset.okb; const d = B.cur;
+    if (a === 'run') { b.disabled = true; let r = null; try { const x = await S.sb.functions.invoke('ok-brain', { body: { action: 'run' } }); r = x && x.data; if (x && x.error && !r) { try { r = await x.error.context.json(); } catch (e) { r = { error: 'x' }; } } } catch (e) { r = { error: String(e) }; }
+      if (r && r.error === 'recent') { toast(L('اتعمل تحليل من أقل من 10 دقايق — استنى شوية', 'An analysis ran less than 10 minutes ago — wait a little'), 'err'); b.disabled = false; return; }
+      if (!r || !r.ok) { toast(L('مابدأش — جرّب تاني', 'Did not start — try again'), 'err'); b.disabled = false; return; }
+      const before = d && d.id; B.running = Date.now(); rerender(); const t = setInterval(async () => { const x = await rpc('nf_ok_brain', { p_id: null }); if (x && x.status === 'ok' && x.id !== before) { clearInterval(t); B.running = 0; B.cur = null; B.at = 0; await load(); toast(L('التحليل الجديد جاهز ✓', 'The new analysis is ready ✓')); } else if (Date.now() - B.running > 6 * 60e3) { clearInterval(t); B.running = 0; rerender(); } }, 10e3); return; }
+    if (!d || !d.id) return; const rec = ((d.analysis && d.analysis.recommendations) || []).find(x => x.id === b.dataset.rec); if (!rec) return;
+    if (a === 'auto') { if (!rec.automation || !window.okTwin || !window.okTwin.addRule) { toast(L('مش متاح', 'Not available'), 'err'); return; } await window.okTwin.addRule(rec.automation.kind, rec.automation.params || {}, 'brain:' + rec.id, 'on'); await rpc('nf_ok_brain_decide', { p_id: d.id, p_rec: rec.id, p_decision: 'auto' }); B.at = 0; load(d.id); return; }
+    if (a === 'task') { const to = pmoId(); if (!to) { toast(L('مش لاقي رئيسة الـ PMO', 'Head of PMO not found'), 'err'); return; } const due = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+      try { await Store.save('tasks', { id: 'tk_brain_' + uid(), title: rec.title, desc: `${rec.why}${rec.evidence ? `\n\n${L('الدليل:', 'Evidence:')} ${rec.evidence}` : ''}\n\n— ${L('من «عقل Ökoplan»', 'from the Ökoplan Brain')}`, assigneeId: to, deptId: null, status: 'open', priority: rec.impact === 'high' ? 'high' : 'normal', dueDate: due, source: 'okbrain', createdBy: (S.session && S.session.id) || null, createdByName: (S.session && S.session.name) || '', createdAt: nowISO(), assignedAt: nowISO() }); } catch (e) { toast(L('مااتعملش', 'Not made'), 'err'); return; }
+      await rpc('nf_ok_brain_decide', { p_id: d.id, p_rec: rec.id, p_decision: 'task' }); toast(L('اتبعت لروان ✓', 'Sent to Rawan ✓')); B.at = 0; load(d.id); return; }
+    if (a === 'no') { await rpc('nf_ok_brain_decide', { p_id: d.id, p_rec: rec.id, p_decision: 'no' }); B.at = 0; load(d.id); return; }
+  });
+  document.addEventListener('input', ev => { const q = ev.target.closest && ev.target.closest('[data-okb-q]'); if (!q) return; B.q = q.value; clearTimeout(B.qt); B.qt = setTimeout(() => { rerender(); const n = document.querySelector('[data-okb-q]'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 250); });
+  document.addEventListener('change', ev => { const s = ev.target.closest && ev.target.closest('[data-okb-lvl]'); if (s) { B.lvl = s.value; rerender(); return; } const h = ev.target.closest && ev.target.closest('[data-okb-hist]'); if (h) { B.at = 0; load(h.value); } });
 })();
