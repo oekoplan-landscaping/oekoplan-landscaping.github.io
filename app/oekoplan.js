@@ -5583,3 +5583,164 @@ html[data-theme="dark"] .okb-run{background:#2a2346;color:#d9d0fb}
   document.addEventListener('input', ev => { const q = ev.target.closest && ev.target.closest('[data-okb-q]'); if (!q) return; B.q = q.value; clearTimeout(B.qt); B.qt = setTimeout(() => { rerender(); const n = document.querySelector('[data-okb-q]'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 250); });
   document.addEventListener('change', ev => { const s = ev.target.closest && ev.target.closest('[data-okb-lvl]'); if (s) { B.lvl = s.value; rerender(); return; } const h = ev.target.closest && ev.target.closest('[data-okb-hist]'); if (h) { B.at = 0; load(h.value); } });
 })();
+
+/* =====================================================================
+   Ökoplan — «إزاي أستخدم السيستم» (18 Nov 2026): illustrated tips so people actually use what is there.
+   Mahmoud: «when people come into the system, or every time, a simple nice infographic — how to use this, how to use that
+   (concept drawing, screenshots, the +…) — so they interact with the system, professional and friendly».
+   · first time: a short welcome tour (the 6 tips that matter most for this person);
+   · then once a day, the first time the app opens: «Tip of the day» — one tip he has not seen yet (then the oldest seen);
+   · every tip has «Try it», which opens the real thing (the + menu, the screenshot, a blank concept, the assistant, …);
+   · only what this person can use (role, phone / computer); never on top of «What's new», a form or the lock;
+   · «All tips» page #/okhow (My account menu) · «Stop the daily tip» in the card.
+   ===================================================================== */
+(() => {
+  if (window.__OK_TIPS__) return; window.__OK_TIPS__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const me = () => (typeof stuMe === 'function' ? stuMe() : '') || (S.session && S.session.workerId) || (S.session && S.session.id) || '';
+  const phone = () => { try { return matchMedia('(pointer:coarse)').matches && Math.min(screen.width, screen.height) < 900; } catch (e) { return false; } };
+  const has = sel => !!document.querySelector(sel);
+  const can = v => { try { return typeof canSee === 'function' && canSee(v); } catch (e) { return false; } };
+  const click = sel => { const e = document.querySelector(sel); if (e) { e.click(); return true; } return false; };
+  const go = h => { location.hash = h; };
+  const today = () => { try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date()); } catch (e) { return new Date().toISOString().slice(0, 10); } };
+
+  /* ---------- the drawings: flat, the office colours ---------- */
+  const Bc = '#50b1e7', T = '#38a599', G = '#70b62e', K = '#17201f', P = '#eef8fd', Y = '#f5b301';
+  const svg = inner => `<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${inner}</svg>`;
+  const bg = `<rect x="16" y="14" width="288" height="142" rx="22" fill="${P}"/>`;
+  const plusBtn = (x, y, r = 18) => `<circle cx="${x}" cy="${y}" r="${r}" fill="url(#okg)"/><path d="M${x} ${y - r * .45}v${r * .9}M${x - r * .45} ${y}h${r * .9}" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/>`;
+  const grad = `<defs><linearGradient id="okg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${G}"/><stop offset=".6" stop-color="${T}"/><stop offset="1" stop-color="${Bc}"/></linearGradient></defs>`;
+  const ART = {
+    plus: svg(`${grad}${bg}${[['✓', 86, 52], ['✦', 132, 40], ['▢', 178, 40], ['✎', 224, 52], ['⌗', 244, 92]].map(([g, x, y]) => `<circle cx="${x}" cy="${y}" r="17" fill="#fff" stroke="${K}" stroke-opacity=".12"/><text x="${x}" y="${y + 5}" text-anchor="middle" font-size="15" fill="${T}" font-family="sans-serif">${g}</text>`).join('')}<path d="M110 118 C 130 80, 200 70, 236 96" fill="none" stroke="${T}" stroke-width="2" stroke-dasharray="3 5"/>${plusBtn(96, 124, 22)}`),
+    snap: svg(`${grad}${bg}<rect x="40" y="32" width="170" height="108" rx="10" fill="#fff" stroke="${K}" stroke-opacity=".15" stroke-width="2"/><rect x="54" y="46" width="70" height="8" rx="4" fill="${K}" opacity=".15"/><rect x="54" y="62" width="120" height="44" rx="6" fill="${Bc}" opacity=".18"/><path d="M70 120 q 30 -22 60 -6 t 50 -12" fill="none" stroke="#e5484d" stroke-width="3.5" stroke-linecap="round"/><circle cx="150" cy="84" r="16" fill="none" stroke="#e5484d" stroke-width="3"/><path d="M34 26h18M34 26v18M216 26h-18M216 26v18M34 146h18M34 146v-18M216 146h-18M216 146v-18" stroke="${T}" stroke-width="3" stroke-linecap="round"/><rect x="232" y="58" width="58" height="62" rx="10" fill="#fff" stroke="${G}" stroke-width="2.5"/><path d="M244 78h34M244 90h26M244 102h30" stroke="${K}" stroke-opacity=".25" stroke-width="3" stroke-linecap="round"/><path d="M226 89h-8" stroke="${G}" stroke-width="3" stroke-linecap="round"/>`),
+    concept: svg(`${grad}${bg}<rect x="36" y="28" width="248" height="114" rx="12" fill="#fff"/><path d="M60 118 C 90 60, 130 130, 160 74 S 230 70, 256 104" fill="none" stroke="${T}" stroke-width="4" stroke-linecap="round"/><circle cx="104" cy="66" r="16" fill="${G}" opacity=".35"/><circle cx="122" cy="74" r="11" fill="${G}" opacity=".55"/><rect x="190" y="44" width="46" height="30" rx="6" fill="none" stroke="${Bc}" stroke-width="3"/><path d="M246 40l18 18-38 38-22 4 4-22z" fill="${Y}" stroke="${K}" stroke-opacity=".3" stroke-width="2"/><path d="M226 96l-4 4" stroke="${K}" stroke-width="3" stroke-linecap="round"/>`),
+    ai: svg(`${grad}${bg}<rect x="40" y="34" width="150" height="40" rx="14" fill="#fff"/><rect x="54" y="48" width="100" height="8" rx="4" fill="${K}" opacity=".18"/><rect x="120" y="86" width="160" height="52" rx="14" fill="url(#okg)" opacity=".92"/><rect x="134" y="100" width="120" height="7" rx="3.5" fill="#fff" opacity=".85"/><rect x="134" y="114" width="90" height="7" rx="3.5" fill="#fff" opacity=".6"/><path d="M78 108c3 18 12 27 30 30-18 3-27 12-30 30-3-18-12-27-30-30 18-3 27-12 30-30z" fill="${Y}" transform="translate(-6 -12) scale(.9)"/>`),
+    task: svg(`${grad}${bg}${[0, 1, 2].map(i => `<rect x="44" y="${34 + i * 38}" width="232" height="30" rx="10" fill="#fff"/><rect x="56" y="${42 + i * 38}" width="14" height="14" rx="4" fill="${i === 0 ? G : '#fff'}" stroke="${i === 0 ? G : K}" stroke-opacity="${i === 0 ? 1 : .3}" stroke-width="2"/>${i === 0 ? `<path d="M59 ${49 + i * 38}l3 3 6-6" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/>` : ''}<rect x="80" y="${45 + i * 38}" width="${[110, 140, 90][i]}" height="8" rx="4" fill="${K}" opacity="${i === 0 ? .12 : .22}"/><circle cx="252" cy="${49 + i * 38}" r="8" fill="${[T, Bc, Y][i]}" opacity=".8"/>`).join('')}`),
+    notes: svg(`${grad}${bg}<rect x="64" y="34" width="96" height="96" rx="6" fill="#fff6c8" transform="rotate(-5 112 82)"/><rect x="150" y="40" width="96" height="96" rx="6" fill="#e3f4ea" transform="rotate(4 198 88)"/>${[0, 1, 2].map(i => `<rect x="78" y="${60 + i * 16}" width="${60 - i * 10}" height="6" rx="3" fill="${K}" opacity=".2" transform="rotate(-5 112 82)"/><rect x="166" y="${64 + i * 16}" width="${56 - i * 8}" height="6" rx="3" fill="${K}" opacity=".2" transform="rotate(4 198 88)"/>`).join('')}<circle cx="246" cy="44" r="12" fill="${Bc}"/><path d="M241 44h10M246 39v10" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>`),
+    scan: svg(`${grad}${bg}<rect x="40" y="36" width="120" height="96" rx="10" fill="#fff" stroke="${K}" stroke-opacity=".15" stroke-width="2"/><rect x="70" y="52" width="60" height="60" rx="4" fill="#fff" stroke="${K}" stroke-width="2"/><path d="M76 58h14v14H76zM110 58h14v14h-14zM76 92h14v14H76zM96 76h8v8h-8zM112 94h8v8h-8z" fill="${K}"/><path d="M168 84h22" stroke="${T}" stroke-width="3" stroke-dasharray="4 5" stroke-linecap="round"/><rect x="200" y="28" width="68" height="116" rx="14" fill="${K}"/><rect x="206" y="38" width="56" height="96" rx="9" fill="#24302e"/><path d="M216 56v-8h8M252 56v-8h-8M216 112v8h8M252 112v8h-8" stroke="${G}" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M220 84h28" stroke="${G}" stroke-width="2"/>`),
+    meet: svg(`${grad}${bg}<rect x="34" y="30" width="178" height="110" rx="12" fill="#fff"/>${[0, 1, 2, 3].map(i => `<rect x="${44 + (i % 2) * 82}" y="${40 + Math.floor(i / 2) * 46}" width="76" height="40" rx="8" fill="${[Bc, T, G, '#94a3b8'][i]}" opacity="${i === 3 ? .85 : .3}"/>`).join('')}<circle cx="164" cy="106" r="9" fill="#fff"/><path d="M160 106h8M164 102v8" stroke="#94a3b8" stroke-width="2.2" stroke-linecap="round"/><rect x="224" y="38" width="66" height="94" rx="10" fill="#fff" stroke="${T}" stroke-width="2.5"/>${[0, 1, 2, 3].map(i => `<rect x="234" y="${52 + i * 16}" width="${42 - (i % 2) * 14}" height="6" rx="3" fill="${K}" opacity=".2"/>`).join('')}<circle cx="282" cy="124" r="11" fill="${G}"/><path d="M276 124l4 4 7-7" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/>`),
+    check: svg(`${grad}${bg}${[0, 1, 2].map(i => `<rect x="40" y="${32 + i * 38}" width="240" height="30" rx="10" fill="#fff"/><rect x="52" y="${42 + i * 38}" width="70" height="8" rx="4" fill="${K}" opacity=".2"/><rect x="140" y="${39 + i * 38}" width="54" height="16" rx="8" fill="${[G, Y, '#94a3b8'][i]}" opacity=".9"/><rect x="204" y="${39 + i * 38}" width="62" height="16" rx="8" fill="${P}" stroke="${T}" stroke-width="1.5"/><path d="M226 ${47 + i * 38}l3 3 6-6" stroke="${T}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`).join('')}`),
+    tabs: svg(`${grad}${bg}<rect x="34" y="30" width="252" height="112" rx="12" fill="#fff"/>${[0, 1, 2].map(i => `<rect x="${46 + i * 74}" y="40" width="68" height="20" rx="7" fill="${i === 1 ? Bc : P}" opacity="${i === 1 ? .9 : 1}"/><rect x="${54 + i * 74}" y="47" width="${36 - i * 4}" height="6" rx="3" fill="${i === 1 ? '#fff' : K}" opacity="${i === 1 ? .9 : .25}"/>`).join('')}<circle cx="268" cy="50" r="11" fill="${P}" stroke="${T}" stroke-width="2"/><path d="M262 50a6 6 0 1 0 2-4.5" fill="none" stroke="${T}" stroke-width="2.2" stroke-linecap="round"/><path d="M262 43v4h4" fill="none" stroke="${T}" stroke-width="2.2" stroke-linecap="round"/><rect x="46" y="72" width="228" height="58" rx="8" fill="${P}"/><rect x="58" y="84" width="120" height="8" rx="4" fill="${K}" opacity=".15"/><rect x="58" y="100" width="170" height="8" rx="4" fill="${K}" opacity=".1"/>`),
+    bell: svg(`${grad}${bg}<rect x="118" y="24" width="84" height="124" rx="16" fill="${K}"/><rect x="124" y="34" width="72" height="104" rx="10" fill="#24302e"/><rect x="132" y="50" width="56" height="30" rx="8" fill="#fff"/><rect x="140" y="58" width="36" height="5" rx="2.5" fill="${K}" opacity=".3"/><rect x="140" y="68" width="26" height="5" rx="2.5" fill="${K}" opacity=".2"/><path d="M76 92a20 20 0 0 1 40 0v14l6 8H70l6-8z" fill="${Y}"/><circle cx="96" cy="120" r="5" fill="${Y}"/><circle cx="114" cy="78" r="7" fill="#e5484d"/><path d="M232 70c10 8 10 26 0 34M244 62c16 12 16 38 0 50" fill="none" stroke="${T}" stroke-width="3" stroke-linecap="round"/>`),
+    me: svg(`${grad}${bg}<rect x="60" y="30" width="200" height="112" rx="14" fill="#fff"/><circle cx="104" cy="74" r="22" fill="${Bc}" opacity=".3"/><circle cx="104" cy="68" r="9" fill="${Bc}"/><path d="M88 90c4-10 28-10 32 0" fill="${Bc}"/><rect x="138" y="56" width="100" height="9" rx="4.5" fill="${K}" opacity=".3"/><rect x="138" y="72" width="70" height="7" rx="3.5" fill="${K}" opacity=".15"/>${[0, 1, 2].map(i => `<circle cx="84" cy="${110 + i * 0}" r="0"/><rect x="${80 + i * 58}" y="108" width="50" height="22" rx="8" fill="${[P, '#e6f6ec', '#fff4e0'][i]}"/>`).join('')}`),
+    lang: svg(`${grad}${bg}<rect x="42" y="40" width="108" height="90" rx="14" fill="#fff"/><text x="96" y="96" text-anchor="middle" font-size="34" font-weight="700" fill="${T}" font-family="sans-serif">ع/A</text><rect x="170" y="40" width="108" height="90" rx="14" fill="#17201f"/><path d="M236 70a20 20 0 1 0 16 30a16 16 0 0 1-16-30z" fill="${Y}"/>`),
+    news: svg(`${grad}${bg}<rect x="70" y="30" width="180" height="112" rx="14" fill="#fff"/><rect x="84" y="44" width="152" height="46" rx="8" fill="url(#okg)" opacity=".85"/><rect x="84" y="100" width="110" height="8" rx="4" fill="${K}" opacity=".25"/><rect x="84" y="116" width="80" height="7" rx="3.5" fill="${K}" opacity=".15"/><path d="M250 34l6 12 13 2-9 9 2 13-12-6-12 6 2-13-9-9 13-2z" fill="${Y}"/>`),
+  };
+
+  /* ---------- the tips ---------- */
+  const TIPS = () => [
+    { id: 'plus', art: 'plus', show: () => has('.nfd-main') || has('.fab'), w: 10,
+      t: L('علامة + فيها كل حاجة', 'The + has everything'), s: [L('دوس على + اللي تحت: تاسك جديد، المساعد، صوّر الشاشة، كونسبت، امسح الكود، ملاحظاتي.', 'Tap the + at the bottom: new task, the assistant, screenshot, concept, scan a code, my notes.'), L('كل حاجة بتتعمل من مكانك من غير ما تدوّر في القوائم.', 'Everything starts from where you are — no hunting through menus.'), L('على الموبايل والكمبيوتر نفس الشكل.', 'The same on the phone and the computer.')], try: () => click('.nfd-main') || click('.fab') },
+    { id: 'snap', art: 'snap', show: () => has('.snapfab'), w: 9,
+      t: L('صوّر الشاشة واكتب عليها', 'Screenshot and mark it up'), s: [L('علامة + ← «صوّر الشاشة».', '+ → «Screenshot».'), L('ارسم دايرة أو سهم، واكتب ملاحظتك على الصورة.', 'Draw a circle or an arrow, write your note on the picture.'), L('احفظها على تاسك أو ابعتها لزميلك — بدل الواتساب.', 'Save it on a task or send it to a colleague — instead of WhatsApp.')], try: () => click('.snapfab') },
+    { id: 'concept', art: 'concept', show: () => has('.conceptfab') || can('concept'), w: 9,
+      t: L('كونسبت درووينج: ارسم فكرتك', 'Concept drawing: sketch your idea'), s: [L('علامة + ← «كونسبت» بيفتح لوحة رسم فاضية.', '+ → «Concept» opens a blank canvas.'), L('ارسم بالقلم أو بإيدك، حط أشكال وصور ونباتات.', 'Draw with a pen or your finger, add shapes, pictures, plants.'), L('احفظها على المشروع عشان الفريق يشوفها ويعلّق.', 'Save it on the project so the team can see it and comment.')], try: () => click('.conceptfab') || go('#/concept') },
+    { id: 'ai', art: 'ai', show: () => has('.aifab') || can('ai'), w: 8,
+      t: L('المساعد الذكي (Claude)', 'The smart assistant (Claude)'), s: [L('اسأله عن أي مشروع: «Aljar واقف فين؟»', 'Ask about any project: «Where is Aljar?»'), L('يكتبلك إيميل، يلخّص ملف، يرتّب أفكارك.', 'It drafts an email, summarises a file, sorts your thoughts.'), L('علامة + ← «المساعد».', '+ → «Assistant».')], try: () => click('.aifab') || go('#/ai') },
+    { id: 'task', art: 'task', show: () => has('.fab'), w: 8,
+      t: L('التاسك بدل «فكّرني»', 'A task instead of «remind me»'), s: [L('علامة + ← «مهمة جديدة»: إيه المطلوب، لمين، وإمتى.', '+ → «New task»: what, for whom, by when.'), L('اللي عليه التاسك بيوصله إشعار على الموبايل.', 'The person gets a notice on the phone.'), L('لما تخلص علّم «خلصت» — وده بيدخل في تقييمك.', 'Mark it done when finished — it counts in your evaluation.')], try: () => click('.fab') },
+    { id: 'notes', art: 'notes', show: () => has('.notesfab'), w: 6,
+      t: L('ملاحظاتي — ليك إنت بس', 'My notes — for you only'), s: [L('علامة + ← «ملاحظاتي».', '+ → «My notes».'), L('اكتب أي حاجة عايز تفتكرها — محدش غيرك بيشوفها.', 'Write anything to remember — nobody else sees it.'), L('بتلاقيها على الموبايل والكمبيوتر.', 'You find them on the phone and the computer.')], try: () => click('.notesfab') },
+    { id: 'scan', art: 'scan', show: () => has('.qrscanfab') || phone(), w: 7,
+      t: L('امسح الكود من الموبايل', 'Scan the code with your phone'), s: [L('علامة + ← «امسح الكود».', '+ → «Scan a code».'), L('للحضور، ولفتح الكمبيوتر لما يتقفل، ولفلوس المشروع.', 'For attendance, to unlock the computer, for project money.'), L('لما الكمبيوتر يطلب موبايلك، افتح التطبيق — الكاميرا بتفتح لوحدها.', 'When the computer asks for your phone, open the app — the camera opens by itself.')], try: () => (typeof ACTIONS.okQrScan === 'function' ? ACTIONS.okQrScan() : click('.qrscanfab')) },
+    { id: 'meet', art: 'meet', show: () => can('okmeets'), w: 7,
+      t: L('اجتماع Zoom أو Meet بمحضر جاهز', 'Zoom or Meet with ready minutes'), s: [L('التواصل ← «اجتماعات Zoom وMeet» ← «اجتماع جديد».', 'Communication → «Zoom & Meet» → «New meeting».'), L('مساعد Ökoplan بيحضر ساكت ويكتب المحضر.', 'The Ökoplan assistant attends quietly and writes the minutes.'), L('التاسكات بتنزل على المشروع بعد الاجتماع.', 'The tasks land on the project after the meeting.')], try: () => go('#/okmeets') },
+    { id: 'check', art: 'check', show: () => can('okcheck') && list('projects').some(p => [p.leadId, p.ownerId].concat(p.coOwnerIds || []).includes(me())), w: 9,
+      t: L('تحديث مشاريعك — دقيقة في الأسبوع', 'Update your projects — a minute a week'), s: [L('«تحديث مشاريعي»: حالة كل مشروع بدوسة.', '«Update my projects»: each project\'s state in one tap.'), L('«مفيش تغيير ✓» لو المشروع زي ما هو.', '«Nothing changed ✓» if it is as it was.'), L('روان ود. طارق بيشوفوا الصورة كاملة من غير ما يسألوك.', 'Rawan and Dr. Tarek see the full picture without asking you.')], try: () => go('#/okcheck') },
+    { id: 'tabs', art: 'tabs', show: () => !phone() && has('#oktabs'), w: 4,
+      t: L('التابات والتحديث', 'Tabs and refresh'), s: [L('كل صفحة بتفتحها بتفضل تاب فوق — ارجعلها بدوسة.', 'Every page you open stays as a tab at the top — back in one click.'), L('× يقفل التاب.', '× closes a tab.'), L('⟳ فوق بيحدّث السيستم لآخر نسخة.', '⟳ at the top refreshes to the latest version.')], try: () => click('.okrefresh') },
+    { id: 'bell', art: 'bell', show: () => has('.bellbtn'), w: 6,
+      t: L('الإشعارات على موبايلك', 'Notices on your phone'), s: [L('دوس على الجرس فوق.', 'Tap the bell at the top.'), L('فعّل الإشعارات — هيوصلك التاسكات والموافقات والاجتماعات.', 'Turn notifications on — tasks, approvals and meetings reach you.'), L('من غيرها ممكن حاجات تفوتك.', 'Without them, things can slip by.')], try: () => click('.bellbtn') },
+    { id: 'me', art: 'me', show: () => can('me'), w: 5,
+      t: L('صفحتي', 'My page'), s: [L('وصفك الوظيفي، وحضورك، وطلباتك (إجازة، إذن…).', 'Your job description, attendance and requests (leave, permission…).'), L('ضيف إيميلك الشخصي عشان لو نسيت كلمة السر.', 'Add your personal email in case you forget your password.'), L('من القائمة الجانبية ← «صفحتي».', 'Side menu → «My page».')], try: () => go('#/me') },
+    { id: 'news', art: 'news', show: () => can('oknews'), w: 3,
+      t: L('الجديد في السيستم', 'What\'s new'), s: [L('كل تحديث جديد بيطلعلك هنا بالصور.', 'Every new update shows up here with pictures.'), L('بس اللي يخصّك ويخص صلاحياتك.', 'Only what concerns you and your permissions.'), L('«حسابي» ← «الجديد في السيستم».', '«My account» → «What\'s new».')], try: () => go('#/oknews') },
+    { id: 'lang', art: 'lang', show: () => !!S.session, w: 2,
+      t: L('عربي أو English، فاتح أو غامق', 'Arabic or English, light or dark'), s: [L('من القائمة الجانبية: «English» تقلب اللغة.', 'From the side menu: «English» switches the language.'), L('القمر فوق بيخلّي الشاشة غامقة — مريحة بالليل.', 'The moon at the top makes the screen dark — easier at night.'), L('اختيارك بيتحفظ على جهازك.', 'Your choice is kept on your device.')], try: null },
+  ];
+  const mine = () => TIPS().filter(t => { try { return t.show(); } catch (e) { return false; } });
+
+  /* ---------- memory (per person, on this device + his record) ---------- */
+  const KEY = () => 'ok.tips.' + (me() || 'x');
+  const st = () => { let v = {}; try { v = JSON.parse(localStorage.getItem(KEY()) || '{}') || {}; } catch (e) { v = {}; } v.seen = v.seen || {}; return v; };
+  const save = v => { try { localStorage.setItem(KEY(), JSON.stringify(v)); } catch (e) { /* */ } };
+  const mark = id => { const v = st(); v.seen[id] = Date.now(); save(v); };
+
+  /* ---------- the card ---------- */
+  document.head.insertAdjacentHTML('beforeend', `<style id="ok-tips-css">
+#oktip{position:fixed;inset:0;z-index:99970;background:rgba(10,20,26,.45);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px;animation:oktipIn .25s ease}
+@keyframes oktipIn{from{opacity:0}to{opacity:1}}
+#oktip .tb{width:100%;max-width:500px;background:var(--surface,#fff);border-radius:24px;box-shadow:0 24px 70px rgba(0,0,0,.25);overflow:hidden;color:var(--ink);animation:oktipUp .3s cubic-bezier(.2,.8,.2,1)}
+@keyframes oktipUp{from{transform:translateY(14px);opacity:.6}to{transform:none;opacity:1}}
+#oktip .art{background:linear-gradient(135deg,#eef8fd,#e8f5f1);padding:16px 16px 4px}#oktip .art svg{display:block;width:100%;height:auto}
+html[data-theme="dark"] #oktip .art{background:linear-gradient(135deg,#12303f,#12302a)}
+#oktip .bd{padding:16px 22px 6px}#oktip .tag{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.05em;color:#1f8a4c;background:#e6f6ec;border-radius:99px;padding:3px 10px;margin-bottom:8px}
+#oktip h3{margin:0 0 12px;font-size:20px;line-height:1.3}#oktip ol{list-style:none;margin:0;padding:0;display:grid;gap:9px}#oktip li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;line-height:1.55}
+#oktip li b{flex:0 0 24px;height:24px;border-radius:50%;background:#38a599;color:#fff;font-size:12.5px;display:grid;place-items:center}
+#oktip .ft{display:flex;align-items:center;gap:8px;padding:14px 22px 18px;flex-wrap:wrap}#oktip .dots{display:flex;gap:5px;flex:1}#oktip .dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}#oktip .dots i.on{background:#38a599;width:18px;border-radius:4px}
+#oktip .try{border:0;border-radius:12px;padding:10px 16px;font:inherit;font-weight:700;color:#fff;background:linear-gradient(135deg,#70b62e,#38a599 60%,#50b1e7);cursor:pointer}
+#oktip .nx{border:0;border-radius:12px;padding:10px 14px;font:inherit;font-weight:600;background:var(--surface-2);color:var(--ink);cursor:pointer}
+#oktip .off{all:unset;cursor:pointer;font-size:12px;color:var(--muted);text-decoration:underline;margin:0 22px 14px}
+.okhow{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.okhow .c{border:1px solid var(--line);background:var(--surface);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
+.okhow .c .art{background:linear-gradient(135deg,#eef8fd,#e8f5f1);padding:10px 10px 2px}.okhow .c .art svg{display:block;width:100%;height:auto}
+html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f,#12302a)}
+.okhow .c .b{padding:12px 16px 14px;display:flex;flex-direction:column;gap:8px;flex:1}.okhow .c h4{margin:0;font-size:16px}.okhow .c ol{margin:0;padding-inline-start:18px;font-size:13.5px;line-height:1.6;color:var(--ink)}
+.okhow .c .row{margin-top:auto}
+</style>`);
+  let deck = [], idx = 0, mode = 'day';
+  const close = () => { const g = document.getElementById('oktip'); if (g) g.remove(); };
+  const draw = () => {
+    const t = deck[idx]; if (!t) return close(); mark(t.id);
+    const tag = mode === 'tour' ? L(`أهلًا بيك في Ökoplan · ${idx + 1}/${deck.length}`, `Welcome to Ökoplan · ${idx + 1}/${deck.length}`) : mode === 'one' ? L('إزاي تستخدم', 'How to use') : L('نصيحة النهارده', 'Tip of the day');
+    const last = idx >= deck.length - 1;
+    let g = document.getElementById('oktip'); if (!g) { document.body.insertAdjacentHTML('beforeend', `<div id="oktip" dir="${en() ? 'ltr' : 'rtl'}" role="dialog" aria-modal="true"></div>`); g = document.getElementById('oktip'); }
+    g.innerHTML = `<div class="tb"><div class="art">${ART[t.art] || ''}</div><div class="bd"><span class="tag">${esc(tag)}</span><h3>${esc(t.t)}</h3><ol>${t.s.map((x, i) => `<li><b>${i + 1}</b><span>${esc(x)}</span></li>`).join('')}</ol></div>
+      <div class="ft"><div class="dots">${deck.length > 1 ? deck.map((_, i) => `<i class="${i === idx ? 'on' : ''}"></i>`).join('') : ''}</div>${t.try ? `<button type="button" class="try" data-oktip="try">${esc(L('جرّبها', 'Try it'))}</button>` : ''}<button type="button" class="nx" data-oktip="${last ? 'done' : 'next'}">${esc(last ? L('تمام', 'Got it') : L('التالي', 'Next'))}</button></div>
+      ${mode === 'day' ? `<button type="button" class="off" data-oktip="off">${esc(L('متطلعليش نصيحة كل يوم', 'Stop the daily tip'))}</button>` : ''}</div>`;
+  };
+  const open = (list, m) => { if (!list.length) return; deck = list; idx = 0; mode = m; draw(); };
+  document.addEventListener('click', ev => {
+    const g = document.getElementById('oktip'); if (g && ev.target === g) { close(); return; }
+    const b = ev.target.closest && ev.target.closest('[data-oktip]'); if (!b) return; const a = b.dataset.oktip; const t = deck[idx];
+    if (a === 'next') { idx++; draw(); return; } if (a === 'done') { close(); return; }
+    if (a === 'off') { const v = st(); v.off = true; save(v); close(); toast(L('تمام — النصايح كلها في «حسابي ← إزاي أستخدم السيستم»', 'Done — all the tips are in «My account → How to use the system»')); return; }
+    if (a === 'try' && t && t.try) { close(); setTimeout(() => { try { t.try(); } catch (e) { /* */ } }, 120); }
+  });
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && document.getElementById('oktip')) close(); });
+  window.okTipOpen = id => { const t = TIPS().find(x => x.id === id); if (t) open([t], 'one'); };
+
+  /* ---------- when: the first time a short tour; then one tip a day ---------- */
+  let booted = false;
+  const blocked = () => !!(document.getElementById('oknews') || document.getElementById('overlay') || document.getElementById('oklock') || document.getElementById('oktip') || (S.route && ['okqr', 'okkey'].includes(S.route.view)) || (typeof role === 'function' && role() === 'kiosk'));
+  const decide = () => {
+    const v = st(); const all = mine(); if (!all.length) return true;
+    const seenIds = Object.keys(v.seen);
+    if (!seenIds.length && !v.tourAt) { v.tourAt = Date.now(); v.day = today(); save(v); open(all.slice().sort((a, b) => b.w - a.w).slice(0, 6), 'tour'); return true; }
+    if (v.off || v.day === today()) return true;
+    v.day = today(); save(v);
+    const fresh = all.filter(t => !v.seen[t.id]).sort((a, b) => b.w - a.w);
+    const pick = fresh[0] || all.slice().sort((a, b) => (v.seen[a.id] || 0) - (v.seen[b.id] || 0))[0];
+    if (pick) open([pick], 'day'); return true;
+  };
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { if (booted || !S.session || !me()) return; booted = true;
+    let tries = 0; const t = setInterval(() => { tries++; if (tries > 60) { clearInterval(t); return; } if (blocked()) return; clearInterval(t); try { decide(); } catch (e) { /* */ } }, 2500); });
+
+  /* ---------- the page: all the tips ---------- */
+  const page = () => `<div style="max-width:1100px"><div class="okmt-hd" style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px"><div style="flex:1;min-width:240px"><h2 style="margin:0 0 4px">${esc(L('إزاي أستخدم السيستم', 'How to use the system'))}</h2><p class="small muted" style="margin:0">${esc(L('كل اللي تقدر تعمله في Ökoplan بالصور — دوس «جرّبها» وهيفتحلك الحاجة نفسها.', 'Everything you can do in Ökoplan, in pictures — tap «Try it» and it opens the real thing.'))}</p></div>
+      <button type="button" class="btn" data-okhow-tour>${esc(L('ابدأ الجولة', 'Start the tour'))}</button>${st().off ? `<button type="button" class="btn ghost" data-okhow-on>${esc(L('رجّع نصيحة النهارده', 'Bring back the daily tip'))}</button>` : ''}</div>
+      <div class="okhow">${mine().map(t => `<div class="c"><div class="art">${ART[t.art] || ''}</div><div class="b"><h4>${esc(t.t)}</h4><ol>${t.s.map(x => `<li>${esc(x)}</li>`).join('')}</ol>${t.try ? `<div class="row"><button type="button" class="btn sm p" data-okhow-try="${esc(t.id)}">${esc(L('جرّبها', 'Try it'))}</button></div>` : ''}</div></div>`).join('')}</div></div>`;
+  if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.okhow = page;
+  if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okhow')) { const i = NAV.findIndex(n => n && n.id === 'oknews'); NAV.splice(i >= 0 ? i + 1 : NAV.length, 0, { id: 'okhow', get label() { return L('إزاي أستخدم السيستم', 'How to use the system'); }, get short() { return L('الدليل', 'Guide'); }, icon: 'info' }); }
+  if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (['kiosk', 'none'].includes(r)) return; if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okhow')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okhow']); });
+  if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okhow') return !!S.session && (typeof role !== 'function' || !['kiosk', 'none'].includes(role())); return base.apply(this, arguments); })(canSee);
+  try { if (typeof VIEW_TITLES === 'object' && !Object.getOwnPropertyDescriptor(VIEW_TITLES, 'okhow')) Object.defineProperty(VIEW_TITLES, 'okhow', { get: () => L('إزاي أستخدم السيستم', 'How to use the system'), configurable: true, enumerable: true }); } catch (e) { /* */ }
+  document.addEventListener('click', ev => {
+    const a = ev.target.closest && ev.target.closest('[data-okhow-try],[data-okhow-tour],[data-okhow-on]'); if (!a) return; ev.preventDefault();
+    if (a.dataset.okhowTour !== undefined) { open(mine().slice().sort((x, y) => y.w - x.w), 'tour'); return; }
+    if (a.dataset.okhowOn !== undefined) { const v = st(); v.off = false; v.day = ''; save(v); toast(L('رجعت ✓', 'Back on ✓')); rerender(); return; }
+    const t = TIPS().find(x => x.id === a.dataset.okhowTry); if (t && t.try) { try { t.try(); } catch (e) { /* */ } }
+  });
+})();
