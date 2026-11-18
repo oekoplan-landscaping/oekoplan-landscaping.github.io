@@ -5121,6 +5121,7 @@ html[data-theme="dark"] #oklock{background:#0d1719}
     jd: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/><rect x="86" y="34" width="148" height="104" rx="12" fill="#fff"/><circle cx="114" cy="62" r="14" fill="${B}" opacity=".85"/><rect x="136" y="54" width="80" height="8" rx="4" fill="${K}" opacity=".3"/><rect x="136" y="68" width="56" height="6" rx="3" fill="${K}" opacity=".15"/>${[0, 1, 2].map(i => `<circle cx="106" cy="${94 + i * 14}" r="3" fill="${T}"/><rect x="116" y="${91 + i * 14}" width="${100 - i * 18}" height="6" rx="3" fill="${K}" opacity=".18"/>`).join('')}`),
     move: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/><rect x="36" y="46" width="96" height="78" rx="12" fill="#fff"/><rect x="188" y="46" width="96" height="78" rx="12" fill="#fff"/><rect x="48" y="58" width="56" height="8" rx="4" fill="${K}" opacity=".25"/><rect x="200" y="58" width="56" height="8" rx="4" fill="${K}" opacity=".25"/><circle cx="84" cy="96" r="13" fill="${B}" opacity=".35"/><circle cx="236" cy="96" r="13" fill="${B}"/><path d="M140 85h40" stroke="${T}" stroke-width="4" stroke-linecap="round"/><path d="M170 76l11 9-11 9" fill="none" stroke="${T}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="128" y="104" width="64" height="22" rx="11" fill="${G}"/><text x="160" y="119" text-anchor="middle" font-family="Jost,sans-serif" font-size="11" font-weight="700" fill="#fff">20 → 30</text>`),
     scan: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/><rect x="34" y="40" width="132" height="86" rx="10" fill="#fff" stroke="${K}" stroke-opacity=".2" stroke-width="3"/><rect x="80" y="126" width="40" height="8" rx="3" fill="${K}" opacity=".15"/><rect x="72" y="56" width="56" height="56" rx="6" fill="#fff" stroke="${K}" stroke-width="2"/><path d="M78 62h12v12H78zM110 62h12v12h-12zM78 94h12v12H78zM98 78h8v8h-8zM112 96h8v8h-8z" fill="${K}"/><path d="M176 83h22" stroke="${T}" stroke-width="3" stroke-dasharray="4 5" stroke-linecap="round"/><rect x="206" y="34" width="70" height="114" rx="14" fill="${K}"/><rect x="211" y="44" width="60" height="94" rx="9" fill="#24302e"/><path d="M222 62v-8h8M260 62v-8h-8M222 108v8h8M260 108v8h-8" stroke="${G}" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M226 85h30" stroke="${G}" stroke-width="2" opacity=".8"/><circle cx="262" cy="134" r="15" fill="${B}" stroke="#fff" stroke-width="3"/><path d="M262 127v14M255 134h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/>`),
+    meet: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/><rect x="34" y="36" width="160" height="100" rx="10" fill="#fff" stroke="${K}" stroke-opacity=".2" stroke-width="3"/>${[0, 1, 2, 3].map(i => `<rect x="${44 + (i % 2) * 74}" y="${46 + Math.floor(i / 2) * 42}" width="66" height="36" rx="6" fill="${[B, T, G, '#94a3b8'][i]}" opacity="${i === 3 ? .9 : .35}"/>`).join('')}<circle cx="151" cy="104" r="9" fill="#fff"/><path d="M146 104h10M151 99v10" stroke="#94a3b8" stroke-width="2.4" stroke-linecap="round"/><rect x="214" y="40" width="72" height="92" rx="10" fill="#fff" stroke="${T}" stroke-width="3"/>${[0, 1, 2, 3].map(i => `<rect x="224" y="${54 + i * 16}" width="${44 - (i % 2) * 14}" height="7" rx="3.5" fill="${K}" opacity=".18"/>`).join('')}<circle cx="276" cy="122" r="12" fill="${G}"/><path d="M270 122l4 4 8-8" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round"/>`),
     design: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/>${[0, 1, 2, 3].map(i => `<rect x="${44 + i * 62}" y="70" width="50" height="30" rx="9" fill="${[G, B, T, '#94a3b8'][i]}" opacity="${i < 2 ? 1 : .55}"/>`).join('')}${[0, 1, 2].map(i => `<path d="M${94 + i * 62} 85h12" stroke="${K}" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/>`).join('')}<rect x="44" y="46" width="120" height="8" rx="4" fill="${K}" opacity=".2"/><rect x="44" y="114" width="232" height="8" rx="4" fill="${K}" opacity=".08"/><rect x="44" y="114" width="120" height="8" rx="4" fill="${T}"/>`),
   };
   const ITEMS = () => [
@@ -5154,6 +5155,11 @@ html[data-theme="dark"] #oklock{background:#0d1719}
       s: [L('بيوصلك إشعار: «من يوم كذا هتشتغل في مشروع كذا».', 'You get a notice: «From day … you work on project …».'),
         L('وفيه مين الـ Project Owner اللي هتتابع معاه، ولحد إمتى.', 'With the Project Owner you follow up with, and until when.'),
         L('الإشعارات بتوصل على الموبايل — فعّلها من الجرس فوق.', 'Notices reach your phone — turn them on from the bell at the top.')] },
+    { id: 'meets', show: () => !!S.session && !!me(), art: 'meet', go: '#/okmeets',
+      t: L('اجتماعات Zoom وGoogle Meet من جوه السيستم', 'Zoom & Google Meet meetings from inside the system'),
+      s: [L('التواصل ← «اجتماعات Zoom وMeet» ← «اجتماع جديد»: لينك Zoom بيتعمل لوحده، أو حط لينك Meet أو لينك العميل.', 'Communication → «Zoom & Meet» → «New meeting»: the Zoom link is made for you, or paste a Meet link or a client\'s link.'),
+        L('مساعد Ökoplan بيدخل الاجتماع ساكت ويسجّل — لو فيه غرفة انتظار دخّله.', 'The Ökoplan assistant joins quietly and records — let it in if there is a waiting room.'),
+        L('بعد الاجتماع: المحضر والقرارات والتاسكات بتنزل على المشروع، واللي عامل الاجتماع أو الـ Project Owner يوافق على التاسكات.', 'After the meeting: the minutes, decisions and tasks land on the project; the creator or the Project Owner approves the tasks.')] },
     { id: 'scan', show: () => !!S.session && !!me(), art: 'scan', go: '',
       t: L('السكان في علامة + — والموبايل بيجهز لوحده', 'The scan is in the + — and the phone gets ready by itself'),
       s: [L('على الموبايل: علامة + ← «امسح الكود» — لأي كود: الحضور، فلوس المشروع، فتح الكمبيوتر.', 'On the phone: + → «Scan a code» — for any code: attendance, project money, unlocking the computer.'),
@@ -5223,4 +5229,220 @@ html[data-theme="dark"] #oklock{background:#0d1719}
   if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'oknews')) { const i = NAV.findIndex(n => n && n.id === 'support'); NAV.splice(i >= 0 ? i + 1 : NAV.length, 0, { id: 'oknews', get label() { return L('الجديد في السيستم', 'What\'s new'); }, icon: 'star' }); }
   if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('oknews')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['oknews']); });
   if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'oknews') return !!S.session && (typeof role !== 'function' || role() !== 'kiosk'); return base.apply(this, arguments); })(canSee);
+})();
+
+/* =====================================================================
+   Ökoplan — Zoom & Google Meet meetings with the Ökoplan assistant (18 Nov 2026)
+   Mahmoud: «meetings come as Google Meet links, sometimes Zoom, sometimes the system's own — I want them opened from inside
+   the system, and Claude there with us, analysing». His choices: Recall.ai brings the assistant into the call; it joins
+   every meeting made here (a client's link too); anyone on the team makes one and reads the minutes; the assistant is silent.
+   · «New meeting»: Zoom (the link is made on the office's Zoom account) or a Meet / Zoom / Teams link pasted in
+     («Open a new Google Meet» opens meet.google.com/new — the office has no Google account to make the link by itself);
+     time, length, project, who is invited (they are told, with the link); the assistant joins at the start.
+   · «Assistant into a running meeting»: any link, now.
+   · after the call: the minutes on the meeting page — summary · points · decisions · tasks (who / what / when) · open
+     questions · next step; the creator, the Project Owners, the PMO and the CEO tick tasks → real tasks for their people.
+   · no money in the minutes; the money points and the full transcript are the CEO's only (nf_okmeet_text).
+   · the CEO: «Assistant setup» — the Recall.ai key, the Zoom app keys, «Check».
+   Server: Edge function «okmeet» + docs col 'okmeets' (read: everyone; write: the server) + cron ok-meets-2m.
+   ===================================================================== */
+(() => {
+  if (window.__OK_MEETS__) return; window.__OK_MEETS__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const COL = 'okmeets';
+  if (typeof COLS !== 'undefined' && Array.isArray(COLS) && !COLS.includes(COL)) COLS.push(COL);
+  S.data[COL] = S.data[COL] || new Map();
+  if (typeof Store === 'object' && typeof Store.subscribeAll === 'function') Store.subscribeAll = (base => function () { base.call(this); const db = S.db; if (!db || !db.collection) return; try { S.unsub.push(db.collection(COL).onSnapshot(snap => { S.data[COL] = new Map(snap.docs.map(d => [d.id, d.data()])); S.loaded[COL] = true; rerender(); }, e => console.warn('snapshot', COL, e))); } catch (e) { console.warn('okmeets sub', e); } })(Store.subscribeAll);
+  const me = () => (typeof stuMe === 'function' ? stuMe() : '') || (S.session && S.session.workerId) || '';
+  const W = id => (id ? byId('workers', id) : null);
+  const nm = id => { const w = W(id); return (w && w.name) || ''; };
+  const owners = p => Array.from(new Set([p.leadId, p.ownerId, p.financeId].concat(p.coOwnerIds || []).filter(Boolean)));
+  const isPMO = () => !!(window.okAccess && window.okAccess.isPMO && window.okAccess.isPMO());
+  const live = () => list('projects').filter(p => p && p.status !== 'archived').sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'en'));
+  const people = () => list('workers').filter(w => w && w.status !== 'inactive' && !['none', 'kiosk'].includes(String(w.role || '')) && w.name).sort((a, b) => String(a.name).localeCompare(String(b.name), 'en'));
+  const fn = async body => { if (!S.sb || !S.sb.functions) return { error: 'offline' }; try { const r = await S.sb.functions.invoke('okmeet', { body }); if (r.error) { let d = null; try { d = r.error.context && (await r.error.context.json()); } catch (e) { /* */ } return d || { error: String(r.error.message || r.error) }; } return r.data || {}; } catch (e) { return { error: String(e && e.message || e) }; } };
+  const meets = () => list(COL).filter(m => m && m.id).sort((a, b) => String(b.startAt || b.at || '').localeCompare(String(a.startAt || a.at || '')));
+  const PLAT = { zoom: 'Zoom', meet: 'Google Meet', teams: 'Microsoft Teams', webex: 'Webex' };
+  const when = iso => { try { return new Date(iso).toLocaleString(en() ? 'en-GB' : 'ar-EG', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }); } catch (e) { return iso || ''; } };
+  const ST = {
+    scheduled: [L('مستني الميعاد', 'Scheduled'), '#2b8fc7', '#e8f5fd'], joining: [L('المساعد بيدخل', 'Assistant joining'), '#b26a00', '#fff4e0'],
+    in_call: [L('المساعد جوه الاجتماع', 'Assistant in the call'), '#1f8a4c', '#e6f6ec'], processing: [L('بيكتب المحضر…', 'Writing the minutes…'), '#6a4fbf', '#f1edfb'],
+    writing: [L('بيكتب المحضر…', 'Writing the minutes…'), '#6a4fbf', '#f1edfb'], ready: [L('المحضر جاهز', 'Minutes ready'), '#1f8a4c', '#e6f6ec'],
+    failed: [L('المساعد مقدرش يدخل', 'The assistant could not join'), '#b42318', '#fdecea'], missed: [L('من غير محضر', 'No minutes'), '#6b7480', '#f1f3f5'],
+    cancelled: [L('اتلغى', 'Cancelled'), '#6b7480', '#f1f3f5'], plain: [L('من غير المساعد', 'Without the assistant'), '#6b7480', '#f1f3f5'],
+  };
+  const chip = m => { const s = ST[m.status] || ST.scheduled; return `<span class="okmt-st" style="color:${s[1]};background:${s[2]}">${esc(s[0])}</span>`; };
+  const canRun = m => { if (!m) return false; if (isAdmin() || isPMO()) return true; if (m.byWid && m.byWid === me()) return true; if (m.byUid && S.sbUser && m.byUid === S.sbUser.id) return true; const p = m.projectId && byId('projects', m.projectId); return !!(p && owners(p).includes(me())); };
+  const WHY = { no_keys: L('المساعد لسه مستني الإعداد من د. طارق', 'The assistant is waiting for its setup'), bot_create: L('المساعد مقدرش يتبعت — جرّب تاني', 'The assistant could not be sent — try again'), bot_kicked_from_waiting_room: L('محدش دخّله من غرفة الانتظار', 'Nobody let it in from the waiting room'), timeout_exceeded_waiting_room: L('فضل في غرفة الانتظار ومحدش دخّله', 'It waited in the waiting room and nobody let it in'), transcript: L('التفريغ مكملش', 'The transcript did not finish'), transcript_create: L('التفريغ مبدأش', 'The transcript did not start'), too_long: L('الاجتماع طوّل أكتر من 8 ساعات', 'The meeting ran over 8 hours') };
+
+  document.head.insertAdjacentHTML('beforeend', `<style id="ok-meets-css">
+.okmt-hd{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px}.okmt-hd .grow{flex:1;min-width:220px}.okmt-hd h2{margin:0 0 4px;font-size:21px}.okmt-hd p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.55}
+.okmt-acts{display:flex;gap:8px;flex-wrap:wrap}
+.okmt-sec{margin:18px 0 8px;font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.02em}
+.okmt-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.okmt-card{border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;cursor:pointer;text-decoration:none;color:inherit}
+.okmt-card:hover{border-color:#50b1e7}.okmt-card .t{font-weight:700;font-size:15px;line-height:1.35}.okmt-card .m{font-size:12.5px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.okmt-st{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.okmt-pl{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:8px;background:var(--surface-2)}
+.okmt-empty{border:1.5px dashed var(--line);border-radius:16px;padding:22px;text-align:center;color:var(--muted);font-size:14px}
+.okmt-note{display:flex;gap:10px;align-items:flex-start;border-radius:14px;padding:12px 14px;background:#eef8fd;color:#1d5f86;font-size:13.5px;line-height:1.55;margin-bottom:12px}
+html[data-theme="dark"] .okmt-note{background:#12303f;color:#cfe9f7}
+.okmt-doc{max-width:900px}.okmt-doc h3{margin:18px 0 8px;font-size:15px}.okmt-doc ul{margin:0;padding-inline-start:20px;line-height:1.7}.okmt-doc .sum{font-size:15px;line-height:1.75;white-space:pre-line}
+.okmt-top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:6px 0 12px}
+.okmt-tk{display:grid;grid-template-columns:28px 1fr 190px 150px;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.okmt-tk .w{font-size:14px;line-height:1.5}.okmt-tk input[type=text]{width:100%}.okmt-tk .done{font-size:12px;color:#1f8a4c;font-weight:700}.okmt-tk .skip{font-size:12px;color:var(--muted)}
+@media (max-width:720px){.okmt-tk{grid-template-columns:28px 1fr}.okmt-tk select,.okmt-tk input[type=date]{grid-column:2}}
+.okmt-ppl{max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:6px 8px;display:flex;flex-wrap:wrap;gap:6px}
+.okmt-ppl label{display:inline-flex;align-items:center;gap:6px;font-size:13px;border:1px solid var(--line);border-radius:999px;padding:4px 10px;cursor:pointer;background:var(--surface)}
+.okmt-ppl label:has(input:checked){border-color:#50b1e7;background:#e8f5fd;color:#1d5f86}
+.okmt-kind{display:grid;grid-template-columns:1fr 1fr;gap:8px}.okmt-kind label{border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;cursor:pointer;display:flex;gap:8px;align-items:flex-start;font-size:13.5px;line-height:1.45}
+.okmt-kind label:has(input:checked){border-color:#50b1e7;background:#e8f5fd}html[data-theme="dark"] .okmt-kind label:has(input:checked),html[data-theme="dark"] .okmt-ppl label:has(input:checked){background:#12303f;color:#cfe9f7}
+.okmt-tr{white-space:pre-wrap;font-size:13px;line-height:1.7;max-height:420px;overflow:auto;background:var(--surface-2);border-radius:12px;padding:12px}
+</style>`);
+
+  /* ---------------- the page ---------------- */
+  const card = m => { const p = m.projectId && byId('projects', m.projectId); const n = m.minutes && Array.isArray(m.minutes.tasks) ? m.minutes.tasks.filter(t => !t.taskId && !t.skipped).length : 0;
+    return `<a class="okmt-card" href="#/okmeets/${esc(m.id)}"><div class="t" dir="auto">${esc(m.title || L('اجتماع', 'Meeting'))}</div>
+      <div class="m"><span class="okmt-pl">${esc(PLAT[m.platform] || m.platform || '')}</span><span>${esc(when(m.startAt || m.at))}</span>${p ? `<span>· ${esc(p.name || '')}</span>` : ''}</div>
+      <div class="m">${chip(m)}${m.status === 'ready' && n ? `<span>${esc(L(`${n} تاسك مستني موافقة`, `${n} task(s) to approve`))}</span>` : ''}<span style="margin-inline-start:auto">${esc(m.byName || '')}</span></div></a>`; };
+  const listPage = () => {
+    const all = meets(); const now = Date.now();
+    const liveNow = all.filter(m => ['joining', 'in_call'].includes(m.status));
+    const next = all.filter(m => m.status === 'scheduled' && !liveNow.includes(m)).sort((a, b) => String(a.startAt).localeCompare(String(b.startAt)));
+    const done = all.filter(m => !liveNow.includes(m) && !next.includes(m));
+    const sec = (t, xs, empty) => `<div class="okmt-sec">${esc(t)}</div>${xs.length ? `<div class="okmt-list">${xs.map(card).join('')}</div>` : (empty ? `<div class="okmt-empty">${esc(empty)}</div>` : '')}`;
+    return `<div class="okmt-hd"><div class="grow"><h2>${esc(L('اجتماعات Zoom وGoogle Meet', 'Zoom & Google Meet meetings'))}</h2><p>${esc(L('اعمل الاجتماع من هنا، ومساعد Ökoplan بيدخله ويكتب المحضر والتاسكات بعده على المشروع.', 'Make the meeting here — the Ökoplan assistant joins it and writes the minutes and tasks on the project.'))}</p></div>
+      <div class="okmt-acts"><button type="button" class="btn p" data-okmt="new">${icon('plus')} ${esc(L('اجتماع جديد', 'New meeting'))}</button><button type="button" class="btn" data-okmt="now">${esc(L('دخّل المساعد في اجتماع شغال', 'Assistant into a running meeting'))}</button><a class="btn ghost" href="#/meetings">${esc(L('اجتماعات السيستم', 'System meetings'))}</a></div></div>
+      ${isAdmin() ? `<div data-okmt-setup></div>` : ''}
+      ${liveNow.length ? sec(L('شغالة دلوقتي', 'Live now'), liveNow) : ''}
+      ${sec(L('الجاية', 'Coming up'), next, L('مفيش اجتماعات جاية — دوس «اجتماع جديد».', 'No meetings coming up — tap «New meeting».'))}
+      ${done.length ? sec(L('المحاضر', 'Minutes'), done.slice(0, 60)) : ''}
+      <div class="okmt-sec" style="margin-top:22px">${esc(L('إزاي بيشتغل', 'How it works'))}</div>
+      <div class="okmt-note">${icon('info')}<span>${esc(L('المساعد بيدخل الاجتماع باسم «Ökoplan Assistant» ويكتب في الشات إنه بيسجّل. مبيتكلمش. لو الاجتماع فيه غرفة انتظار، اللي عامل الاجتماع لازم يدخّله. بعد ما الاجتماع يخلص بدقايق، المحضر بينزل هنا ويوصل إشعار للي اتعزموا وللـ Project Owner. المبالغ والفلوس مش بتتكتب في المحضر.', 'The assistant joins as «Ökoplan Assistant» and says in the chat that it records. It does not talk. If the meeting has a waiting room, the host has to let it in. A few minutes after the meeting the minutes land here and the invitees and the Project Owner are told. Amounts and money are never written in the minutes.'))}</span></div>`;
+  };
+  const tasksBlock = (m, can) => { const ts = (m.minutes && m.minutes.tasks) || []; if (!ts.length) return `<p class="muted small">${esc(L('مفيش تاسكات اتقالت في الاجتماع.', 'No tasks were said in the meeting.'))}</p>`;
+    const ppl = people();
+    const rows = ts.map((t, i) => { const fixed = t.taskId || t.skipped;
+      const sel = `<select class="inp" data-okmt-who="${i}" ${fixed || !can ? 'disabled' : ''}><option value="">${esc(L('— مين؟ —', '— who? —'))}</option>${ppl.map(w => `<option value="${esc(w.id)}" ${w.id === t.whoId ? 'selected' : ''}>${esc(w.name)}</option>`).join('')}</select>`;
+      return `<div class="okmt-tk"><div>${fixed ? '' : `<input type="checkbox" data-okmt-pick="${i}" ${t.whoId && can ? 'checked' : ''} ${can ? '' : 'disabled'}>`}</div>
+        <div><div class="w" dir="auto">${esc(t.what)}</div><div class="small muted" dir="auto">${esc(t.who || '')}${t.whoId ? '' : ` · ${L('مش من المكتب — اختار مين يتابع', 'not from the office — pick who follows up')}`}</div>${t.taskId ? `<div class="done">✓ ${esc(L(`اتعمل تاسك — ${t.okBy || ''}`, `Task made — ${t.okBy || ''}`))}</div>` : t.skipped ? `<div class="skip">${esc(L('اتشال', 'Skipped'))}</div>` : ''}</div>
+        ${sel}<input type="date" class="inp" data-okmt-due="${i}" value="${esc(t.due || '')}" ${fixed || !can ? 'disabled' : ''}></div>`; }).join('');
+    const open = ts.some(t => !t.taskId && !t.skipped);
+    return `${rows}${can && open ? `<div class="row" style="margin-top:12px;gap:8px"><button type="button" class="btn p" data-okmt="approve" data-id="${esc(m.id)}">${esc(L('اعمل المختار تاسكات', 'Make the ticked ones tasks'))}</button><button type="button" class="btn ghost" data-okmt="skip" data-id="${esc(m.id)}">${esc(L('شيل اللي مش متعلّم', 'Drop the unticked ones'))}</button></div>` : ''}${!can && open ? `<p class="small muted" style="margin-top:8px">${esc(L('اللي عامل الاجتماع أو الـ Project Owner هو اللي بيوافق على التاسكات.', 'The meeting\'s creator or the Project Owner approves the tasks.'))}</p>` : ''}`; };
+  const ul = xs => (xs && xs.length ? `<ul dir="auto">${xs.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p class="muted small">—</p>`);
+  const docPage = id => {
+    const m = byId(COL, id); if (!m) return `<div class="empty"><b>${esc(L('الاجتماع ده مش موجود', 'This meeting is not here'))}</b><p><a href="#/okmeets">${esc(L('كل الاجتماعات', 'All meetings'))}</a></p></div>`;
+    const p = m.projectId && byId('projects', m.projectId); const can = canRun(m); const mi = m.minutes || {};
+    const inv = (m.invitees || []).map(nm).filter(Boolean);
+    const head = `<p class="small"><a href="#/okmeets">← ${esc(L('اجتماعات Zoom وGoogle Meet', 'Zoom & Google Meet meetings'))}</a></p>
+      <h2 style="margin:4px 0 2px" dir="auto">${esc(m.title || '')}</h2>
+      <div class="okmt-top">${chip(m)}<span class="okmt-pl">${esc(PLAT[m.platform] || m.platform || '')}</span><span class="small muted">${esc(when(m.startAt || m.at))} · ${esc(L(`${m.duration || 60} دقيقة`, `${m.duration || 60} min`))}</span>${p ? `<a class="small" href="#/projects/${esc(p.id)}">${esc(p.name || '')}</a>` : ''}<span class="small muted">${esc(L('عمله', 'By'))} ${esc(m.byName || '')}</span></div>
+      <div class="row" style="gap:8px;flex-wrap:wrap">${['scheduled', 'joining', 'in_call', 'plain'].includes(m.status) || m.status === 'failed' ? `<a class="btn p" href="${esc(m.link)}" target="_blank" rel="noopener">${esc(L('ادخل الاجتماع', 'Join the meeting'))}</a><button type="button" class="btn" data-okmt="copy" data-link="${esc(m.link)}">${esc(L('انسخ اللينك', 'Copy the link'))}</button>` : ''}
+        ${m.status === 'failed' || m.status === 'missed' ? `<button type="button" class="btn" data-okmt="resend" data-id="${esc(m.id)}">${esc(L('ابعت المساعد تاني', 'Send the assistant again'))}</button>` : ''}
+        ${can && ['scheduled', 'joining', 'in_call'].includes(m.status) ? `<button type="button" class="btn ghost" data-okmt="cancel" data-id="${esc(m.id)}">${esc(L('طلّع المساعد / الغي', 'Remove the assistant / cancel'))}</button>` : ''}</div>
+      ${m.password ? `<p class="small muted" style="margin-top:6px">${esc(L('باسورد Zoom:', 'Zoom passcode:'))} <span class="ltr" dir="ltr">${esc(m.password)}</span></p>` : ''}
+      ${inv.length ? `<p class="small muted" style="margin-top:6px">${esc(L('المدعوين:', 'Invited:'))} ${esc(inv.join('، '))}</p>` : ''}
+      ${m.why && m.status !== 'ready' ? `<div class="okmt-note" style="margin-top:12px;background:#fff4e0;color:#7a4b00">${icon('info')}<span>${esc(WHY[m.why] || m.why)}${isAdmin() && m.detail ? ` — <span class="ltr" dir="ltr">${esc(String(m.detail).slice(0, 200))}</span>` : ''}</span></div>` : ''}`;
+    if (m.status !== 'ready') { const wait = { scheduled: L('المساعد هيدخل الاجتماع في ميعاده، والمحضر هينزل هنا بعد ما يخلص.', 'The assistant joins at the start; the minutes land here after the meeting.'), joining: L('المساعد بيدخل دلوقتي — لو فيه غرفة انتظار دخّله.', 'The assistant is joining — let it in if there is a waiting room.'), in_call: L('المساعد جوه الاجتماع وبيسجّل.', 'The assistant is in the call, recording.'), processing: L('الاجتماع خلص — المحضر بيتكتب (عادة في خلال ربع ساعة).', 'The meeting ended — the minutes are being written (usually within 15 minutes).'), writing: L('المحضر بيتكتب دلوقتي…', 'Writing the minutes now…') }[m.status];
+      return `<div class="okmt-doc">${head}${wait ? `<div class="okmt-note" style="margin-top:14px">${icon('clock')}<span>${esc(wait)}</span></div>` : ''}</div>`; }
+    if (mi.empty) return `<div class="okmt-doc">${head}<div class="okmt-note" style="margin-top:14px">${icon('info')}<span>${esc(L('الاجتماع اتسجّل بس مكانش فيه كلام كفاية لمحضر.', 'The meeting was recorded but there was not enough talk for minutes.'))}</span></div></div>`;
+    return `<div class="okmt-doc">${head}
+      <h3>${esc(L('الملخص', 'Summary'))}</h3><div class="card"><div class="sum" dir="auto">${esc(mi.summary || '—')}</div></div>
+      <h3>${esc(L('أهم النقاط', 'Key points'))}</h3>${ul(mi.points)}
+      <h3>${esc(L('القرارات', 'Decisions'))}</h3>${ul(mi.decisions)}
+      <h3>${esc(L('التاسكات', 'Tasks'))}</h3><div class="card">${tasksBlock(m, can)}</div>
+      <h3>${esc(L('أسئلة مفتوحة', 'Open questions'))}</h3>${ul(mi.questions)}
+      ${mi.next ? `<h3>${esc(L('الخطوة الجاية', 'Next step'))}</h3><p dir="auto">${esc(mi.next)}</p>` : ''}
+      ${(m.attendees || []).length ? `<p class="small muted" style="margin-top:16px">${esc(L('اللي اتكلموا:', 'Speakers:'))} ${esc(m.attendees.join('، '))}${m.talkMinutes ? ` · ${esc(L(`${m.talkMinutes} دقيقة`, `${m.talkMinutes} min`))}` : ''}</p>` : ''}
+      ${isAdmin() ? `<div class="card" style="margin-top:16px"><div class="cardhead"><h3 style="margin:0">${esc(L('ليك إنت بس', 'For you only'))}</h3></div><p class="small muted">${esc(m.hasMoney ? L('فيه نقاط مالية اتقالت في الاجتماع.', 'Money points were said in the meeting.') : L('مفيش نقاط مالية.', 'No money points.'))}</p><div data-okmt-x></div><button type="button" class="btn sm" data-okmt="text" data-id="${esc(m.id)}">${esc(L('النقاط المالية والتفريغ الكامل', 'Money points & full transcript'))}</button></div>` : ''}
+    </div>`;
+  };
+  if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.okmeets = () => { const id = S.route && S.route.id; return id ? docPage(id) : listPage(); };
+  if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okmeets')) { const i = NAV.findIndex(n => n && n.id === 'meetings'); NAV.splice(i >= 0 ? i + 1 : NAV.length, 0, { id: 'okmeets', get label() { return L('اجتماعات Zoom وMeet', 'Zoom & Meet'); }, get short() { return 'Zoom/Meet'; }, icon: 'meet', count: () => list(COL).filter(m => ['joining', 'in_call'].includes(m.status)).length || 0 }); }
+  if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (['kiosk', 'none'].includes(r)) return; if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okmeets')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okmeets']); });
+  if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okmeets') return !!S.session && (typeof role !== 'function' || !['kiosk', 'none'].includes(role())); return base.apply(this, arguments); })(canSee);
+  try { if (typeof VIEW_TITLES === 'object' && !Object.getOwnPropertyDescriptor(VIEW_TITLES, 'okmeets')) Object.defineProperty(VIEW_TITLES, 'okmeets', { get: () => L('اجتماعات Zoom وGoogle Meet', 'Zoom & Google Meet meetings'), configurable: true, enumerable: true }); } catch (e) { /* */ }
+
+  /* ---------------- the CEO: the assistant's setup ---------------- */
+  let keys = null, keysAt = 0;
+  const loadKeys = async () => { if (!isAdmin() || !S.sb || !S.sb.rpc) return; if (Date.now() - keysAt < 60e3 && keys) return; keysAt = Date.now(); try { const r = await S.sb.rpc('nf_okmeet_keys'); keys = r && r.data && r.data.status === 'ok' ? r.data : null; } catch (e) { keys = null; } rerender(); };
+  const setupBox = () => { const k = keys || {}; const ok = (b, t) => `<span class="okmt-st" style="${b ? 'color:#1f8a4c;background:#e6f6ec' : 'color:#b26a00;background:#fff4e0'}">${esc(b ? '✓ ' + t : '… ' + t)}</span>`;
+    return `<div class="card" style="margin-bottom:14px"><div class="cardhead"><h3 style="margin:0">${esc(L('إعداد المساعد (ليك إنت بس)', 'Assistant setup (you only)'))}</h3><div class="grow"></div><button type="button" class="btn sm" data-okmt="keys">${esc(L('حط المفاتيح', 'Enter the keys'))}</button><button type="button" class="btn sm ghost" data-okmt="check">${esc(L('اختبار', 'Check'))}</button></div>
+      <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px">${ok(!!k.recall, 'Recall.ai')}${ok(!!k.zoom, 'Zoom')}<span class="small muted">${esc(L('التفريغ: Deepgram (عربي) — المفتاح بتاعه بيتحط جوه حساب Recall.ai', 'Transcription: Deepgram (Arabic) — its key goes inside the Recall.ai account'))}</span></div>
+      <div data-okmt-chk class="small muted" style="margin-top:6px"></div></div>`; };
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    if (!(S.route && S.route.view === 'okmeets')) return; const h = document.querySelector('[data-okmt-setup]'); if (!h) return; if (!keys) loadKeys(); if (h.dataset.v === JSON.stringify(keys)) return; h.dataset.v = JSON.stringify(keys); h.innerHTML = setupBox();
+  } catch (e) { /* */ } });
+  const keysModal = () => openModal({ title: L('مفاتيح مساعد الاجتماعات', 'Meeting assistant keys'), submitLabel: L('حفظ', 'Save'),
+    body: `<div class="form"><div class="full small muted">${esc(L('المفاتيح بتتحفظ على السيرفر بس ومبترجعش تظهر لحد. سيب الخانة فاضية لو مش عايز تغيّرها.', 'Keys are kept on the server only and are never shown again. Leave a box empty to keep it as it is.'))}</div>
+      ${field('Recall.ai API key', '<input class="inp ltr" name="recall_key" type="password" autocomplete="off">', 'full')}
+      ${field(L('منطقة Recall.ai', 'Recall.ai region'), `<select class="inp ltr" name="recall_region"><option value="">${esc(L('زي ما هي', 'Keep'))}</option><option>us-west-2</option><option>us-east-1</option><option>eu-central-1</option><option>ap-northeast-1</option></select>`)}
+      ${field('Zoom Account ID', '<input class="inp ltr" name="zoom_account" autocomplete="off">')}${field('Zoom Client ID', '<input class="inp ltr" name="zoom_client" autocomplete="off">')}${field('Zoom Client Secret', '<input class="inp ltr" name="zoom_secret" type="password" autocomplete="off">')}</div>`,
+    onSubmit: async f => { const d = formData(f); let n = 0; for (const k of ['recall_key', 'recall_region', 'zoom_account', 'zoom_client', 'zoom_secret']) { const v = String(d[k] || '').trim(); if (!v) continue; const r = await S.sb.rpc('nf_set_secret', { p_key: k, p_value: v }); if (r && r.error) { toast(L('مااتحفظش', 'Not saved'), 'err'); return false; } n++; }
+      keysAt = 0; keys = null; toast(n ? L('اتحفظ ✓', 'Saved ✓') : L('مفيش تغيير', 'Nothing changed')); loadKeys(); return true; } });
+
+  /* ---------------- new meeting / assistant now ---------------- */
+  const pad = n => String(n).padStart(2, '0');
+  const localNext = () => { const d = new Date(Date.now() + 60 * 60e3); d.setMinutes(d.getMinutes() < 30 ? 30 : 60, 0, 0); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+  const projSel = (val, name) => `<select class="inp" name="${name || 'projectId'}"><option value="">${esc(L('— من غير مشروع —', '— no project —'))}</option>${live().map(p => `<option value="${esc(p.id)}" ${p.id === val ? 'selected' : ''}>${esc(p.name || p.code || '')}</option>`).join('')}</select>`;
+  const pplBox = () => `<input class="inp" data-okmt-q placeholder="${esc(L('دوّر على اسم…', 'Search a name…'))}" style="margin-bottom:6px"><div class="okmt-ppl">${people().filter(w => w.id !== me()).map(w => `<label data-n="${esc(String(w.name).toLowerCase())}"><input type="checkbox" name="inv" value="${esc(w.id)}">${esc(w.name)}</label>`).join('')}</div>`;
+  const newModal = (preProject) => {
+    openModal({ title: L('اجتماع جديد', 'New meeting'), wide: true, submitLabel: L('اعمل الاجتماع', 'Create the meeting'),
+      body: `<div class="form">${field(L('العنوان', 'Title'), '<input class="inp" name="title" required dir="auto">', 'full')}
+        <div class="field full"><label>${esc(L('الاجتماع على', 'Meeting on'))}</label><div class="okmt-kind">
+          <label><input type="radio" name="kind" value="zoom" checked><span><b>Zoom</b><br><span class="small muted">${esc(L('اللينك بيتعمل لوحده من حساب Zoom بتاع المكتب', 'The link is made on the office\'s Zoom account'))}</span></span></label>
+          <label><input type="radio" name="kind" value="link"><span><b>${esc(L('لينك عندي', 'A link I have'))}</b><br><span class="small muted">${esc(L('Google Meet أو Zoom أو Teams — حتى لو العميل هو اللي بعته', 'Google Meet, Zoom or Teams — a client\'s link too'))}</span></span></label></div></div>
+        <div class="field full" data-okmt-linkf style="display:none"><label>${esc(L('اللينك', 'The link'))}</label><input class="inp ltr" name="link" dir="ltr" placeholder="https://meet.google.com/…"><div class="small muted" style="margin-top:4px"><a href="https://meet.google.com/new" target="_blank" rel="noopener">${esc(L('افتح Google Meet جديد', 'Open a new Google Meet'))} ↗</a> ${esc(L('— وانسخ اللينك هنا', '— then paste the link here'))}</div></div>
+        ${field(L('الميعاد', 'When'), `<input class="inp" type="datetime-local" name="startAt" value="${localNext()}" required>`)}
+        ${field(L('المدة', 'Length'), `<select class="inp" name="duration">${[30, 45, 60, 90, 120, 180].map(x => `<option value="${x}" ${x === 60 ? 'selected' : ''}>${esc(L(`${x} دقيقة`, `${x} min`))}</option>`).join('')}</select>`)}
+        ${field(L('المشروع', 'Project'), projSel(preProject || ''), 'full')}
+        <div class="field full"><label>${esc(L('المدعوين (بيوصلهم إشعار باللينك)', 'Invite (they get a notice with the link)'))}</label>${pplBox()}</div>
+        ${field(L('أجندة (اختياري)', 'Agenda (optional)'), '<textarea class="inp" name="agenda" rows="2" dir="auto"></textarea>', 'full')}
+        <label class="check full on"><input type="checkbox" name="assistant" checked> ${esc(L('مساعد Ökoplan يحضر ويكتب المحضر', 'The Ökoplan assistant attends and writes the minutes'))}</label></div>`,
+      onOpen: f => { const sync = () => { const k = (f.querySelector('[name=kind]:checked') || {}).value; f.querySelector('[data-okmt-linkf]').style.display = k === 'link' ? '' : 'none'; }; f.querySelectorAll('[name=kind]').forEach(r => r.addEventListener('change', sync)); sync();
+        const q = f.querySelector('[data-okmt-q]'); if (q) q.addEventListener('input', () => { const v = q.value.trim().toLowerCase(); f.querySelectorAll('.okmt-ppl label').forEach(l => { l.style.display = !v || l.dataset.n.includes(v) ? '' : 'none'; }); }); },
+      onSubmit: async f => { const d = formData(f); const inv = Array.from(f.querySelectorAll('[name=inv]:checked')).map(x => x.value); const kind = (f.querySelector('[name=kind]:checked') || {}).value || 'zoom';
+        if (!String(d.title || '').trim()) { toast(L('اكتب عنوان', 'Write a title'), 'err'); return false; }
+        if (kind === 'link' && !/^https:\/\/\S+/.test(String(d.link || '').trim())) { toast(L('حط لينك الاجتماع', 'Paste the meeting link'), 'err'); return false; }
+        const at = new Date(String(d.startAt || '')); if (isNaN(at.getTime())) { toast(L('اختار الميعاد', 'Pick the time'), 'err'); return false; }
+        const btn = f.querySelector('button[type=submit]'); if (btn) btn.textContent = L('بيتعمل…', 'Creating…');
+        const r = await fn({ action: 'create', kind, title: d.title, link: d.link, startAt: at.toISOString(), duration: Number(d.duration) || 60, projectId: d.projectId || '', invitees: inv, agenda: d.agenda || '', assistant: !!f.querySelector('[name=assistant]').checked });
+        if (!r || !r.ok) { toast(r && r.error === 'no_zoom' ? L('Zoom لسه مش متظبط في السيستم — اختار «لينك عندي»', 'Zoom is not set up yet — choose «A link I have»') : r && r.error === 'bad_link' ? L('اللينك ده مش لينك Meet أو Zoom أو Teams', 'That is not a Meet, Zoom or Teams link') : r && r.error === 'zoom' ? L('Zoom رفض يعمل الاجتماع', 'Zoom refused to make the meeting') + (r.detail ? ' — ' + r.detail : '') : L('مااتعملش — جرّب تاني', 'Not created — try again'), 'err'); if (btn) btn.textContent = L('اعمل الاجتماع', 'Create the meeting'); return false; }
+        toast(r.why === 'no_keys' ? L('الاجتماع اتعمل ✓ — المساعد هيشتغل أول ما د. طارق يظبط الإعداد', 'Meeting created ✓ — the assistant starts once the setup is done') : L('الاجتماع اتعمل ✓', 'Meeting created ✓'));
+        setTimeout(() => { location.hash = '#/okmeets/' + r.id; }, 60); return true; } });
+  };
+  const nowModal = () => openModal({ title: L('دخّل المساعد في اجتماع شغال', 'Assistant into a running meeting'), submitLabel: L('ابعت المساعد', 'Send the assistant'),
+    body: `<div class="form">${field(L('لينك الاجتماع', 'Meeting link'), '<input class="inp ltr" name="link" dir="ltr" placeholder="https://zoom.us/j/… · https://meet.google.com/…" required>', 'full')}${field(L('العنوان', 'Title'), '<input class="inp" name="title" dir="auto">', 'full')}${field(L('المشروع', 'Project'), projSel(''), 'full')}
+      <div class="full small muted">${esc(L('المساعد بيدخل في خلال دقيقة. لو فيه غرفة انتظار، دخّل «Ökoplan Assistant».', 'The assistant joins within a minute. If there is a waiting room, let «Ökoplan Assistant» in.'))}</div></div>`,
+    onSubmit: async f => { const d = formData(f); if (!/^https:\/\/\S+/.test(String(d.link || '').trim())) { toast(L('حط لينك الاجتماع', 'Paste the meeting link'), 'err'); return false; }
+      const r = await fn({ action: 'send', link: String(d.link).trim(), title: d.title || L('اجتماع', 'Meeting'), projectId: d.projectId || '' });
+      if (!r || !r.ok) { toast(r && r.error === 'bad_link' ? L('اللينك ده مش لينك Meet أو Zoom أو Teams', 'That is not a Meet, Zoom or Teams link') : L('مااتبعتش — جرّب تاني', 'Not sent — try again'), 'err'); return false; }
+      toast(r.why === 'no_keys' ? L('اتسجّل — بس المساعد لسه مستني الإعداد', 'Saved — but the assistant is waiting for its setup') : L('المساعد في الطريق ✓', 'The assistant is on its way ✓')); setTimeout(() => { location.hash = '#/okmeets/' + r.id; }, 60); return true; } });
+
+  /* ---------------- clicks ---------------- */
+  document.addEventListener('click', async ev => {
+    const b = ev.target.closest && ev.target.closest('[data-okmt]'); if (!b) return; const a = b.dataset.okmt; ev.preventDefault();
+    if (a === 'new') return newModal(); if (a === 'now') return nowModal(); if (a === 'keys') return isAdmin() && keysModal();
+    if (a === 'copy') { try { await navigator.clipboard.writeText(b.dataset.link || ''); toast(L('اتنسخ ✓', 'Copied ✓')); } catch (e) { prompt(L('انسخ اللينك', 'Copy the link'), b.dataset.link || ''); } return; }
+    if (a === 'check') { const box = document.querySelector('[data-okmt-chk]'); if (box) box.textContent = L('بيختبر…', 'Checking…'); const r = await fn({ action: 'check' }); const t = v => (v === true ? '✓' : v === 'no_key' ? L('مش متحط', 'not set') : '✗ ' + v); if (box) box.textContent = `Recall.ai: ${t(r.recall)} · Zoom: ${t(r.zoom)}`; return; }
+    const id = b.dataset.id; const m = id && byId(COL, id); if (!m) return;
+    if (a === 'cancel') { if (!confirm(L('تطلّع المساعد وتلغي متابعة الاجتماع ده؟', 'Remove the assistant and stop following this meeting?'))) return; const r = await fn({ action: 'cancel', id }); toast(r && r.ok ? L('اتلغى', 'Cancelled') : L('مااتلغاش', 'Not cancelled'), r && r.ok ? undefined : 'err'); return; }
+    if (a === 'resend') { b.disabled = true; const r = await fn({ action: 'resend', id }); b.disabled = false; toast(r && r.ok ? L('المساعد في الطريق ✓ — دخّله لو فيه غرفة انتظار', 'On its way ✓ — let it in if there is a waiting room') : r && r.error === 'no_keys' ? L('المساعد لسه مستني الإعداد', 'The assistant is waiting for its setup') : L('مااتبعتش', 'Not sent'), r && r.ok ? undefined : 'err'); return; }
+    if (a === 'text') { const h = document.querySelector('[data-okmt-x]'); const r = await S.sb.rpc('nf_okmeet_text', { p_id: id }); const d = r && r.data; if (!h) return; if (!d || d.status !== 'ok') { h.innerHTML = `<p class="small muted">${esc(L('مفيش تفريغ محفوظ', 'No transcript kept'))}</p>`; return; }
+      h.innerHTML = `${(d.money || []).length ? `<h3>${esc(L('النقاط المالية', 'Money points'))}</h3>${ul(d.money)}` : ''}<h3>${esc(L('التفريغ', 'Transcript'))}</h3><div class="okmt-tr" dir="auto">${esc(d.transcript || '')}</div>`; b.remove(); return; }
+    if (a === 'approve' || a === 'skip') {
+      const ts = (m.minutes && m.minutes.tasks) || []; const picks = [], skip = [];
+      ts.forEach((t, i) => { if (t.taskId || t.skipped) return; const on = document.querySelector(`[data-okmt-pick="${i}"]`); const who = (document.querySelector(`[data-okmt-who="${i}"]`) || {}).value || ''; const due = (document.querySelector(`[data-okmt-due="${i}"]`) || {}).value || '';
+        if (on && on.checked) { if (a === 'approve') picks.push({ i, whoId: who, due }); } else if (a === 'skip') skip.push(i); });
+      if (a === 'approve') { if (!picks.length) { toast(L('علّم على التاسكات الأول', 'Tick the tasks first'), 'err'); return; } if (picks.some(p0 => !p0.whoId)) { toast(L('اختار مين لكل تاسك متعلّم', 'Pick who for each ticked task'), 'err'); return; } }
+      b.disabled = true; const r = await fn({ action: 'approve', id, picks: a === 'approve' ? picks : [], skip }); b.disabled = false;
+      toast(r && r.ok ? (a === 'approve' ? L(`اتعمل ${r.made} تاسك ✓`, `${r.made} task(s) made ✓`) : L('اتشالوا', 'Dropped')) : L('مااتعملش', 'Not done'), r && r.ok ? undefined : 'err'); return; }
+  });
+  /* the project page: a shortcut to make a meeting for this project */
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    if (!(S.route && S.route.view === 'meetings') || document.querySelector('[data-okmt-jump]')) return; const host = document.querySelector('#main .card, #main h2, main .card'); if (!host) return;
+    host.insertAdjacentHTML('beforebegin', `<div class="okmt-note" data-okmt-jump>${icon('meet')}<span>${esc(L('اجتماع على Zoom أو Google Meet، أو لينك من عميل؟ ', 'A Zoom or Google Meet meeting, or a client\'s link? '))}<a href="#/okmeets">${esc(L('اجتماعات Zoom وGoogle Meet ←', 'Zoom & Google Meet meetings →'))}</a></span></div>`);
+  } catch (e) { /* */ } });
+  window.okMeetNew = newModal;
 })();
