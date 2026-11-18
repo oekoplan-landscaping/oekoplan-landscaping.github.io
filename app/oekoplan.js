@@ -5155,6 +5155,10 @@ html[data-theme="dark"] #oklock{background:#0d1719}
       s: [L('بيوصلك إشعار: «من يوم كذا هتشتغل في مشروع كذا».', 'You get a notice: «From day … you work on project …».'),
         L('وفيه مين الـ Project Owner اللي هتتابع معاه، ولحد إمتى.', 'With the Project Owner you follow up with, and until when.'),
         L('الإشعارات بتوصل على الموبايل — فعّلها من الجرس فوق.', 'Notices reach your phone — turn them on from the bell at the top.')] },
+    { id: 'teamkpi', show: () => { try { return canSee('okteamkpi'); } catch (e) { return false; } }, art: 'pmo', go: '#/okteamkpi',
+      t: L('مؤشرات فريقك كل شهر', 'Your team\'s KPIs every month'), s: [L('«مؤشرات فريقي»: كل اللي شغالين معاك في مشاريعك واللي تحت إدارتك.', '«My team\'s KPIs»: everyone who works with you on your projects and everyone you manage.'),
+        L('مؤشر الالتزام لكل واحد: الحضور، استخدام السيستم، التاسكات في ميعادها، التحديث الأسبوعي.', 'Each person\'s commitment index: attendance, system use, tasks on time, the weekly update.'),
+        L('بتتحدّث أول كل شهر ويوصلك إشعار.', 'It refreshes on the 1st of every month and you get a notice.')] },
     { id: 'brainuse', show: () => !!S.session && !!me() && !isAdmin(), art: 'status', go: '#/oklearn',
       t: L('السيستم بقى بيقيس الأداء', 'The system now measures performance'),
       s: [L('كل أسبوع السيستم بيراجع الشغل: الحضور، التاسكات وهل خلصت في ميعادها، التحديث الأسبوعي للمشاريع، وتاسكات الاجتماعات.', 'Every week the system reviews the work: attendance, tasks and whether they finished on time, the weekly project update, and meeting tasks.'),
@@ -5743,4 +5747,47 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
     if (a.dataset.okhowOn !== undefined) { const v = st(); v.off = false; v.day = ''; save(v); toast(L('رجعت ✓', 'Back on ✓')); rerender(); return; }
     const t = TIPS().find(x => x.id === a.dataset.okhowTry); if (t && t.try) { try { t.try(); } catch (e) { /* */ } }
   });
+})();
+
+/* =====================================================================
+   Ökoplan — «مؤشرات فريقي» (18 Nov 2026, approved with the PIN): every manager / Project Owner sees, each month, the KPIs of the
+   people who work with him on his projects and of the people he manages (RPC nf_ok_team_kpis — the month that just ended, from
+   «عقل Ökoplan»). Numbers only: Claude's personal notes stay with the CEO. A notice on the 1st of every month.
+   ===================================================================== */
+(() => {
+  if (window.__OK_TEAMKPI__) return; window.__OK_TEAMKPI__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const me = () => (typeof stuMe === 'function' ? stuMe() : '') || (S.session && S.session.workerId) || '';
+  const owners = p => [p.leadId, p.ownerId, p.financeId].concat(p.coOwnerIds || []).filter(Boolean);
+  const isMgr = () => { const id = me(); if (!id || isAdmin()) return false; return list('projects').some(p => p.status !== 'archived' && owners(p).includes(id) && (p.team || []).length) || list('workers').some(w => w.managerId === id) || (typeof role === 'function' && ['manager', 'head', 'vice', 'hr'].includes(role())); };
+  const T = { d: null, at: 0, busy: false, q: '' };
+  const load = async () => { if (T.busy || !S.sb || !S.sb.rpc) return; T.busy = true; try { const r = await S.sb.rpc('nf_ok_team_kpis'); T.d = r && r.data ? r.data : { status: 'err' }; } catch (e) { T.d = { status: 'err' }; } T.busy = false; T.at = Date.now(); rerender(); };
+  const PART = { attendance: L('الحضور', 'Attendance'), system: L('استخدام السيستم', 'System use'), tasks: L('التاسكات في ميعادها', 'Tasks on time'), updates: L('التحديث الأسبوعي', 'Weekly update'), meetings: L('تاسكات الاجتماعات', 'Meeting tasks') };
+  const monthName = ym => { try { const [y, m] = String(ym).split('-').map(Number); return new Date(Date.UTC(y, m - 1, 15)).toLocaleDateString(en() ? 'en-GB' : 'ar-EG', { month: 'long', year: 'numeric' }); } catch (e) { return ym; } };
+  const bar = v => { if (v == null) return `<span class="small muted">—</span>`; const c = v >= 70 ? '#1f8a4c' : v >= 45 ? '#d98a00' : '#c0392b'; return `<div style="display:flex;align-items:center;gap:6px"><div class="okb-bar" style="flex:1"><i style="width:${v}%;background:${c}"></i></div><b style="font-variant-numeric:tabular-nums">${v}</b></div>`; };
+  const page = () => {
+    if (!T.d || Date.now() - T.at > 5 * 60e3) setTimeout(load, 0);
+    const d = T.d; const hd = `<div class="okb-hd"><div class="grow"><h2>📊 ${esc(L('مؤشرات فريقي', 'My team\'s KPIs'))}</h2><p>${esc(L('الناس اللي شغالين معاك في مشاريعك واللي تحت إدارتك — كل شهر. الأرقام من السيستم نفسه: الحضور، استخدام السيستم، التاسكات، التحديث الأسبوعي، تاسكات الاجتماعات.', 'The people who work with you on your projects and the people you manage — every month. The numbers come from the system itself: attendance, system use, tasks, the weekly update, meeting tasks.'))}</p></div></div>`;
+    if (!d) return `<div class="okb">${hd}<div class="empty">${esc(L('بيحمّل…', 'Loading…'))}</div></div>`;
+    if (d.status === 'off') return `<div class="okb">${hd}<div class="okb-box">${esc(L('الصفحة دي مقفولة دلوقتي.', 'This page is switched off.'))}</div></div>`;
+    if (d.status === 'empty' || d.status === 'none') return `<div class="okb">${hd}<div class="okb-box">${esc(L('مفيش حد شغال معاك في مشاريعك أو تحت إدارتك دلوقتي.', 'Nobody works with you on your projects or under you right now.'))}</div></div>`;
+    if (d.status === 'none_yet') return `<div class="okb">${hd}<div class="okb-box">${esc(L('أول تقرير بيطلع بعد أول تحليل للمكتب.', 'The first report comes after the office\'s first analysis.'))}</div></div>`;
+    if (d.status !== 'ok') return `<div class="okb">${hd}<div class="okb-box bad">${esc(L('مقدرتش أجيب المؤشرات — جرّب تاني.', 'Could not load the KPIs — try again.'))}</div></div>`;
+    const q = T.q.trim().toLowerCase(); const ppl = (d.people || []).filter(p => !q || String(p.name).toLowerCase().includes(q) || String(p.title || '').toLowerCase().includes(q));
+    const scores = (d.people || []).map(p => p.score).filter(v => v != null); const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+    const rows = ppl.map(p => { const att = p.att ? (d.workdays && p.att.days != null ? `${p.att.rate == null ? '—' : p.att.rate + '%'} · ${L(`${p.att.lateDays || 0} تأخير`, `${p.att.lateDays || 0} late`)}` : '—') : L('ملوش بصمة', 'no punch');
+      return `<tr><td><b dir="auto">${esc(p.name)}</b><div class="small muted" dir="auto">${esc(p.title || '')}</div>${(p.myProjects || []).length ? `<div class="small muted notr" dir="auto">${esc(p.myProjects.slice(0, 4).join('، '))}${p.myProjects.length > 4 ? ` +${p.myProjects.length - 4}` : ''}</div>` : ''}</td><td style="min-width:140px">${bar(p.score)}</td><td class="small">${esc(att)}</td><td class="small">${esc(L(`${(p.use || {}).activeDays || 0} يوم`, `${(p.use || {}).activeDays || 0} days`))}</td><td class="small">${p.tasks && p.tasks.onTimePct != null ? esc(p.tasks.onTimePct + '%') : esc(String((p.tasks && p.tasks.done30) || 0))}${p.tasks && p.tasks.overdueOpen ? ` <span style="color:#b42318">· ${esc(L(`${p.tasks.overdueOpen} متأخر`, `${p.tasks.overdueOpen} late`))}</span>` : ''}</td><td class="small">${p.po ? esc(`${p.po.compliancePct == null ? '—' : p.po.compliancePct + '%'}`) : '—'}</td><td class="small muted">${esc(Object.entries(p.parts || {}).map(([k, v]) => `${PART[k] || k} ${v}`).join(' · ') || '—')}</td></tr>`; }).join('');
+    return `<div class="okb">${hd}
+      <div class="okb-kpis"><div class="okb-k"><div class="v">${esc(monthName(d.month))}</div><div class="t">${esc(L('الشهر', 'Month'))} · ${esc(String(d.window || ''))}</div></div><div class="okb-k"><div class="v">${esc(String(d.team || 0))}</div><div class="t">${esc(L('شخص معاك', 'people with you'))}</div></div><div class="okb-k"><div class="v">${avg == null ? '—' : avg}</div><div class="t">${esc(L('متوسط فريقك', 'your team\'s average'))}</div></div><div class="okb-k"><div class="v">${d.officeAvg == null ? '—' : esc(String(d.officeAvg))}</div><div class="t">${esc(L('متوسط المكتب', 'office average'))}</div></div></div>
+      <div class="okb-tools"><input class="inp" data-okt-q placeholder="${esc(L('دوّر على اسم…', 'Search a name…'))}" value="${esc(T.q)}"></div>
+      <div class="okb-box" style="padding:4px 10px;overflow:auto"><table class="okb-ppl"><thead><tr><th>${esc(L('الشخص', 'Person'))}</th><th>${esc(L('مؤشر الالتزام', 'Commitment index'))}</th><th>${esc(L('الحضور', 'Attendance'))}</th><th>${esc(L('أيام على السيستم', 'Days on the system'))}</th><th>${esc(L('التاسكات', 'Tasks'))}</th><th>${esc(L('تحديث مشاريعه', 'His project updates'))}</th><th>${esc(L('مكوّنات المؤشر', 'Index parts'))}</th></tr></thead><tbody>${rows || `<tr><td colspan="7" class="small muted">—</td></tr>`}</tbody></table></div>
+      <p class="small muted" style="margin-top:6px">${esc(L('مؤشر الالتزام = متوسط الأجزاء اللي ليها بيانات بس. اللي مش متسجّل مبيتحسبش لحد ولا عليه. الأرقام بتتحدّث أول كل شهر.', 'Commitment index = the average of the parts that have data only. What is not recorded counts neither for nor against anyone. The numbers refresh on the 1st of every month.'))}</p></div>`;
+  };
+  if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.okteamkpi = page;
+  if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okteamkpi')) { const i = NAV.findIndex(n => n && n.id === 'okcheck'); NAV.splice(i >= 0 ? i + 1 : NAV.length, 0, { id: 'okteamkpi', get label() { return L('مؤشرات فريقي', 'My team\'s KPIs'); }, get short() { return 'KPIs'; }, icon: 'star' }); }
+  if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (['kiosk', 'none'].includes(r)) return; if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okteamkpi')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okteamkpi']); });
+  if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okteamkpi') return !!S.session && isMgr() && !(S.settings && S.settings.okKpiMgr === false); return base.apply(this, arguments); })(canSee);
+  try { if (typeof VIEW_TITLES === 'object' && !Object.getOwnPropertyDescriptor(VIEW_TITLES, 'okteamkpi')) Object.defineProperty(VIEW_TITLES, 'okteamkpi', { get: () => L('مؤشرات فريقي', 'My team\'s KPIs'), configurable: true, enumerable: true }); } catch (e) { /* */ }
+  document.addEventListener('input', ev => { const q = ev.target.closest && ev.target.closest('[data-okt-q]'); if (!q) return; T.q = q.value; clearTimeout(T.qt); T.qt = setTimeout(() => { rerender(); const n = document.querySelector('[data-okt-q]'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 250); });
 })();
