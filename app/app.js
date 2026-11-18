@@ -3618,7 +3618,7 @@ ACTIONS.pjFilter = arg => { const f = S.ui.filter.projects ||= {}; if (arg === '
    capability), proposals as executable actions the manager approves, and
    department updates written into the task manager.
    ===================================================================== */
-const AI_MODEL_DEFAULT = 'claude-sonnet-4-5';
+const AI_MODEL_DEFAULT = 'claude-opus-5-5';   /* 18 Nov 2026: Ökoplan's assistant runs on Opus 5.5 (the server's admin_config.ai_model decides) */
 const aiCfg = () => Object.assign({ model: AI_MODEL_DEFAULT, enabled: true }, S.settings.ai || {});
 const aiKey = () => { try { return localStorage.getItem('nf.apikey') || ''; } catch (e) { return ''; } };
 const aiEdge = () => typeof sbOn === 'function' && sbOn() && (S.settings.ai || {}).edge !== false;
