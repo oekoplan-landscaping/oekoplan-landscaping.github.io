@@ -1,0 +1,15 @@
+{
+  "name": "oekoplan-ios",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ökoplan — iPhone app shell (Capacitor) around the live office system https://oekoplan-landscaping.github.io/app/",
+  "dependencies": {
+    "@capacitor/core": "8.5.2",
+    "@capacitor/ios": "8.5.2",
+    "@capacitor/push-notifications": "8.1.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.2",
+    "@capacitor/assets": "3.0.5"
+  }
+}

@@ -1,0 +1,60 @@
+# Ökoplan — iPhone app build (Capacitor shell around the live office system) → TestFlight.
+# The iOS project is generated on the build Mac from ios-app/ (package.json + capacitor.config.json + scripts/); nothing secret here.
+# Needs in Codemagic (UI): the App Store Connect integration «ninety-ci» and, under Code signing identities, the App Store
+# provisioning profile «Ökoplan AppStore» for com.oekoplan.office (with the existing Apple Distribution certificate).
+workflows:
+  ios-testflight:
+    name: Ökoplan iOS → TestFlight
+    max_build_duration: 40
+    instance_type: mac_mini_m2
+    working_directory: ios-app
+    integrations:
+      app_store_connect: ninety-ci
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.oekoplan.office
+      node: 22
+      xcode: latest
+    # Builds by itself when the app files change (a push to main touching ios-app/ or this file) — website and system
+    # publishes do not build. Manual «Start new build» still works.
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+      cancel_previous_builds: true
+    when:
+      changeset:
+        includes:
+          - 'ios-app/'
+          - 'codemagic.yaml'
+    scripts:
+      - name: Install
+        script: |
+          npm install --no-audit --no-fund
+          python3 -m pip install --quiet --break-system-packages pillow || python3 -m pip install --quiet pillow
+      - name: Generate the iOS project
+        script: |
+          rm -rf ios assets
+          npx cap add ios
+          python3 scripts/make-assets.py
+          python3 scripts/configure-ios.py
+          npx capacitor-assets generate --ios --iconBackgroundColor '#ffffff' --iconBackgroundColorDark '#081620' --splashBackgroundColor '#ffffff' --splashBackgroundColorDark '#081620'
+          npx cap sync ios
+      - name: Signing
+        script: xcode-project use-profiles
+      - name: Build number
+        script: |
+          cd ios/App
+          agvtool new-version -all $((BUILD_NUMBER + 10))
+      - name: Build the app (.ipa)
+        script: xcode-project build-ipa --project "ios/App/App.xcodeproj" --scheme "App"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

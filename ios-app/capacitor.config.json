@@ -1,0 +1,18 @@
+{
+  "appId": "com.oekoplan.office",
+  "appName": "Ökoplan",
+  "webDir": "www",
+  "server": {
+    "url": "https://oekoplan-landscaping.github.io/app/",
+    "allowNavigation": ["oekoplan-landscaping.github.io", "*.supabase.co"]
+  },
+  "plugins": {
+    "PushNotifications": { "presentationOptions": ["badge", "sound", "alert"] }
+  },
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#ffffff",
+    "scheme": "Oekoplan"
+  },
+  "appendUserAgent": "OekoplanApp/office"
+}

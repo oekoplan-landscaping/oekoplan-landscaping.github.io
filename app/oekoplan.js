@@ -5160,6 +5160,10 @@ html[data-theme="dark"] #oklock{background:#0d1719}
       s: [L('بيوصلك إشعار: «من يوم كذا هتشتغل في مشروع كذا».', 'You get a notice: «From day … you work on project …».'),
         L('وفيه مين الـ Project Owner اللي هتتابع معاه، ولحد إمتى.', 'With the Project Owner you follow up with, and until when.'),
         L('الإشعارات بتوصل على الموبايل — فعّلها من الجرس فوق.', 'Notices reach your phone — turn them on from the bell at the top.')] },
+    { id: 'okapp', show: () => { try { return canSee('okapp'); } catch (e) { return false; } }, art: 'me', go: '#/okapp',
+      t: L('أبلكيشن Ökoplan على Google Play وTestFlight', 'The Ökoplan app on Google Play and TestFlight'), s: [L('من «نزّل الأبلكيشن»: اختار موبايلك واكتب إيميلك مرة واحدة.', 'From «Get the app»: pick your phone and write your email once.'),
+        L('أندرويد: الجيميل اللي فاتح بيه Play Store. آيفون: الإيميل اللي هتوصلك عليه دعوة TestFlight.', 'Android: the Gmail signed in on Play Store. iPhone: the email that will receive the TestFlight invitation.'),
+        L('أول ما نضيفك يوصلك إشعار فيه الخطوات. إيميلك محدش بيشوفه غير الإدارة.', 'As soon as you are added, a notice brings you the steps. Only management sees your email.')] },
     { id: 'okask', show: () => { try { return canSee('okask'); } catch (e) { return false; } }, art: 'check', go: '#/okask',
       t: L('طلبات الموافقة', 'Approval requests'), s: [L('فتح تاسكات المرحلة، جدول التسليمات، وتوزيع المشاريع — مفيش حاجة منهم بتشتغل لوحدها.', 'Opening a stage\'s tasks, the deliverables schedule and assigning projects — none of them runs by itself.'),
         L('بيوصلك طلب: «تمام، يلا نشتغل» أو «أجّل وغيّر الميعاد» — والمتأجّل بيتفتح لوحده يوم الميعاد.', 'A request reaches you: «OK, let\'s go» or «Hold and change the date» — what is held opens by itself on that date.'),
@@ -5970,4 +5974,114 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
   });
   setInterval(() => { try { if (document.visibilityState === 'visible' && canAsk()) load(true); } catch (e) { /* */ } }, 5 * 60e3);
   window.okAsk = { load, rows: () => A.rows, taskTimes, estDays };
+})();
+
+/* =====================================================================
+   Ökoplan — «نزّل الأبلكيشن» (18 Nov 2026): the mobile app goes to Google Play (closed test) and TestFlight (iPhone).
+   Each person picks his phone and writes the email the store knows him by: the Gmail signed in on Play Store (Android) or the
+   email that receives Apple's TestFlight invitation (iPhone). Private — the person and the CEO only (RPCs nf_ok_app_*).
+   The CEO: who wrote what, copy the Android emails for Play Console, a TestFlight CSV, the store links, and «they were added» →
+   each person gets a notice + push with the steps. A small banner on the home page until the person has written his email.
+   ===================================================================== */
+(() => {
+  if (window.__OK_APPGET__) return; window.__OK_APPGET__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const me = () => (typeof stuMe === 'function' ? stuMe() : '') || (S.session && S.session.workerId) || (isAdmin() ? 'owner' : '');
+  const UA = () => navigator.userAgent || '';
+  const dev = () => (/iPhone|iPad|iPod/i.test(UA()) ? 'ios' : /Android/i.test(UA()) ? 'android' : '');
+  const store = () => (S.settings && S.settings.okStore) || {};
+  const TF = 'https://apps.apple.com/app/testflight/id899247664';
+  const A = { mine: undefined, list: null, busy: false, pick: '', at: 0 };
+  const loadMine = async () => { if (A.busy || !S.sb || !S.sb.rpc || !S.session) return; A.busy = true; try { const r = await S.sb.rpc('nf_ok_app_me'); A.mine = r && !r.error ? (r.data || null) : A.mine === undefined ? null : A.mine; } catch (e) { if (A.mine === undefined) A.mine = null; } A.busy = false; A.at = Date.now(); rerender(); };
+  const loadList = async () => { if (!isAdmin() || !S.sb || !S.sb.rpc) return; try { const r = await S.sb.rpc('nf_ok_app_list'); A.list = r && r.data && !r.data.error ? r.data : { rows: [], people: 0 }; } catch (e) { A.list = { rows: [], people: 0 }; } rerender(); };
+  const okSee = () => !!S.session && !['kiosk', 'none'].includes(typeof role === 'function' ? role() : '');
+  const plat = p => (p === 'ios' ? 'iPhone' : 'Android');
+  const d10 = v => (v ? fmtDate(String(v).slice(0, 10)) : '');
+
+  const steps = m => {
+    const s = store();
+    if (m.platform === 'android') return `<ol class="okap-st">
+      <li>${esc(L('لو عندك أبلكيشن Ökoplan القديم اللي نزل من لينك السيستم، امسحه الأول.', 'If you have the old Ökoplan app installed from the system\'s link, uninstall it first.'))}</li>
+      <li>${esc(L('افتح لينك الاختبار وإنت فاتح Play Store بنفس الجيميل ده:', 'Open the testing link while Play Store is signed in with this same Gmail:'))} <b dir="ltr">${esc(m.email)}</b>، ${esc(L('ودوس «Become a tester».', 'and tap «Become a tester».'))}${s.play ? `<div><a class="btn sm p" href="${esc(s.play)}" target="_blank" rel="noopener">${esc(L('لينك الاختبار', 'Testing link'))}</a></div>` : ''}</li>
+      <li>${esc(L('دوس «Download it on Google Play» ونزّله. من هنا ورايح بيتحدّث لوحده من Play Store.', 'Tap «Download it on Google Play» and install. From then on it updates itself from Play Store.'))}</li>
+      <li>${esc(L('افتحه وادخل بنفس رقم موبايلك وكلمة السر.', 'Open it and sign in with your usual mobile number and password.'))}</li></ol>`;
+    return `<ol class="okap-st">
+      <li>${esc(L('نزّل أبلكيشن TestFlight من App Store.', 'Install the TestFlight app from the App Store.'))} <a class="btn sm" href="${TF}" target="_blank" rel="noopener">TestFlight</a></li>
+      <li>${s.testflight ? `${esc(L('افتح اللينك ده من الآيفون، ودوس «Accept» وبعدين «Install»:', 'Open this link on the iPhone, tap «Accept», then «Install»:'))} <div><a class="btn sm p" href="${esc(s.testflight)}" target="_blank" rel="noopener">${esc(L('افتح في TestFlight', 'Open in TestFlight'))}</a></div>` : `${esc(L('هيوصلك إيميل من Apple على', 'An email from Apple will reach'))} <b dir="ltr">${esc(m.email)}</b> ${esc(L('عنوانه «You\'re invited to test Ökoplan». افتحه من الآيفون، ودوس «View in TestFlight» وبعدين «Accept» و«Install».', 'titled «You\'re invited to test Ökoplan». Open it on the iPhone, tap «View in TestFlight», then «Accept» and «Install».'))}`}</li>
+      <li>${esc(L('افتحه وادخل بنفس رقم موبايلك وكلمة السر. التحديثات بتوصلك من TestFlight.', 'Open it and sign in with your usual mobile number and password. Updates come through TestFlight.'))}</li></ol>`;
+  };
+  const form = cur => { const p = A.pick || (cur && cur.platform) || dev() || 'android';
+    return `<form id="okap-f" class="okap-f">
+      <div class="okap-pl"><label class="${p === 'android' ? 'on' : ''}"><input type="radio" name="pl" value="android" ${p === 'android' ? 'checked' : ''}><b>Android</b><span>${esc(L('Samsung · Oppo · Xiaomi · Honor…', 'Samsung · Oppo · Xiaomi · Honor…'))}</span></label><label class="${p === 'ios' ? 'on' : ''}"><input type="radio" name="pl" value="ios" ${p === 'ios' ? 'checked' : ''}><b>iPhone</b><span>TestFlight</span></label></div>
+      <div class="field"><label>${esc(p === 'ios' ? L('الإيميل اللي هتوصلك عليه دعوة TestFlight (يفضّل إيميل الـ Apple ID)', 'The email that will receive the TestFlight invitation (your Apple ID email is best)') : L('الجيميل اللي فاتح بيه Play Store على موبايلك', 'The Gmail signed in on Play Store on your phone'))}</label><input name="email" type="email" dir="ltr" autocomplete="email" required placeholder="${p === 'ios' ? 'name@icloud.com' : 'name@gmail.com'}" value="${esc((cur && cur.platform === p && cur.email) || '')}"></div>
+      ${p === 'android' ? `<div class="small muted">${esc(L('مهم: لازم يكون نفس الجيميل اللي على Play Store، وإلا الاختبار مش هيفتح معاك. تلاقيه في Play Store ← صورتك فوق.', 'Important: it must be the same Gmail as on Play Store, or the test will not open for you. You find it in Play Store → your photo at the top.'))}</div>` : ''}
+      <div class="okap-acts"><button class="btn p" type="submit">${esc(L('سجّل', 'Save'))}</button>${cur ? `<button class="btn ghost" type="button" data-okap="cancel">${esc(L('إلغاء', 'Cancel'))}</button>` : ''}</div></form>`; };
+  const adminCard = () => {
+    if (!isAdmin()) return ''; if (!A.list) { setTimeout(loadList, 0); return `<div class="okb-box small muted">${esc(L('بيحمّل…', 'Loading…'))}</div>`; }
+    const rows = A.list.rows || []; const an = rows.filter(r => r.platform === 'android'), io = rows.filter(r => r.platform === 'ios'); const s = store();
+    const wait = p => rows.filter(r => r.platform === p && !r.addedAt).length;
+    const tr = rows.map(r => `<tr><td dir="auto">${esc(r.name || '')}</td><td>${esc(plat(r.platform))}</td><td dir="ltr" style="text-align:start">${esc(r.email)}</td><td class="small">${esc(d10(r.at))}</td><td class="small">${r.addedAt ? `✓ ${esc(d10(r.addedAt))}` : `<span style="color:#b26a00">${esc(L('مستني', 'Waiting'))}</span>`}</td></tr>`).join('');
+    return `<h3 class="okap-h">🔒 ${esc(L('للإدارة: الإيميلات', 'For management: the emails'))}</h3><div class="okb-box">
+      <div class="okb-kpis"><div class="okb-k"><div class="v">${an.length}</div><div class="t">Android</div></div><div class="okb-k"><div class="v">${io.length}</div><div class="t">iPhone</div></div><div class="okb-k"><div class="v">${Math.max(0, (A.list.people || 0) - rows.filter(r => r.wid !== 'owner').length)}</div><div class="t">${esc(L('لسه مكتبوش', 'not written yet'))}</div></div><div class="okb-k"><div class="v">${an.length >= 12 ? '✓' : `${an.length}/12`}</div><div class="t">${esc(L('تسترز جوجل المطلوبين', 'Google testers needed'))}</div></div></div>
+      <div class="okap-acts"><button class="btn sm" type="button" data-okap="copy">${esc(L('انسخ إيميلات الأندرويد (لـ Play Console)', 'Copy the Android emails (for Play Console)'))}</button><button class="btn sm" type="button" data-okap="csv">${esc(L('نزّل CSV للآيفون (لـ TestFlight)', 'Download the iPhone CSV (for TestFlight)'))}</button></div>
+      <div class="okap-acts"><button class="btn sm p" type="button" data-okap="mark:android" ${wait('android') ? '' : 'disabled'}>${esc(L(`اتضافوا على جوجل — ابعت للـ ${wait('android')}`, `Added on Google — notify ${wait('android')}`))}</button><button class="btn sm p" type="button" data-okap="mark:ios" ${wait('ios') ? '' : 'disabled'}>${esc(L(`اتضافوا على TestFlight — ابعت للـ ${wait('ios')}`, `Added on TestFlight — notify ${wait('ios')}`))}</button></div>
+      <form id="okap-links" class="okap-links"><div class="field"><label>${esc(L('لينك اختبار جوجل (Closed testing — Join on the web)', 'Google testing link (Closed testing — Join on the web)'))}</label><input name="play" dir="ltr" placeholder="https://play.google.com/apps/testing/com.oekoplan.office" value="${esc(s.play || '')}"></div><div class="field"><label>${esc(L('لينك TestFlight العام (اختياري)', 'TestFlight public link (optional)'))}</label><input name="testflight" dir="ltr" placeholder="https://testflight.apple.com/join/…" value="${esc(s.testflight || '')}"></div><button class="btn sm" type="submit">${esc(L('احفظ اللينكات', 'Save the links'))}</button></form>
+      <div style="overflow:auto;margin-top:10px"><table class="oka-tbl"><thead><tr><th>${esc(L('الاسم', 'Name'))}</th><th>${esc(L('الموبايل', 'Phone'))}</th><th>${esc(L('الإيميل', 'Email'))}</th><th>${esc(L('سجّل', 'Written'))}</th><th>${esc(L('اتضاف', 'Added'))}</th></tr></thead><tbody>${tr || `<tr><td colspan="5" class="small muted">${esc(L('لسه محدش كتب.', 'Nobody has written yet.'))}</td></tr>`}</tbody></table></div></div>`;
+  };
+  const page = () => {
+    if (!okSee()) return `<div class="banner warn">${esc(L('مش متاحة', 'Not available'))}</div>`;
+    if (A.mine === undefined && !A.busy) setTimeout(loadMine, 0);
+    const m = A.mine; const editing = A.edit || !m;
+    const hd = `<div class="okb-hd"><div class="grow"><h2>📱 ${esc(L('نزّل أبلكيشن Ökoplan', 'Get the Ökoplan app'))}</h2><p>${esc(L('الأبلكيشن هيبقى على Google Play للأندرويد وعلى TestFlight للآيفون. اكتب إيميلك مرة واحدة، وأول ما نضيفك هيوصلك إشعار فيه الخطوات.', 'The app is on Google Play for Android and on TestFlight for iPhone. Write your email once — as soon as you are added, a notice brings you the steps.'))}</p></div></div>`;
+    let body;
+    if (A.mine === undefined) body = `<div class="empty">${esc(L('بيحمّل…', 'Loading…'))}</div>`;
+    else if (editing) body = `<div class="okb-box">${form(m)}</div>`;
+    else body = `<div class="okb-box"><div class="okap-me"><div><div class="small muted">${esc(L('سجّلت', 'You wrote'))} · ${esc(plat(m.platform))}</div><b dir="ltr">${esc(m.email)}</b></div><button class="btn sm ghost" type="button" data-okap="edit">${esc(L('غيّر', 'Change'))}</button></div>
+      ${m.addedAt ? `<div class="okap-ok">✓ ${esc(L('اتضفت — اتبع الخطوات:', 'You were added — follow the steps:'))}</div>${steps(m)}` : `<div class="okap-wait">⏳ ${esc(L('اتسجّلت. أول ما نضيفك على', 'Saved. As soon as you are added on'))} ${esc(m.platform === 'ios' ? 'TestFlight' : 'Google Play')} ${esc(L('هيوصلك إشعار فيه الخطوات.', 'a notice brings you the steps.'))}</div>`}</div>`;
+    return `<div class="okb okap">${hd}${body}${adminCard()}</div>`;
+  };
+  document.head.insertAdjacentHTML('beforeend', `<style>
+.okap-f{display:flex;flex-direction:column;gap:10px}.okap-pl{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.okap-pl label{border:1.5px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:2px;cursor:pointer;background:var(--surface)}.okap-pl label.on{border-color:#2b8fc7;box-shadow:0 0 0 3px rgba(43,143,199,.15)}
+.okap-pl input{position:absolute;opacity:0;pointer-events:none}.okap-pl b{font-size:15px}.okap-pl span{font-size:12px;color:var(--muted)}
+.okap-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}.okap-me{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.okap-ok{margin-top:10px;font-weight:700;color:#1f8a4c}.okap-wait{margin-top:10px;font-size:13.5px;color:var(--muted)}
+.okap-st{margin:8px 0 0;padding-inline-start:20px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.6}.okap-st .btn{margin-top:4px}
+.okap-h{font-size:15px;margin:18px 2px 8px}.okap-links{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-top:10px}@media(max-width:720px){.okap-links{grid-template-columns:1fr}}
+.okap-ban{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--line);background:linear-gradient(90deg,rgba(80,177,231,.12),rgba(52,168,150,.10));border-radius:14px;padding:10px 14px;margin:0 0 12px;font-size:13.5px}.okap-ban b{font-size:14px}.okap-ban .grow{flex:1;min-width:180px}
+</style>`);
+  document.addEventListener('change', ev => { const r = ev.target.closest && ev.target.closest('#okap-f input[name=pl]'); if (!r) return; A.pick = r.value; rerender(); });
+  document.addEventListener('submit', async ev => {
+    const f = ev.target; if (!f) return;
+    if (f.id === 'okap-f') { ev.preventDefault(); const pl = (f.querySelector('input[name=pl]:checked') || {}).value || 'android'; const em = String((f.querySelector('[name=email]') || {}).value || '').trim();
+      if (pl === 'android' && !/@(gmail|googlemail)\.com$/i.test(em) && !(await confirmDlg(L('ده مش جيميل. متأكد إنه الإيميل اللي فاتح بيه Play Store؟', 'This is not a Gmail address. Are you sure it is the account signed in on Play Store?'), L('أيوه', 'Yes')))) return;
+      try { const r = await S.sb.rpc('nf_ok_app_reg', { p_platform: pl, p_email: em }); if (!r || r.error || !r.data || r.data.error) { toast(r && r.data && r.data.error === 'email' ? L('الإيميل مش مظبوط', 'The email is not valid') : L('ماقدرتش أسجّل — جرّب تاني', 'Could not save — try again'), 'err'); return; } A.edit = false; A.pick = ''; toast(L('اتسجّل — هيوصلك إشعار أول ما نضيفك', 'Saved — you will get a notice as soon as you are added')); await loadMine(); if (isAdmin()) loadList(); } catch (e) { toast(L('ماقدرتش أسجّل — جرّب تاني', 'Could not save — try again'), 'err'); } }
+    if (f.id === 'okap-links') { ev.preventDefault(); if (!isAdmin()) return; const d = formData(f); const ok = u => !u || /^https:\/\//.test(u); if (!ok(d.play) || !ok(d.testflight)) { toast(L('اللينك لازم يبدأ بـ https://', 'Links must start with https://'), 'err'); return; } try { await Store.saveSettings(Object.assign({}, S.settings, { okStore: { play: String(d.play || '').trim(), testflight: String(d.testflight || '').trim(), at: nowISO() } })); toast(L('اتحفظت', 'Saved')); } catch (e) { toast(L('ماقدرتش أحفظ', 'Could not save'), 'err'); } }
+  });
+  document.addEventListener('click', async ev => {
+    const b = ev.target.closest && ev.target.closest('[data-okap]'); if (!b) return; const a = b.dataset.okap;
+    if (a === 'edit') { A.edit = true; rerender(); return; } if (a === 'cancel') { A.edit = false; A.pick = ''; rerender(); return; }
+    if (a === 'dismiss') { try { localStorage.setItem('ok.app.ban.' + me(), String(Date.now())); } catch (e) { /* */ } rerender(); return; }
+    if (!isAdmin() || !A.list) return; const rows = A.list.rows || [];
+    if (a === 'copy') { const t = rows.filter(r => r.platform === 'android').map(r => r.email).join(', '); try { await navigator.clipboard.writeText(t); toast(L(`اتنسخ ${rows.filter(r => r.platform === 'android').length} إيميل — الزقهم في Play Console ← Testers ← Email list`, `${rows.filter(r => r.platform === 'android').length} emails copied — paste them in Play Console → Testers → Email list`)); } catch (e) { openModal({ title: L('إيميلات الأندرويد', 'Android emails'), body: `<textarea rows="8" style="width:100%" dir="ltr" readonly>${esc(t)}</textarea>` }); } return; }
+    if (a === 'csv') { const q = v => '"' + String(v || '').replace(/"/g, '""') + '"'; const lines = ['First Name,Last Name,Email'].concat(rows.filter(r => r.platform === 'ios').map(r => { const p = String(r.name || '').trim().split(/\s+/); return [q(p[0] || ''), q(p.slice(1).join(' ')), q(r.email)].join(','); })); const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/csv' }); const u = URL.createObjectURL(blob); const x = document.createElement('a'); x.href = u; x.download = 'oekoplan-testflight-testers.csv'; document.body.appendChild(x); x.click(); x.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); return; }
+    if (a.startsWith('mark:')) { const p = a.slice(5); const n = rows.filter(r => r.platform === p && !r.addedAt).length; if (!n) return; if (!(await confirmDlg(L(`تأكد إنك ضفت الـ ${n} إيميل دول على ${p === 'ios' ? 'TestFlight' : 'Play Console'} الأول. أبعتلهم إشعار بالخطوات؟`, `Make sure you added these ${n} emails on ${p === 'ios' ? 'TestFlight' : 'Play Console'} first. Send them a notice with the steps?`), L('ابعت', 'Send')))) return; b.disabled = true; try { const r = await S.sb.rpc('nf_ok_app_mark', { p_platform: p }); const d = r && r.data; if (!d || d.error) throw new Error('mark'); toast(L(`اتبعت لـ ${d.n}`, `Sent to ${d.n}`)); await loadList(); } catch (e) { toast(L('ماقدرتش أبعت', 'Could not send'), 'err'); b.disabled = false; } }
+  });
+  /* the home banner until the person has written his email (hidden for 5 days with ×) */
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => {
+    if (!okSee() || (S.route && S.route.view === 'okapp')) return; const home = typeof homeView === 'function' ? homeView() : 'dashboard'; if (!(S.route && S.route.view === home && !S.route.id)) return;
+    if (A.mine === undefined) { if (!A.busy && Date.now() - A.at > 60e3) setTimeout(loadMine, 1200); return; } if (A.mine) return;
+    try { const t = +localStorage.getItem('ok.app.ban.' + me()) || 0; if (Date.now() - t < 5 * 864e5) return; } catch (e) { /* */ }
+    const v = document.getElementById('view'); if (!v || v.querySelector('.okap-ban')) return;
+    v.insertAdjacentHTML('afterbegin', `<div class="okap-ban">📱<div class="grow"><b>${esc(L('أبلكيشن Ökoplan على Google Play وTestFlight', 'The Ökoplan app on Google Play and TestFlight'))}</b><div class="small muted">${esc(L('اكتب إيميلك مرة واحدة علشان نضيفك.', 'Write your email once so we can add you.'))}</div></div><a class="btn sm p" href="#/okapp">${esc(L('اكتب إيميلك', 'Write your email'))}</a><button type="button" class="btn sm ghost" data-okap="dismiss" aria-label="close">×</button></div>`);
+  });
+  if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.okapp = page;
+  if (typeof EXTRA_TITLES === 'object') EXTRA_TITLES.okapp = () => ({ title: L('نزّل الأبلكيشن', 'Get the app'), sub: L('Google Play للأندرويد · TestFlight للآيفون', 'Google Play for Android · TestFlight for iPhone') });
+  if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okapp')) { const i = NAV.findIndex(n => n && n.id === 'okhow'); NAV.splice(i >= 0 ? i + 1 : NAV.length, 0, { id: 'okapp', get label() { return L('نزّل الأبلكيشن', 'Get the app'); }, get short() { return L('الأبلكيشن', 'App'); }, icon: 'send' }); }
+  if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (['kiosk', 'none'].includes(r)) return; if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okapp')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okapp']); });
+  if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okapp') return okSee(); return base.apply(this, arguments); })(canSee);
+  try { if (typeof VIEW_TITLES === 'object' && !Object.getOwnPropertyDescriptor(VIEW_TITLES, 'okapp')) Object.defineProperty(VIEW_TITLES, 'okapp', { get: () => L('نزّل الأبلكيشن', 'Get the app'), configurable: true, enumerable: true }); } catch (e) { /* */ }
+  if (typeof OEKO_I18N === 'object') Object.assign(OEKO_I18N, { 'نزّل الأبلكيشن': 'Get the app' });
+  window.okAppGet = { loadMine, loadList, state: () => A };
 })();
