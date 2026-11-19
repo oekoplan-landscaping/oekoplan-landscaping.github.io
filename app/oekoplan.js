@@ -2901,7 +2901,7 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
    Everything shown (text, tooltips, placeholders, page title, notifications) is rewritten to Ökoplan Landscaping.
    The project «One Ninety» is a real project name and stays. What people type is never touched. */
 (() => { try {
-  const HIT = /ninety|نينتي|factory|مصنع|your advances|سلفك|^\s*Owner\s*$/i;
+  const HIT = /ninety|نينتي|factory|مصنع|work orders?|أوامر التشغيل|أوامر تشغيل|أمر التشغيل|أمر تشغيل|your advances|سلفك|^\s*Owner\s*$/i;   /* 19 Nov: «مدير المصنع» is «المدير المسؤول» here (Mahmoud: «هم ما عندهمش مصنع») */
   const fix = t => String(t)
     .replace(/One Ninety/g, 'One\u0001N').replace(/ون نينتي/g, 'ون\u0001ن')
     .replace(/NINETY\s+FACTORY\s+MANAGEMENT/g, 'ÖKOPLAN LANDSCAPING')
@@ -2911,8 +2911,8 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
     /* an office, not a factory: the shared engine's wording, in both languages */
     .replace(/^(\s*)Owner(\s*)$/, '$1Project Owner$2')
     .replace(/your advances · /g, '').replace(/سلفك · /g, '')
-    .replace(/the factory floor/g, 'the office').replace(/factory manager/g, 'office manager').replace(/Factory manager/g, 'Office manager').replace(/Factory & office/g, 'Office').replace(/FACTORY/g, 'OFFICE').replace(/Factory/g, 'Office').replace(/factory/g, 'office')
-    .replace(/مدير المصنع/g, 'مدير المكتب').replace(/أرضية المصنع/g, 'المكتب').replace(/المصنع والمكتب/g, 'المكتب').replace(/المصنع/g, 'المكتب').replace(/للمصنع/g, 'للمكتب').replace(/بالمصنع/g, 'بالمكتب').replace(/مصنع/g, 'مكتب')
+    .replace(/the factory floor/g, 'the office').replace(/factory manager/g, 'manager in charge').replace(/Factory manager/g, 'Manager in charge').replace(/work orders/g, 'tasks').replace(/Work orders/g, 'Tasks').replace(/work order/g, 'task').replace(/Work order/g, 'Task').replace(/Factory & office/g, 'Office').replace(/FACTORY/g, 'OFFICE').replace(/Factory/g, 'Office').replace(/factory/g, 'office')
+    .replace(/لمدير المصنع/g, 'للمدير المسؤول').replace(/مدير المصنع/g, 'المدير المسؤول').replace(/أوامر التشغيل/g, 'المهام').replace(/أوامر تشغيل/g, 'مهام').replace(/أمر التشغيل/g, 'المهمة').replace(/أمر تشغيل/g, 'مهمة').replace(/أرضية المصنع/g, 'المكتب').replace(/المصنع والمكتب/g, 'المكتب').replace(/المصنع/g, 'المكتب').replace(/للمصنع/g, 'للمكتب').replace(/بالمصنع/g, 'بالمكتب').replace(/مصنع/g, 'مكتب')
     .replace(/One\u0001N/g, 'One Ninety').replace(/ون\u0001ن/g, 'ون نينتي');
   window.okBrandFix = fix;
   const ATTRS = ['title', 'placeholder', 'aria-label', 'alt', 'data-tip'];
@@ -6605,3 +6605,4 @@ html[data-theme="dark"] .okst .pill.okp-g{color:#5fd3a0}html[data-theme="dark"] 
     const h = fmField(sel).querySelector('.okst-h'); if (h) { h.insertAdjacentHTML('beforeend', `<div style="margin-top:6px;font-weight:700">${esc(L('لو عايز تدّيله التاسك برضه، دوس «حفظ» تاني.', 'To give the task anyway, press «Save» again.'))}</div>`); h.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
   }, true);
 } catch (e) { console.warn('oeko status', e); } })();
+
