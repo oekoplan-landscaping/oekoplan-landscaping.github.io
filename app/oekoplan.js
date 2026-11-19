@@ -6249,7 +6249,7 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
   const cur = () => mine.find(running) || null;
   const loadMine = async () => { const d = T(); try { mine = (await rpc('nf_ok_daily_mine', { p_from: d, p_to: d })) || []; mineDay = d; } catch (e) { /* offline: keep */ } try { Object.keys(pcRef).forEach(k => delete pcRef[k]); } catch (e) { /* */ } paintBar(); return mine; };
   const pcRef = {};
-  window.okDaily = { loadMine, mine: () => mine, current: cur };
+  window.okDaily = { loadMine, mine: () => mine, current: cur, catName: k => catName(k) };
 
   const todaysMeetings = () => { const m = meId(); const sid = S.session && S.session.id; try { return list('meetings').filter(x => x && x.at && String(x.at).slice(0, 10) === T() && x.status !== 'cancelled' && (x.hostId === sid || x.hostId === m || (Array.isArray(x.invitees) && x.invitees.some(i => i === m || i === sid || (i && (i.id === m || i.id === sid)))))); } catch (e) { return []; } };
   const tasksOn = pid => { const m = meId(); try { return list('tasks').filter(t => t.projectId === pid && t.assigneeId === m && ['open', 'doing'].includes(t.status) && !['update', 'notice', 'daily'].includes(t.kind)).slice(0, 6); } catch (e) { return []; } };
@@ -6460,6 +6460,7 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
     out.push('- الطلبات (إجازة، إذن، نسيان بصمة، سلفة): من «بوابتي» ← «طلب جديد»، ويعتمدها المدير المباشر.');
     out.push('- صفحة المشروع: القايمة ← «المشاريع» ← اختار المشروع. زرار «تعديل» (الكود، ميعاد التسليم، أعضاء الفريق) للـ Project Owner بتاع المشروع ورئيسة الـ PMO والـ CEO بس. تغيير الـ Project Owner من رئيسة الـ PMO أو الـ CEO.');
     if (can('okteam')) out.push('- «فريقي»: حالة كل واحد على مشاريعك النهارده (حاضر من الساعة كام / في بريك / أجازة / انصرف / لسه ماحضرش). عمود «حضور» = أيام الحضور الشهر ده (المديرين بمواعيد مرنة بيتحسب لهم كل يوم شغل).');
+    if (can('okstatus')) out.push('- «حالة الفريق»: كل الناس النهارده — حاضر / في ميتنج / شغّال / بريك / إجازة (وراجع إمتى) / طالب إجازة / لسه ما حضرش. ولما تدّي تاسك بيظهر جنب كل اسم حالته، ولو الميعاد في إجازته بيحذّرك ويقترح حد فاضي.');
     if (can('oktimeline')) out.push('- «تايم لاين المشاريع»: القايمة ← «المشاريع» ← «تايم لاين المشاريع»: كل المشاريع على خط زمني (المخطط والفعلي، المسار الحرج، الزحمة، حمل الشغل).');
     if (can('okdash')) out.push('- «لوحة المكتب»: من القايمة. قسم «الفلوس» الأرقام بتظهر بالضغط على العين وبتتخفى بعد 20 ثانية.');
     if (can('okdaily')) out.push('- «مهام اليوم» (إدارة المشروعات): مين سجّل إيه النهارده ومين لسه، والوقت على كل مشروع ومرحلة آخر 7 أيام.');
@@ -6470,3 +6471,134 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
     try { const pages = (Array.isArray(NAV) ? NAV : []).filter(n => n && n.id && can(n.id)).map(n => (typeof I18N !== 'undefined' && I18N.lang === 'en' && typeof tr === 'function') ? tr(n.label) : n.label).filter(Boolean); if (pages.length) out.push('- الصفحات اللي يقدر يفتحها: ' + Array.from(new Set(pages)).slice(0, 60).join('، ')); } catch (e) { /* */ }
     return out.join('\n'); };
 } catch (e) { console.warn('oeko supkb', e); } })();
+
+/* ============ «حالة الفريق» — who is in, in a meeting, on leave or asking for leave (Mahmoud, 19 Nov: «حاجة تبين الحالة بتاعت كل واحد…
+   بحيث يكون حد واخد إجازة فمحدش يديله تاسك»). One server call (nf_ok_team_status) — only «إجازة», never its type, reason or balance.
+   Who sees it: the CEO, the Head of PMO, the heads, HR and the Project Owners — opened by settings.okTeamStatus.on (with the PIN). ============ */
+(() => { try {
+  if (window.__OK_STATUS__) return; window.__OK_STATUS__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en'; const L = (a, b) => (en() ? b : a);
+  const meW = () => (S.session && S.session.workerId) || '';
+  const cfg = () => (S.settings && S.settings.okTeamStatus) || {};
+  const isPO = () => { const m = meW(); return !!m && list('projects').some(p => p && p.status === 'active' && (p.ownerId === m || (p.coOwnerIds || []).includes(m))); };
+  const allowed = () => { try { if (!S.session) return false; if (isAdmin()) return true; if (!cfg().on || !meW()) return false;
+    const w = byId('workers', meW()) || {}; return !!((window.okAccess && window.okAccess.isPMO && window.okAccess.isPMO()) || ['head', 'manager', 'hr'].includes(w.role) || isPO()); } catch (e) { return false; } };
+  const st = { at: 0, busy: false, rows: null, day: '', work: false, denied: false };
+  const load = async force => {
+    if (st.busy || st.denied || !S.sb || !S.sb.rpc || !allowed()) return st.rows; if (!force && st.rows && Date.now() - st.at < 60000) return st.rows;
+    st.busy = true; try { const r = await S.sb.rpc('nf_ok_team_status', { p_days: 21 }); if (r && r.error) { if (/forbidden/.test(r.error.message || '')) st.denied = true; } else if (r && r.data) { const m = {}; (r.data.rows || []).forEach(x => { m[x.w] = x; }); st.rows = m; st.day = r.data.day || todayISO(); st.work = !!r.data.work; st.at = Date.now(); } } catch (e) { /* offline */ } finally { st.busy = false; }
+    return st.rows; };
+  const today = () => st.day || todayISO();
+  const off = d => { const x = new Date(d + 'T12:00:00'); return [5, 6].includes(x.getDay()); };
+  const addD = (d, n) => new Date(new Date(d + 'T12:00:00').getTime() + n * 864e5).toISOString().slice(0, 10);
+  const nextWork = d => { let x = addD(d, 1); for (let i = 0; i < 7 && off(x); i++) x = addD(x, 1); return x; };
+  const dn = d => { try { return new Date(d + 'T12:00:00').toLocaleDateString(en() ? 'en-GB' : 'ar-EG', { weekday: 'long' }); } catch (e) { return ''; } };
+  const dm = d => `${+d.slice(8, 10)}/${+d.slice(5, 7)}`;
+  const rng = (f, t) => (!t || t === f) ? `${dn(f)} \u2066${dm(f)}\u2069` : `\u2066${dm(f)} – ${dm(t)}\u2069`;
+  const hm = v => { try { return fmtTm(String(v).length > 5 ? new Date(v).toTimeString().slice(0, 5) : v); } catch (e) { return String(v || ''); } };
+  const nowLabel = n => { if (!n || !st.work) return ''; if (n.k === 'office') return (window.okDaily && window.okDaily.catName ? window.okDaily.catName(n.c) : '') + (n.t ? ' · ' + n.t : ''); const p = n.p && byId('projects', n.p); return [p ? (p.code || p.name) : '', n.t].filter(Boolean).join(' · '); };
+  /* the state of one person today: [kind, dot, text, sub] */
+  const stateOf = (w, x) => {
+    x = x || {}; const a = x.a || {}; const d = today();
+    const lv = (x.lv || []).find(l => l.st === 'approved' && l.f <= d && l.t >= d);
+    if (lv || a.s === 'L') return { k: 'leave', dot: 'b', t: L('إجازة', 'On leave'), sub: lv ? L('راجع ', 'Back ') + dn(nextWork(lv.t)) + ' ' + dm(nextWork(lv.t)) : '' };
+    if (x.now && !a.out) { const lb = nowLabel(x.now); return x.now.k === 'meeting' ? { k: 'meet', dot: 'p', t: L('في ميتنج', 'In a meeting'), sub: [L('من ', 'since ') + hm(x.now.since), lb].filter(Boolean).join(' · ') } : { k: 'busy', dot: 'g', t: L('شغّال', 'Working'), sub: [lb, L('من ', 'since ') + hm(x.now.since)].filter(Boolean).join(' · ') }; }
+    if (a.brk && !a.out) return { k: 'brk', dot: 'y', t: L('في بريك', 'On a break'), sub: L('من ', 'since ') + hm(a.brk) };
+    if (a.out) return { k: 'out', dot: 'n', t: L('انصرف', 'Left'), sub: hm(a.out) };
+    if (a.in) return { k: 'in', dot: 'g', t: L('حاضر', 'In'), sub: L('من ', 'since ') + hm(a.in) };
+    if (off(d)) return { k: 'off', dot: 'n', t: L('أجازة أسبوعية', 'Weekend'), sub: '' };
+    if (w && w.noPunch) return { k: 'np', dot: 'n', t: L('من غير بصمة', 'No punch'), sub: '' };
+    return { k: 'notyet', dot: 'n', t: L('لسه ما حضرش', 'Not in yet'), sub: '' };
+  };
+  const aheadOf = x => { const d = today(); const out = [];
+    (x && x.lv || []).forEach(l => { if (l.st === 'approved' && l.f <= d && l.t >= d) return; out.push(l.st === 'approved' ? { c: 'b', t: '🌴 ' + L('إجازة ', 'Leave ') + rng(l.f, l.t) } : { c: 'y', t: '🟡 ' + L('طالب إجازة ', 'Asked for leave ') + rng(l.f, l.t) + L(' — مستنية اعتماد', ' — awaiting approval') }); });
+    (x && x.pm || []).forEach(p => out.push({ c: 'y', t: '⏳ ' + L('إذن النهارده', 'Permission today') + (p.h ? ` · ${p.h}${L(' س', ' h')}` : '') + (p.st === 'pending' ? L(' (مستني اعتماد)', ' (pending)') : '') }));
+    return out; };
+  const onLeaveOn = (x, d) => (x && x.lv || []).find(l => l.f <= d && l.t >= d) || null;
+  window.okTeamStatus = { load, allowed, stateOf, aheadOf, onLeaveOn, rows: () => st.rows };
+
+  document.head.insertAdjacentHTML('beforeend', `<style>
+.okst .sum{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}.okst .sum button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-size:13.5px;font-weight:600}.okst .sum button b{font-size:16px}.okst .sum button.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.okst .tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.okst .tools input,.okst .tools select{font:inherit;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:8px 12px}.okst .tools input{flex:1;min-width:180px}
+.okst .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.okst .c{position:relative;display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:var(--shadow-sm,0 1px 2px rgba(0,0,0,.04));transition:transform .15s ease,box-shadow .15s ease}.okst .c:hover{transform:translateY(-1px);box-shadow:var(--shadow,0 8px 24px -12px rgba(0,0,0,.18))}
+.okst .c .av{position:relative;flex:none}.okst .c .av i{position:absolute;inset-inline-end:-2px;bottom:-2px;width:14px;height:14px;border-radius:50%;border:2.5px solid var(--surface)}
+.okst .c .nm{min-width:0;flex:1}.okst .c .nm b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.okst .c .nm small{display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.okst .pill{display:inline-flex;align-items:center;gap:6px;margin-top:8px;border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:700}.okst .sub{display:block;margin-top:4px;font-size:12px;color:var(--ink-2)}
+.okst .ah{margin-top:6px;font-size:12px;border-radius:10px;padding:4px 8px}.okst .ah.b{background:var(--accent-soft);color:var(--accent)}.okst .ah.y{background:var(--warn-soft);color:var(--warn-ink)}
+.okd-g{background:#22a06b}.okd-p{background:#7c5cff}.okd-b{background:#2f80ed}.okd-y{background:#f2a516}.okd-n{background:#a0a7b0}
+.okst .pill.okp-g{background:rgba(34,160,107,.12);color:#16784f}.okst .pill.okp-p{background:rgba(124,92,255,.12);color:#5a3fd6}.okst .pill.okp-b{background:rgba(47,128,237,.12);color:#1f63c2}.okst .pill.okp-y{background:rgba(242,165,22,.15);color:#9a6400}.okst .pill.okp-n{background:var(--surface-2);color:var(--muted)}
+html[data-theme="dark"] .okst .pill.okp-g{color:#5fd3a0}html[data-theme="dark"] .okst .pill.okp-p{color:#b3a2ff}html[data-theme="dark"] .okst .pill.okp-b{color:#8cbcff}html[data-theme="dark"] .okst .pill.okp-y{color:#f5c76b}
+.okst-h{margin-top:6px;font-size:12.5px;border-radius:12px;padding:8px 10px;background:var(--surface-2);line-height:1.5}.okst-h.warn{background:var(--warn-soft);color:var(--warn-ink)}.okst-h .alt{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.okst-h .alt button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:3px 10px;font:inherit;font-size:12px;cursor:pointer}
+.okst-h i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-inline-end:6px;vertical-align:middle}
+</style>`);
+
+  const people = () => list('workers').filter(w => w && w.status !== 'inactive' && w.status !== 'left' && !['kiosk', 'admin'].includes(w.role) && w.id !== 'okplayreview' && w.id !== meW());
+  const ui = () => { S.ui = S.ui || {}; S.ui.okst = S.ui.okst || { q: '', dept: '', show: '', mine: false }; return S.ui.okst; };
+  const myPeople = () => { const m = meW(); const s = new Set(); list('projects').filter(p => p && p.status === 'active' && (p.ownerId === m || (p.coOwnerIds || []).includes(m) || (p.team || []).includes(m))).forEach(p => (p.team || []).concat([p.ownerId], p.coOwnerIds || []).forEach(i => i && s.add(i))); s.delete(m); return s; };
+  const GROUPS = () => [['', L('الكل', 'Everyone')], ['here', L('موجودين', 'Here now')], ['meet', L('في ميتنج', 'In a meeting')], ['leave', L('إجازة', 'On leave')], ['req', L('طالبين إجازة', 'Asked for leave')], ['notyet', L('لسه ما حضروش', 'Not in yet')]];
+  const inGroup = (g, s, x) => !g || (g === 'here' ? ['in', 'busy', 'meet', 'brk'].includes(s.k) : g === 'req' ? (x && x.lv || []).some(l => l.st === 'pending') : s.k === g);
+  const page = () => {
+    if (!allowed()) return `<div class="banner warn">${esc(L('الصفحة دي للإدارة والهيدز والـ Project Owners', 'This page is for the management, the heads and the Project Owners'))}</div>`;
+    if (!st.rows) { load().then(() => { if (S.route && S.route.view === 'okstatus') rerender(); }); return `<div class="empty"><b>${esc(st.denied ? L('مش متاحة ليك', 'Not available to you') : L('بنجيب الحالة…', 'Loading…'))}</b></div>`; }
+    const u = ui(); const mine = u.mine ? myPeople() : null; const q = String(u.q || '').trim().toLowerCase();
+    const all = people().map(w => { const x = st.rows[w.id]; return { w, x, s: stateOf(w, x) }; });
+    const counts = {}; GROUPS().forEach(([g]) => { counts[g] = all.filter(r => inGroup(g, r.s, r.x)).length; });
+    const ORDER = { meet: 1, busy: 2, in: 3, brk: 4, leave: 5, notyet: 6, out: 7, off: 8, np: 9 };
+    const xs = all.filter(r => inGroup(u.show, r.s, r.x) && (!u.dept || r.w.deptId === u.dept) && (!mine || mine.has(r.w.id)) && (!q || String(r.w.name || '').toLowerCase().includes(q) || String(r.w.title || '').toLowerCase().includes(q)))
+      .sort((a, b) => (ORDER[a.s.k] - ORDER[b.s.k]) || String(a.w.name || '').localeCompare(String(b.w.name || '')));
+    const depts = Array.from(new Set(people().map(w => w.deptId).filter(Boolean)));
+    return `<div class="okst">
+      <div class="sum">${GROUPS().map(([g, t]) => `<button type="button" class="${(u.show || '') === g ? 'on' : ''}" data-okst-g="${g}"><b>${counts[g]}</b>${esc(t)}</button>`).join('')}</div>
+      <div class="tools"><input type="search" placeholder="${esc(L('دوّر باسم أو وظيفة…', 'Search a name or a title…'))}" value="${esc(u.q || '')}" data-okst-q="1"><select data-okst-d="1"><option value="">${esc(L('كل الأقسام', 'All departments'))}</option>${depts.map(d => `<option value="${esc(d)}" ${u.dept === d ? 'selected' : ''}>${esc(deptName(d))}</option>`).join('')}</select>
+        ${isPO() || (window.okAccess && window.okAccess.isPMO && window.okAccess.isPMO()) ? `<button type="button" class="btn ${u.mine ? 'p' : 'ghost'}" data-okst-m="1">${esc(L('فريق مشاريعي', 'My projects\' team'))}</button>` : ''}<button type="button" class="btn ghost" data-okst-r="1">${icon('refresh')}<span>${esc(L('تحديث', 'Refresh'))}</span></button></div>
+      ${xs.length ? `<div class="grid">${xs.map(({ w, x, s }) => `<div class="c k-${s.k}"><div class="av">${avatarHTML(w, 44)}<i class="okd-${s.dot}"></i></div><div class="nm"><b>${esc(w.name || '')}</b><small>${esc([w.title, deptName(w.deptId)].filter(Boolean).join(' · '))}</small><span class="pill okp-${s.dot}">${esc(s.t)}</span>${s.sub ? `<span class="sub">${esc(s.sub)}</span>` : ''}${aheadOf(x).map(h => `<div class="ah ${h.c}">${esc(h.t)}</div>`).join('')}</div></div>`).join('')}</div>` : `<div class="empty small">${esc(L('مفيش حد هنا', 'No one here'))}</div>`}
+      <div class="tiny muted" style="margin-top:12px">${esc(L(`آخر تحديث ${hm(new Date(st.at).toISOString())} — بيتحدّث لوحده كل دقيقة. الإجازة بتظهر «إجازة» بس، من غير نوعها ولا سببها.`, `Updated ${hm(new Date(st.at).toISOString())} — refreshes every minute. Leave shows as «leave» only, never its type or reason.`))}</div></div>`;
+  };
+  document.addEventListener('click', ev => { const t = ev.target.closest && ev.target.closest('[data-okst-g],[data-okst-m],[data-okst-r],[data-okstpick]'); if (!t) return;
+    if (t.dataset.okstpick) { ev.preventDefault(); const sel = document.getElementById('f-assigneeId'); if (sel) { sel.value = t.dataset.okstpick; sel.dispatchEvent(new Event('change', { bubbles: true })); } return; }
+    ev.preventDefault(); const u = ui(); if (t.dataset.okstG != null) u.show = u.show === t.dataset.okstG ? '' : t.dataset.okstG; if (t.dataset.okstM) u.mine = !u.mine; if (t.dataset.okstR) { load(true).then(() => rerender()); return; } rerender(); });
+  document.addEventListener('input', ev => { const t = ev.target; if (!t || !t.dataset || !t.dataset.okstQ) return; ui().q = t.value; clearTimeout(window.__okstq); window.__okstq = setTimeout(() => { const pos = t.selectionStart; rerender(); const n = document.querySelector('[data-okst-q]'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) { /* */ } } }, 250); });
+  document.addEventListener('change', ev => { const t = ev.target; if (!t || !t.dataset || !t.dataset.okstD) return; ui().dept = t.value; rerender(); });
+  setInterval(() => { if (S.route && S.route.view === 'okstatus' && document.visibilityState === 'visible' && allowed()) load(true).then(() => { if (S.route && S.route.view === 'okstatus' && !document.querySelector('.okst [data-okst-q]:focus')) rerender(); }); }, 60000);
+
+  if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.okstatus = () => page();
+  if (typeof EXTRA_TITLES === 'object') EXTRA_TITLES.okstatus = () => ({ title: L('حالة الفريق', 'Team status'), sub: L('مين موجود، مين في ميتنج، مين في إجازة أو طالبها — قبل ما تدّي حد تاسك', 'Who is in, in a meeting, on leave or asking for it — before you give anyone a task') });
+  if (typeof VIEW_TITLES === 'object') try { Object.defineProperty(VIEW_TITLES, 'okstatus', { configurable: true, enumerable: true, get: () => L('حالة الفريق', 'Team status') }); } catch (e) { /* */ }
+  if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okstatus')) { const i = NAV.findIndex(n => n && n.id === 'okteam'); NAV.splice(i >= 0 ? i + 1 : Math.min(3, NAV.length), 0, { id: 'okstatus', label: 'حالة الفريق', short: 'حالة الفريق', icon: 'workers' }); }
+  if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okstatus')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okstatus']); });
+  if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okstatus') return allowed(); return base.apply(this, arguments); })(canSee);
+  if (typeof OEKO_I18N === 'object') OEKO_I18N['حالة الفريق'] = 'Team status';
+
+  /* giving a task: the state next to every name, a warning when the date falls in a leave, and who is free instead */
+  const fmField = sel => sel.closest('.field') || sel.parentNode;
+  const dueOf = f => { const i = f && f.querySelector('[name=dueDate]'); return (i && i.value) || today(); };
+  function hint(sel) {
+    const f = sel.closest('form'); const fd = fmField(sel); if (!fd) return; let h = fd.querySelector('.okst-h'); const id = sel.value; const x = id && st.rows ? st.rows[id] : null; const w = id && byId('workers', id);
+    if (!id || !w || !st.rows) { if (h) h.remove(); return; }
+    const s = stateOf(w, x); const due = dueOf(f); const lv = onLeaveOn(x, due); const ah = aheadOf(x).slice(0, 2);
+    let alt = ''; if (lv) { const opts = Array.from(sel.options).map(o => o.value).filter(v => v && v !== id); const cand = opts.map(v => ({ v, w: byId('workers', v), x: st.rows[v] })).filter(c => c.w && !onLeaveOn(c.x, due) && !['leave', 'off'].includes(stateOf(c.w, c.x).k)).sort((a, b) => ((b.w.deptId === w.deptId) - (a.w.deptId === w.deptId)) || String(a.w.name).localeCompare(String(b.w.name))).slice(0, 4);
+      if (cand.length) alt = `<div class="alt"><span>${esc(L('فاضيين:', 'Free:'))}</span>${cand.map(c => `<button type="button" data-okstpick="${esc(c.v)}">${esc(c.w.name)}</button>`).join('')}</div>`; }
+    const html = `${lv ? `⚠️ <b>${esc(L(`${w.name} في إجازة ${rng(lv.f, lv.t)}`, `${w.name} is on leave ${rng(lv.f, lv.t)}`))}</b>${lv.st === 'pending' ? esc(L(' (طالبها ومستنية اعتماد)', ' (asked, awaiting approval)')) : ''} — ${esc(L('والميعاد جوّاها. تختار حد تاني؟', 'and the due date falls inside it. Pick someone else?'))}` : `<i class="dot okd-${s.dot}"></i><b>${esc(s.t)}</b>${s.sub ? ' · ' + esc(s.sub) : ''}${ah.length ? '<br>' + ah.map(a => esc(a.t)).join(' · ') : ''}`}${alt}`;
+    if (!h) { h = document.createElement('div'); h.className = 'okst-h notr'; fd.appendChild(h); } h.classList.toggle('warn', !!lv); h.innerHTML = html;
+  }
+  function decorate() {
+    const sel = document.getElementById('f-assigneeId'); if (!sel || sel.dataset.okst || !allowed()) return; sel.dataset.okst = '1';
+    load().then(rows => { if (!rows || !sel.isConnected) return; const d = today();
+      Array.from(sel.options).forEach(o => { if (!o.value) return; const w = byId('workers', o.value); if (!w) return; const x = rows[o.value]; const s = stateOf(w, x); const base = o.dataset.base || o.textContent; o.dataset.base = base;
+        const up = (x && x.lv || []).find(l => !(l.st === 'approved' && l.f <= d && l.t >= d));
+        const tag = s.k === 'leave' ? '🌴 ' + L('إجازة', 'on leave') : s.k === 'meet' ? '🗓 ' + L('في ميتنج', 'in a meeting') : up ? (up.st === 'approved' ? '🌴 ' : '🟡 ') + L('إجازة ', 'leave ') + rng(up.f, up.t) : '';
+        o.textContent = tag ? `${base} · ${tag}` : base; });
+      hint(sel); });
+  }
+  if (typeof openModal === 'function') openModal = (base => function () { const r = base.apply(this, arguments); setTimeout(decorate, 0); return r; })(openModal);
+  document.addEventListener('change', ev => { const t = ev.target; if (!t) return; if (t.id === 'f-assigneeId' || (t.name === 'dueDate' && t.closest('form') && t.closest('form').querySelector('#f-assigneeId'))) { const sel = document.getElementById('f-assigneeId'); if (sel && st.rows) hint(sel); } });
+  /* saving a task on someone whose leave covers the date: the first «save» stops and says so inside the form; a second one goes through */
+  document.addEventListener('submit', ev => {
+    const f = ev.target; if (!f || f.id !== 'mform') return; const sel = f.querySelector('#f-assigneeId'); if (!sel || !sel.value || !st.rows || !allowed()) return;
+    const w = byId('workers', sel.value); const lv = onLeaveOn(st.rows[sel.value], dueOf(f)); if (!w || !lv) return;
+    const key = sel.value + '|' + dueOf(f); if (f.dataset.okstOk === key) return;
+    ev.preventDefault(); ev.stopImmediatePropagation(); f.dataset.okstOk = key; hint(sel);
+    const h = fmField(sel).querySelector('.okst-h'); if (h) { h.insertAdjacentHTML('beforeend', `<div style="margin-top:6px;font-weight:700">${esc(L('لو عايز تدّيله التاسك برضه، دوس «حفظ» تاني.', 'To give the task anyway, press «Save» again.'))}</div>`); h.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+  }, true);
+} catch (e) { console.warn('oeko status', e); } })();
