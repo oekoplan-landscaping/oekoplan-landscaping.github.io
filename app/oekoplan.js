@@ -6622,7 +6622,16 @@ html[data-theme="dark"] .okst .pill.okp-g{color:#5fd3a0}html[data-theme="dark"] 
   const isDelegate = () => { try { return !isAdmin() && !!meW() && ((S.settings && S.settings.okCeoAssist) || []).includes(meW()); } catch (e) { return false; } };
   const leaderW = wid => { const w = wid && byId('workers', wid); if (!w) return false; if (['head', 'manager'].includes(w.role)) return true;
     return list('projects').some(p => p && p.status !== 'archived' && [p.leadId, p.ownerId].concat(p.coOwnerIds || []).includes(wid)); };
-  window.okApprove = { leaderW, isDelegate };
+  /* Mahmoud: «أحمد السيد ما يشوفش أي حاجة ليها علاقة بالعقود والفلوس والمرتبات» — he acts for Dr. Tarek on time-off and attendance only;
+     anything with money (advances, penalties, purchases, estimates, contracts) goes to Dr. Tarek alone and is hidden from him (settings.okApprove.assistNoMoney) */
+  const DELEG = ['leave', 'leaveThuSat', 'permission', 'punch', 'outfix'];
+  const MONEYREQ = /^(advance|loan|estimate|po|opex|purchase|purchase_exception|pricecheck|need|penalty|penalty_cancel|payroll|salary|bonus|claim|contract|invoice|expense)/;
+  const delegType = r => !!r && DELEG.includes(r.type);
+  const moneyReq = r => !!r && MONEYREQ.test(String(r.type || ''));
+  const noMoneyMe = () => !!cfg().assistNoMoney && isDelegate();
+  window.okApprove = { leaderW, isDelegate, delegType, moneyReq };
+  if (typeof requestVisible === 'function') requestVisible = (base => function (r) { try { if (noMoneyMe() && moneyReq(r)) return false; } catch (e) { /* */ } return base.apply(this, arguments); })(requestVisible);
+  if (typeof canSee === 'function') canSee = (base => function (v) { try { if (noMoneyMe() && ['penalties', 'payroll', 'accounts', 'expenses', 'invoices', 'quotes', 'projectcosts'].includes(String(v || ''))) return false; } catch (e) { /* */ } return base.apply(this, arguments); })(canSee);
   try { if (typeof CHAIN_LABEL === 'object') Object.defineProperty(CHAIN_LABEL, 'admin', { configurable: true, enumerable: true, get: () => ceoName() }); } catch (e) { /* */ }   /* «المالك (رئيس مجلس الإدارة)» is Dr. Tarek here */
 
   /* a leader's request: its «head» step is Dr. Tarek's */
@@ -6630,14 +6639,15 @@ html[data-theme="dark"] .okst .pill.okp-g{color:#5fd3a0}html[data-theme="dark"] 
   if (typeof stepActor === 'function') stepActor = (base => function (step, r) {
     try { const g = cfg();
       if (g.noSelf && r && meW() && r.workerId === meW() && !isAdmin()) return false;
-      if (step === 'admin' && g.ceoDelegate && isDelegate()) return true;
-      if (g.leadersToCeo && step === 'head' && r && leaderW(r.workerId)) return isAdmin() || (g.ceoDelegate && isDelegate());
+      if (noMoneyMe() && moneyReq(r)) return false;
+      if (step === 'admin' && g.ceoDelegate && isDelegate() && delegType(r)) return true;
+      if (g.leadersToCeo && step === 'head' && r && leaderW(r.workerId)) return isAdmin() || (g.ceoDelegate && isDelegate() && delegType(r));
     } catch (e) { /* */ }
     return base.apply(this, arguments); })(stepActor);
   if (typeof reqStepTargets === 'function') reqStepTargets = (base => function (r) {
     const out = base.apply(this, arguments);
     try { const g = cfg(); const step = r && r.chain && r.chain[r.step || 0]; const ceoStep = step === 'admin' || (g.leadersToCeo && step === 'head' && leaderW(r.workerId));
-      if (ceoStep) { const t = ['role:admin']; if (g.ceoDelegate) ((S.settings && S.settings.okCeoAssist) || []).forEach(a => t.push('w:' + a)); return t; } } catch (e) { /* */ }
+      if (ceoStep) { const t = ['role:admin']; if (g.ceoDelegate && delegType(r)) ((S.settings && S.settings.okCeoAssist) || []).forEach(a => t.push('w:' + a)); return t; } } catch (e) { /* */ }
     return out; })(reqStepTargets);
 
   /* Ahmed deciding in Dr. Tarek's place: the records carry Dr. Tarek's name, and who really did it */
@@ -6649,7 +6659,7 @@ html[data-theme="dark"] .okst .pill.okp-g{color:#5fd3a0}html[data-theme="dark"] 
     return base.call(this, col, id, patch); })(Store.update);
   if (typeof decideRequest === 'function') decideRequest = (base => async (id, status, note, opts = {}) => {
     const r = byId('requests', id); let on = false;
-    try { on = !!(cfg().ceoDelegate && isDelegate() && r && r.status === 'pending' && reqStage(r).role === 'admin'); } catch (e) { on = false; }
+    try { on = !!(cfg().ceoDelegate && isDelegate() && delegType(r) && r && r.status === 'pending' && reqStage(r).role === 'admin'); } catch (e) { on = false; }
     if (!on) return base(id, status, note, opts);
     behalf = { at: Date.now() }; let res; try { res = await base(id, status, note, opts); } finally { behalf = null; }
     try { if (res !== false && typeof pushSend === 'function') { const w = byId('workers', r.workerId) || {}; const d = typeof reqDesc === 'function' ? reqDesc(r) : (REQ_TYPES[r.type] || r.type);
