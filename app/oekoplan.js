@@ -4275,7 +4275,8 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
   const isPO = () => { const m = me(); return !!m && live().some(p => owners(p).includes(m)); };
   window.okPO = { leads, posOf, isPO };
   /* the «head» step of a request is the Project Owner's here */
-  try { if (typeof CHAIN_LABEL === 'object') CHAIN_LABEL.head = 'Project Owner'; } catch (e) { /* */ }
+  try { if (typeof CHAIN_LABEL === 'object') { CHAIN_LABEL.head = 'Project Owner'; CHAIN_LABEL.manager = 'المدير المسؤول'; } } catch (e) { /* */ }
+  if (typeof OEKO_I18N === 'object') OEKO_I18N['المدير المسؤول'] = 'The manager in charge';
 
   /* his people's records (lite) — merged into the local list, refreshed every 5 minutes */
   let LITE = [], asked = 0, busy = false;
@@ -6523,7 +6524,7 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
 .okst .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
 .okst .c{position:relative;display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:var(--shadow-sm,0 1px 2px rgba(0,0,0,.04));transition:transform .15s ease,box-shadow .15s ease}.okst .c:hover{transform:translateY(-1px);box-shadow:var(--shadow,0 8px 24px -12px rgba(0,0,0,.18))}
 .okst .c .av{position:relative;flex:none}.okst .c .av i{position:absolute;inset-inline-end:-2px;bottom:-2px;width:14px;height:14px;border-radius:50%;border:2.5px solid var(--surface)}
-.okst .c .nm{min-width:0;flex:1}.okst .c .nm b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.okst .c .nm small{display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.okst .c.me{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}.okst .c .you{display:inline-block;font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:1px 8px;vertical-align:middle}.okst .c .nm{min-width:0;flex:1}.okst .c .nm b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.okst .c .nm small{display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .okst .pill{display:inline-flex;align-items:center;gap:6px;margin-top:8px;border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:700}.okst .sub{display:block;margin-top:4px;font-size:12px;color:var(--ink-2)}
 .okst .ah{margin-top:6px;font-size:12px;border-radius:10px;padding:4px 8px}.okst .ah.b{background:var(--accent-soft);color:var(--accent)}.okst .ah.y{background:var(--warn-soft);color:var(--warn-ink)}
 .okd-g{background:#22a06b}.okd-p{background:#7c5cff}.okd-b{background:#2f80ed}.okd-y{background:#f2a516}.okd-n{background:#a0a7b0}
@@ -6533,26 +6534,28 @@ html[data-theme="dark"] .okst .pill.okp-g{color:#5fd3a0}html[data-theme="dark"] 
 .okst-h i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-inline-end:6px;vertical-align:middle}
 </style>`);
 
-  const people = () => list('workers').filter(w => w && w.status !== 'inactive' && w.status !== 'left' && !['kiosk', 'admin'].includes(w.role) && w.id !== 'okplayreview' && w.id !== meW());
+  const people = () => list('workers').filter(w => w && w.status !== 'inactive' && w.status !== 'left' && !['kiosk', 'admin'].includes(w.role) && w.id !== 'okplayreview');
   const ui = () => { S.ui = S.ui || {}; S.ui.okst = S.ui.okst || { q: '', dept: '', show: '', mine: false }; return S.ui.okst; };
   const myPeople = () => { const m = meW(); const s = new Set(); list('projects').filter(p => p && p.status === 'active' && (p.ownerId === m || (p.coOwnerIds || []).includes(m) || (p.team || []).includes(m))).forEach(p => (p.team || []).concat([p.ownerId], p.coOwnerIds || []).forEach(i => i && s.add(i))); s.delete(m); return s; };
-  const GROUPS = () => [['', L('الكل', 'Everyone')], ['here', L('موجودين', 'Here now')], ['meet', L('في ميتنج', 'In a meeting')], ['leave', L('إجازة', 'On leave')], ['req', L('طالبين إجازة', 'Asked for leave')], ['notyet', L('لسه ما حضروش', 'Not in yet')]];
-  const inGroup = (g, s, x) => !g || (g === 'here' ? ['in', 'busy', 'meet', 'brk'].includes(s.k) : g === 'req' ? (x && x.lv || []).some(l => l.st === 'pending') : s.k === g);
+  /* the leaders see each other (Mahmoud: «ريم تشوف الاستاتس بتاعت هايدي بتاعت روان») — one tap to see only them */
+  const leader = w => !!w && (['head', 'manager', 'hr'].includes(w.role) || /head of|partner|director/i.test(w.title || '') || list('projects').some(p => p && p.status === 'active' && (p.ownerId === w.id || (p.coOwnerIds || []).includes(w.id))));
+  const GROUPS = () => [['', L('الكل', 'Everyone')], ['lead', L('الـ Project Owners والهيدز', 'Project Owners & heads')], ['here', L('موجودين', 'Here now')], ['meet', L('في ميتنج', 'In a meeting')], ['leave', L('إجازة', 'On leave')], ['req', L('طالبين إجازة', 'Asked for leave')], ['notyet', L('لسه ما حضروش', 'Not in yet')]];
+  const inGroup = (g, s, x, w) => !g || (g === 'lead' ? leader(w) : g === 'here' ? ['in', 'busy', 'meet', 'brk'].includes(s.k) : g === 'req' ? (x && x.lv || []).some(l => l.st === 'pending') : s.k === g);
   const page = () => {
     if (!allowed()) return `<div class="banner warn">${esc(L('الصفحة دي للإدارة والهيدز والـ Project Owners', 'This page is for the management, the heads and the Project Owners'))}</div>`;
     if (!st.rows) { load().then(() => { if (S.route && S.route.view === 'okstatus') rerender(); }); return `<div class="empty"><b>${esc(st.denied ? L('مش متاحة ليك', 'Not available to you') : L('بنجيب الحالة…', 'Loading…'))}</b></div>`; }
     const u = ui(); const mine = u.mine ? myPeople() : null; const q = String(u.q || '').trim().toLowerCase();
     const all = people().map(w => { const x = st.rows[w.id]; return { w, x, s: stateOf(w, x) }; });
-    const counts = {}; GROUPS().forEach(([g]) => { counts[g] = all.filter(r => inGroup(g, r.s, r.x)).length; });
+    const counts = {}; GROUPS().forEach(([g]) => { counts[g] = all.filter(r => inGroup(g, r.s, r.x, r.w)).length; });
     const ORDER = { meet: 1, busy: 2, in: 3, brk: 4, leave: 5, notyet: 6, out: 7, off: 8, np: 9 };
-    const xs = all.filter(r => inGroup(u.show, r.s, r.x) && (!u.dept || r.w.deptId === u.dept) && (!mine || mine.has(r.w.id)) && (!q || String(r.w.name || '').toLowerCase().includes(q) || String(r.w.title || '').toLowerCase().includes(q)))
-      .sort((a, b) => (ORDER[a.s.k] - ORDER[b.s.k]) || String(a.w.name || '').localeCompare(String(b.w.name || '')));
+    const xs = all.filter(r => inGroup(u.show, r.s, r.x, r.w) && (!u.dept || r.w.deptId === u.dept) && (!mine || mine.has(r.w.id)) && (!q || String(r.w.name || '').toLowerCase().includes(q) || String(r.w.title || '').toLowerCase().includes(q)))
+      .sort((a, b) => ((b.w.id === meW()) - (a.w.id === meW())) || (ORDER[a.s.k] - ORDER[b.s.k]) || String(a.w.name || '').localeCompare(String(b.w.name || '')));
     const depts = Array.from(new Set(people().map(w => w.deptId).filter(Boolean)));
     return `<div class="okst">
       <div class="sum">${GROUPS().map(([g, t]) => `<button type="button" class="${(u.show || '') === g ? 'on' : ''}" data-okst-g="${g}"><b>${counts[g]}</b>${esc(t)}</button>`).join('')}</div>
       <div class="tools"><input type="search" placeholder="${esc(L('دوّر باسم أو وظيفة…', 'Search a name or a title…'))}" value="${esc(u.q || '')}" data-okst-q="1"><select data-okst-d="1"><option value="">${esc(L('كل الأقسام', 'All departments'))}</option>${depts.map(d => `<option value="${esc(d)}" ${u.dept === d ? 'selected' : ''}>${esc(deptName(d))}</option>`).join('')}</select>
         ${isPO() || (window.okAccess && window.okAccess.isPMO && window.okAccess.isPMO()) ? `<button type="button" class="btn ${u.mine ? 'p' : 'ghost'}" data-okst-m="1">${esc(L('فريق مشاريعي', 'My projects\' team'))}</button>` : ''}<button type="button" class="btn ghost" data-okst-r="1">${icon('refresh')}<span>${esc(L('تحديث', 'Refresh'))}</span></button></div>
-      ${xs.length ? `<div class="grid">${xs.map(({ w, x, s }) => `<div class="c k-${s.k}"><div class="av">${avatarHTML(w, 44)}<i class="okd-${s.dot}"></i></div><div class="nm"><b>${esc(w.name || '')}</b><small>${esc([w.title, deptName(w.deptId)].filter(Boolean).join(' · '))}</small><span class="pill okp-${s.dot}">${esc(s.t)}</span>${s.sub ? `<span class="sub">${esc(s.sub)}</span>` : ''}${aheadOf(x).map(h => `<div class="ah ${h.c}">${esc(h.t)}</div>`).join('')}</div></div>`).join('')}</div>` : `<div class="empty small">${esc(L('مفيش حد هنا', 'No one here'))}</div>`}
+      ${xs.length ? `<div class="grid">${xs.map(({ w, x, s }) => `<div class="c k-${s.k}${w.id === meW() ? ' me' : ''}"><div class="av">${avatarHTML(w, 44)}<i class="okd-${s.dot}"></i></div><div class="nm"><b>${esc(w.name || '')}${w.id === meW() ? ` <span class="you">${esc(L('إنت', 'You'))}</span>` : ''}</b><small>${esc([w.title, deptName(w.deptId)].filter(Boolean).join(' · '))}</small><span class="pill okp-${s.dot}">${esc(s.t)}</span>${s.sub ? `<span class="sub">${esc(s.sub)}</span>` : ''}${aheadOf(x).map(h => `<div class="ah ${h.c}">${esc(h.t)}</div>`).join('')}</div></div>`).join('')}</div>` : `<div class="empty small">${esc(L('مفيش حد هنا', 'No one here'))}</div>`}
       <div class="tiny muted" style="margin-top:12px">${esc(L(`آخر تحديث ${hm(new Date(st.at).toISOString())} — بيتحدّث لوحده كل دقيقة. الإجازة بتظهر «إجازة» بس، من غير نوعها ولا سببها.`, `Updated ${hm(new Date(st.at).toISOString())} — refreshes every minute. Leave shows as «leave» only, never its type or reason.`))}</div></div>`;
   };
   document.addEventListener('click', ev => { const t = ev.target.closest && ev.target.closest('[data-okst-g],[data-okst-m],[data-okst-r],[data-okstpick]'); if (!t) return;
