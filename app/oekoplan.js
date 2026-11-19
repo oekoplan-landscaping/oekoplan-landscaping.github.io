@@ -6606,3 +6606,59 @@ html[data-theme="dark"] .okst .pill.okp-g{color:#5fd3a0}html[data-theme="dark"] 
   }, true);
 } catch (e) { console.warn('oeko status', e); } })();
 
+
+/* ============ Approvals the office's way (Mahmoud, 19 Nov):
+   · a Project Owner's / a head's own requests (leave, permission…) are approved by Dr. Tarek — not by another Project Owner;
+   · Ahmed Elsayed (the CEO's assistant, settings.okCeoAssist) can take that decision for him: to everyone it shows as Dr. Tarek's,
+     to Dr. Tarek it shows that Ahmed took it (a line in the request + a notice to him);
+   · nobody approves his own request.
+   All behind settings.okApprove {leadersToCeo, ceoDelegate, noSelf} — opened with the PIN. ============ */
+(() => { try {
+  if (window.__OK_APPROVE__) return; window.__OK_APPROVE__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en'; const L = (a, b) => (en() ? b : a);
+  const cfg = () => (S.settings && S.settings.okApprove) || {};
+  const meW = () => (S.session && S.session.workerId) || '';
+  const ceoName = () => (S.settings && S.settings.ownerName) || L('د. طارق صبحي', 'Dr. Tarek Sobhy');
+  const isDelegate = () => { try { return !isAdmin() && !!meW() && ((S.settings && S.settings.okCeoAssist) || []).includes(meW()); } catch (e) { return false; } };
+  const leaderW = wid => { const w = wid && byId('workers', wid); if (!w) return false; if (['head', 'manager'].includes(w.role)) return true;
+    return list('projects').some(p => p && p.status !== 'archived' && [p.leadId, p.ownerId].concat(p.coOwnerIds || []).includes(wid)); };
+  window.okApprove = { leaderW, isDelegate };
+  try { if (typeof CHAIN_LABEL === 'object') Object.defineProperty(CHAIN_LABEL, 'admin', { configurable: true, enumerable: true, get: () => ceoName() }); } catch (e) { /* */ }   /* «المالك (رئيس مجلس الإدارة)» is Dr. Tarek here */
+
+  /* a leader's request: its «head» step is Dr. Tarek's */
+  if (typeof reqStage === 'function') reqStage = (base => function (r) { const s = base.apply(this, arguments); try { if (cfg().leadersToCeo && s && s.role === 'head' && r && leaderW(r.workerId)) s.role = 'admin'; } catch (e) { /* */ } return s; })(reqStage);
+  if (typeof stepActor === 'function') stepActor = (base => function (step, r) {
+    try { const g = cfg();
+      if (g.noSelf && r && meW() && r.workerId === meW() && !isAdmin()) return false;
+      if (step === 'admin' && g.ceoDelegate && isDelegate()) return true;
+      if (g.leadersToCeo && step === 'head' && r && leaderW(r.workerId)) return isAdmin() || (g.ceoDelegate && isDelegate());
+    } catch (e) { /* */ }
+    return base.apply(this, arguments); })(stepActor);
+  if (typeof reqStepTargets === 'function') reqStepTargets = (base => function (r) {
+    const out = base.apply(this, arguments);
+    try { const g = cfg(); const step = r && r.chain && r.chain[r.step || 0]; const ceoStep = step === 'admin' || (g.leadersToCeo && step === 'head' && leaderW(r.workerId));
+      if (ceoStep) { const t = ['role:admin']; if (g.ceoDelegate) ((S.settings && S.settings.okCeoAssist) || []).forEach(a => t.push('w:' + a)); return t; } } catch (e) { /* */ }
+    return out; })(reqStepTargets);
+
+  /* Ahmed deciding in Dr. Tarek's place: the records carry Dr. Tarek's name, and who really did it */
+  let behalf = null;
+  if (typeof Store === 'object' && Store.update) Store.update = (base => function (col, id, patch) {
+    try { if (behalf && col === 'requests' && patch && typeof patch === 'object') { const me = S.session || {}; const tag = x => (x && x.by === me.id && !x.via) ? Object.assign({}, x, { byName: ceoName(), role: 'admin', via: { id: meW(), name: me.name || '' } }) : x;
+      patch = Object.assign({}, patch); ['approvals', 'thread'].forEach(k => { if (Array.isArray(patch[k])) patch[k] = patch[k].map(tag); });
+      if (patch.decidedBy === me.id) { patch.decidedByName = ceoName(); patch.decidedVia = { id: meW(), name: me.name || '' }; } } } catch (e) { /* */ }
+    return base.call(this, col, id, patch); })(Store.update);
+  if (typeof decideRequest === 'function') decideRequest = (base => async (id, status, note, opts = {}) => {
+    const r = byId('requests', id); let on = false;
+    try { on = !!(cfg().ceoDelegate && isDelegate() && r && r.status === 'pending' && reqStage(r).role === 'admin'); } catch (e) { on = false; }
+    if (!on) return base(id, status, note, opts);
+    behalf = { at: Date.now() }; let res; try { res = await base(id, status, note, opts); } finally { behalf = null; }
+    try { if (res !== false && typeof pushSend === 'function') { const w = byId('workers', r.workerId) || {}; const d = typeof reqDesc === 'function' ? reqDesc(r) : (REQ_TYPES[r.type] || r.type);
+      pushSend(['role:admin'], `${(S.session && S.session.name) || ''} ${status === 'rejected' ? 'رفض' : 'وافق على'} طلب ${w.name || ''} بالنيابة عنك`.slice(0, 100), d, '/#/approvals', 'behalf-' + id); } } catch (e) { /* */ }
+    return res; })(decideRequest);
+
+  /* Dr. Tarek opening a request: who really took the decision */
+  if (ACTIONS && ACTIONS.reqOpen) ACTIONS.reqOpen = (base => function (id) { const out = base.apply(this, arguments);
+    try { if (isAdmin()) { const r = byId('requests', id); const xs = ((r && r.approvals) || []).filter(a => a && a.via); const mb = document.querySelector('#mform .mb');
+      if (xs.length && mb && !mb.querySelector('.okbehalf')) mb.insertAdjacentHTML('afterbegin', `<div class="okbehalf banner" style="margin:0 0 10px;background:var(--accent-soft);color:var(--accent);border-radius:12px;padding:8px 12px;font-size:13px">👤 ${xs.map(a => esc(L(`${a.via.name} ${a.status === 'rejected' ? 'رفض' : 'وافق'} بالنيابة عنك · ${fmtDate(String(a.at).slice(0, 10))} ${fmtTm(new Date(a.at).toTimeString().slice(0, 5))}`, `${a.via.name} ${a.status === 'rejected' ? 'rejected' : 'approved'} on your behalf · ${fmtDate(String(a.at).slice(0, 10))} ${fmtTm(new Date(a.at).toTimeString().slice(0, 5))}`))).join('<br>')}<div class="tiny" style="opacity:.8;margin-top:2px">${esc(L('الموظف شايفها موافقتك إنت.', 'The employee sees it as your decision.'))}</div></div>`); } } catch (e) { /* */ }
+    return out; })(ACTIONS.reqOpen);
+} catch (e) { console.warn('oeko approve', e); } })();
