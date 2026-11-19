@@ -6168,3 +6168,28 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
   if (typeof punchGeoBase === 'function') punchGeoBase = (base => async function () { const r = await base.apply(this, arguments); try { if (r && r.msg && /موقع المصنع غير محدد/.test(r.msg)) r.msg = L('موقع المكتب لسه مش متحدد في السيستم — البصمة موقوفة لحد ما الإدارة تحدده', 'The office location is not set in the system yet — punching is paused until management sets it'); } catch (e) { /* keep */ } return r; })(punchGeoBase);
   if (typeof OEKO_I18N === 'object') OEKO_I18N['مواعيد مرنة — بصمة من الموبايل في أي وقت ومن أي مكان'] = 'Flexible hours — punch from the phone any time, from anywhere';
 } catch (e) { console.warn('oeko flex punch', e); } })();
+
+/* ============ Editing a project: its Project Owner, the Head of PMO, the CEO (19 Nov, PIN) ============
+   Rawan: «open permission for all project owners to edit their project code and time line and add or remove any team member
+   from their own team only inside their own projects». Before: any employee could open «Edit project» on any project.
+   After: the project's Project Owner (and co-owners) + the Head of PMO + the CEO. Who owns / leads a project stays with the
+   Head of PMO and the CEO (the lead field is locked for the Project Owner). The server checks the same (nf_guard_projects). */
+(() => { try {
+  if (window.__OK_POEDIT__) return; window.__OK_POEDIT__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en'; const L = (a, b) => (en() ? b : a);
+  const meId = () => (S.session && S.session.workerId) || '';
+  const pmo = () => { try { return !!(window.okAccess && window.okAccess.isPMO && window.okAccess.isPMO()); } catch (e) { return false; } };
+  const boss = () => { try { return isAdmin() || pmo(); } catch (e) { return false; } };
+  const owns = p => !!p && !!meId() && [p.ownerId].concat(Array.isArray(p.coOwnerIds) ? p.coOwnerIds : []).includes(meId());
+  const canEditProj = p => boss() || owns(p);
+  window.okCanEditProject = canEditProj;
+  const NO = () => L('تعديل المشروع للـ Project Owner بتاعه ولرئيسة الـ PMO وللـ CEO بس', 'Editing a project is for its Project Owner, the Head of PMO and the CEO only');
+  if (typeof ACTIONS === 'object' && typeof ACTIONS.stuProjectEdit === 'function') { const base = ACTIONS.stuProjectEdit; ACTIONS.stuProjectEdit = id => {
+    const p = byId('projects', id); if (p && !canEditProj(p)) { toast(NO(), 'err'); return; }
+    const r = base(id);
+    if (p && !boss()) setTimeout(() => { const s = document.querySelector('#modalroot select[name="leadId"]'); if (!s) return; s.style.pointerEvents = 'none'; s.style.opacity = '.6'; s.tabIndex = -1;
+      const f = s.closest('.field'); if (f && !f.querySelector('.oklk')) f.insertAdjacentHTML('beforeend', `<div class="small muted oklk">🔒 ${esc(L('تغيير الـ Project Owner من رئيسة الـ PMO أو الـ CEO', 'The Head of PMO or the CEO changes the Project Owner'))}</div>`); }, 0);
+    return r; }; }
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try { document.querySelectorAll('[data-action="stuProjectEdit"]').forEach(b => { const p = byId('projects', b.dataset.arg); if (p && !canEditProj(p)) b.remove(); }); } catch (e) { /* ignore */ } });
+  if (typeof Store === 'object' && Store.save) Store.save = (base => async function (col) { try { return await base.apply(this, arguments); } catch (e) { const m = String(e && (e.message || e)); if (col === 'projects' && /project_edit_owner_only|project_owner_change_pmo_only/.test(m)) { toast(/pmo_only/.test(m) ? L('تغيير الـ Project Owner من رئيسة الـ PMO أو الـ CEO', 'The Head of PMO or the CEO changes the Project Owner') : NO(), 'err'); return null; } throw e; } })(Store.save);
+} catch (e) { console.warn('oeko po edit', e); } })();
