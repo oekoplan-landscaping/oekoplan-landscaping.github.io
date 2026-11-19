@@ -52637,7 +52637,7 @@ ${sg ? `اقتراح البوت قبل كده: ${sg.cause} — ${sg.fix}\n` : ''
   const mine = () => String(window.NF_BUILD || '').trim();
   const can = () => !!mine() && !!window.NF_PWA && /^https?:$/.test(location.protocol) && !(window.claude && typeof window.claude.use === 'function');
   const ss = { get(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { if (v == null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch (e) { /* private mode */ } } };
-  const BUILD_RE = /^\d{8}-\d{4}-[0-9a-f]{6}(?:-o[0-9a-f]{6})?$/;
+  const BUILD_RE = /^\d{8}-\d{4}-(?:[0-9a-f]{6}(?:-o[0-9a-f]{6})?|oeko\d{1,4})$/;   /* 19 Nov: Ökoplan's builds end in -oekoNN */
 
   F.check = async function (force) {
     if (!can()) return false;

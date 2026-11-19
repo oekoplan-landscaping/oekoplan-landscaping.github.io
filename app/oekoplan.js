@@ -5249,7 +5249,10 @@ html[data-theme="dark"] #oklock{background:#0d1719}
         L('في شاشة الدخول: «نسيت كلمة السر» ← رقمك ← اختار الإيميل ← يجيلك كود.', 'On the sign-in screen: «Forgot password» → your number → choose the email → you get a code.'),
         L('اكتب الكود وكلمة السر الجديدة مرتين.', 'Type the code and the new password twice.')] },
   ];
-  const mine = () => ITEMS().filter(x => { try { return x.show(); } catch (e) { return false; } });
+  /* 19 Nov — «when you change something for someone, it shows on his next refresh with an infographic of where it is»:
+     settings.okUpdates = [{ id, to: [workerId…], t, tEn, s: [..], sEn: [..], img: { ar, en } (upd/…jpg), go, at }] — shown to those people only, first */
+  const PERS = () => { try { return ((S.settings && S.settings.okUpdates) || []).filter(u => u && u.id && Array.isArray(u.to)).map(u => ({ id: u.id, mine: true, show: () => u.to.includes(me()), img: u.img, go: u.go, t: L(u.t, u.tEn || u.t), s: (u.s || []).map((x, i) => L(x, (u.sEn || [])[i] || x)) })); } catch (e) { return []; } };
+  const mine = () => PERS().concat(ITEMS()).filter(x => { try { return x.show(); } catch (e) { return false; } });
   const FIRST = ['pmo', 'jd', 'check', 'money', 'design', 'lock', 'mail'];   /* the first tour (17 Nov, before the moves) */
   const seenKey = () => 'ok.news.' + (me() || (S.session && S.session.id) || 'x');
   const asSet = v => (Array.isArray(v) ? v : v === RELEASE ? FIRST : []);
@@ -5265,7 +5268,7 @@ html[data-theme="dark"] #oklock{background:#0d1719}
 #oknews h3{margin:0 0 12px;font-size:20px;line-height:1.3}#oknews ol{list-style:none;margin:0;padding:0;display:grid;gap:10px}#oknews li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;line-height:1.55}
 #oknews li b{flex:none;width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#50b1e7,#38a599);color:#fff;display:grid;place-items:center;font-size:12.5px}
 #oknews .ft{display:flex;align-items:center;gap:8px;padding:14px 22px 20px}#oknews .dots{display:flex;gap:5px;flex:1}#oknews .dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}#oknews .dots i.on{background:#50b1e7;width:18px;border-radius:5px}
-#oknews .go{background:#50b1e7;color:#fff;border:0}html[data-theme="dark"] #oknews .art{background:linear-gradient(135deg,#14313f,#12322b)}
+#oknews .go{background:#50b1e7;color:#fff;border:0}#oknews .nb.wide{max-width:760px}#oknews .art img{display:block;width:100%;height:auto;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.12)}#oknews .art a{display:block;cursor:zoom-in}#oknews .tag.me{color:#b45309;background:#fff4e5}html[data-theme="dark"] #oknews .art{background:linear-gradient(135deg,#14313f,#12322b)}
 </style>`);
   let idx = 0, list0 = [];
   const show = all => {
@@ -5273,7 +5276,8 @@ html[data-theme="dark"] #oklock{background:#0d1719}
     document.body.insertAdjacentHTML('beforeend', `<div id="oknews" dir="${en() ? 'ltr' : 'rtl'}"><div class="nb" role="dialog" aria-modal="true"></div></div>`); paint();
   };
   const paint = () => { const box = document.querySelector('#oknews .nb'); if (!box) return; const x = list0[idx];
-    box.innerHTML = `<div class="art">${ART[x.art] || ''}</div><div class="bd"><span class="tag">${esc(L('الجديد في Ökoplan', 'New in Ökoplan'))} · ${idx + 1}/${list0.length}</span><h3>${esc(x.t)}</h3><ol>${x.s.map((t, i) => `<li><b>${i + 1}</b><span>${esc(t)}</span></li>`).join('')}</ol></div>
+    const im = x.img ? (typeof x.img === 'object' ? (en() ? x.img.en : x.img.ar) || x.img.ar || x.img.en : x.img) : ''; box.classList.toggle('wide', !!im);
+    box.innerHTML = `<div class="art">${im ? `<a href="${esc(im)}" target="_blank" rel="noopener"><img src="${esc(im)}" alt=""></a>` : (ART[x.art] || '')}</div><div class="bd"><span class="tag ${x.mine ? 'me' : ''}">${esc(x.mine ? L('اتعمل لك تعديل', 'An update for you') : L('الجديد في Ökoplan', 'New in Ökoplan'))} · ${idx + 1}/${list0.length}</span><h3>${esc(x.t)}</h3><ol>${x.s.map((t, i) => `<li><b>${i + 1}</b><span>${esc(t)}</span></li>`).join('')}</ol></div>
       <div class="ft"><div class="dots">${list0.map((_, i) => `<i class="${i === idx ? 'on' : ''}"></i>`).join('')}</div>${x.go ? `<button type="button" class="btn sm" data-oknews="go">${esc(L('افتحها', 'Open it'))}</button>` : ''}${idx > 0 ? `<button type="button" class="btn sm ghost" data-oknews="back">${esc(L('السابق', 'Back'))}</button>` : ''}<button type="button" class="btn sm go" data-oknews="${idx < list0.length - 1 ? 'next' : 'done'}">${esc(idx < list0.length - 1 ? L('التالي', 'Next') : L('تمام', 'Got it'))}</button></div>`; };
   document.addEventListener('click', ev => { const t = ev.target.closest && ev.target.closest('[data-oknews]'); if (!t) { if (ev.target && ev.target.id === 'oknews') { markSeen(); ev.target.remove(); } return; } ev.preventDefault();
     const a = t.dataset.oknews; const close = () => { markSeen(); const g = document.getElementById('oknews'); if (g) g.remove(); };
