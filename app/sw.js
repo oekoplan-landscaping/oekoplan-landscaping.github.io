@@ -1,10 +1,10 @@
 /* Ninety Fabrication — service worker (app shell cache). Data never lives here: it is on the server. */
-const BUILD = '20261119-1305-oeko84';
+const BUILD = '20261119-1315-oeko85';
 /* v4.17: several Ninety apps share one origin (/ = factory, /studioz/ = office) — each service worker keeps to its own scope and its own cache prefix */
 const SCOPE = new URL(self.registration.scope).pathname;
 const TAG = SCOPE.replace(/^\/|\/$/g, '').replace(/\//g, '-');
 const CACHE = 'nf-shell-' + (TAG ? TAG + '-' : '') + BUILD;
-const SHELL = ["./app.js?v=20261119-1305-oeko84", "./index.html", "./config.js", "./manifest.json", "./vendor/supabase.js", "./vendor/three.bundle.js", "./vendor/pdf.min.js", "./vendor/pdf.worker.min.js", "./vendor/leaflet.js", "./icons/icon-192.png", "./icons/icon-512.png", "./en.json", "./oekoplan.js?v=20261119-1305-oeko84", "./oeko-home.js?v=20261119-1305-oeko84", "./qrp-v1.js?v=20261119-1305-oeko84"];
+const SHELL = ["./app.js?v=20261119-1315-oeko85", "./index.html", "./config.js", "./manifest.json", "./vendor/supabase.js", "./vendor/three.bundle.js", "./vendor/pdf.min.js", "./vendor/pdf.worker.min.js", "./vendor/leaflet.js", "./icons/icon-192.png", "./icons/icon-512.png", "./en.json", "./oekoplan.js?v=20261119-1315-oeko85", "./oeko-home.js?v=20261119-1315-oeko85", "./qrp-v1.js?v=20261119-1315-oeko85"];
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' }))).catch(() => { })));
@@ -79,6 +79,7 @@ self.addEventListener('fetch', e => {
   if (same && url.pathname === '/meet.html') return; // v7.48: the meeting guest page is its own page (never cached as the app)
   if (same && /^\/oauth\//.test(url.pathname)) return; // v7.66: the sign-in / consent page for ChatGPT is its own page (never cached as the app)
   if (same && url.pathname.startsWith(SCOPE + 'site/')) return; // the public website is its own pages
+  if (same && url.pathname.startsWith(SCOPE + 'get/')) return; // 19 Nov: the install page (get/) is its own page — it was answered with the app shell and showed blank
   if (same && (req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('/index.html'))) {
     // app page: the cached shell first (instant open), the network when it is missing — and only an HTML answer is ever kept
     // (v7.75: the shell key is fixed (./index.html); a non-HTML response or one from another path never gets stored under it)
