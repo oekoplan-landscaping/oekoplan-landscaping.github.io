@@ -251,7 +251,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
     thuSatEnabled: false, teamApproval: false, punchStrict: true, passwordResetApproval: true, escalateMinutes: 15, maxLeaveDaysPerMonth: 0, noticeMonths: 2, noticeMonthsLead: 3, noticeAbsenceDays: 3, probationMonths: 3, freshGradNoOtMonths: 0, freshGradNoLeaveMonths: 12,
     annualRaisePct: 7, nursingMinutesPerDay: 60, nursingMonths: 24, womenNightBan: ['19:00', '07:00'],
     flexArrival: ['08:00', '11:00'], flexHours: 8, flexBreakMinutes: 30,
-    chains: { leave: ['head'], permission: ['head'], advance: ['head', 'hr'], punch: ['head'], leaveThuSat: ['head'], penalty_cancel: ['head', 'admin'] },
+    chains: { leave: ['head'], permission: ['head'], advance: ['head', 'admin'], punch: ['head'], outfix: ['head'], leaveThuSat: ['head'], penalty_cancel: ['head', 'admin'] },   /* 19 Nov (PIN): advances to the CEO, no «manager» step */
   };
   const REG_AR = `## أولًا: التعيين والتعاقد
 - يُعيَّن الموظف في وظيفة وبمرتب طبقًا للهيكل التنظيمي وجدول المرتبات المعتمد من مجلس الإدارة، مع تقديم مسوغات التعيين (صحيفة الحالة الجنائية باسم الشركة، شهادة الخدمة العسكرية أو الإعفاء، أصل المؤهل، صورة الرقم القومي، شهادة الميلاد، 6 صور شخصية).
@@ -1278,16 +1278,19 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
   const SOURCES = { ref: ['ترشيح', 'Referral'], repeat: ['عميل قائم', 'Repeat client'], tender: ['مناقصة / دعوة', 'Tender / invitation'], web: ['الموقع / السوشيال', 'Website / social'], other: ['أخرى', 'Other'] };
   const enqVis = () => !!S.session && (isAdmin() || ((S.settings && (S.settings.okDealViewers || S.settings.okEnqViewers)) || []).includes(me()));
   const enqs = () => list(COL).filter(e => !e.deleted);
+  /* 19 Nov (PIN): someone on an offer's team («فريق العرض») sees that offer — read only; the server sends him only those */
+  const onOffer = e => { const m = me(); return !!e && !!m && (e.team || []).includes(m); };
+  const teamVis = () => !!S.session && !enqVis() && enqs().some(onOffer);
   const nextCode = () => { let n = 0; list('projects').forEach(p => { const m = /^OK-(\d{3,})$/.exec(p.code || ''); if (m) n = Math.max(n, +m[1]); }); return 'OK-' + String(n + 1).padStart(3, '0'); };
   const late = e => e.next && e.next < todayISO() && !['won', 'lost'].includes(e.stage);
   const card = e => `<div class="okcard" data-action="okEnqOpen" data-arg="${e.id}"><b>${esc(e.name)}</b><small>${esc([e.developer, e.location].filter(Boolean).join(' · ') || '—')}</small><small>${esc(TYPES[e.type] ? L(TYPES[e.type][0], TYPES[e.type][1]) : '')}${e.ownerId ? ' · ' + esc(who(e.ownerId)) : ''}${(e.team || []).length ? ' · 👥 ' + esc((e.team || []).map(who).filter(Boolean).join('، ')) : ''}</small>${e.next ? `<small class="${late(e) ? 'late' : ''}">${esc(L('الخطوة الجاية', 'Next'))}: ${esc(e.nextWhat || '')} · ${d10(e.next)}</small>` : ''}${e.gonogo && e.gonogo.decision ? `<small>${e.gonogo.decision === 'go' ? '✅ Go' : '⛔ No-Go'}</small>` : ''}</div>`;
   const enqPage = () => {
-    if (!enqVis()) return `<div class="banner warn">${esc(L('الصفحة دي لإدارة المكتب', 'This page is for the office management'))}</div>`;
-    const all = enqs(); const open = all.filter(e => !['won', 'lost'].includes(e.stage)); const done = all.filter(e => ['won', 'lost'].includes(e.stage)).sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+    const ro = teamVis(); if (!enqVis() && !ro) return `<div class="banner warn">${esc(L('الصفحة دي لإدارة المكتب', 'This page is for the office management'))}</div>`;
+    const all = enqs().filter(e => !ro || onOffer(e)); const open = all.filter(e => !['won', 'lost'].includes(e.stage)); const done = all.filter(e => ['won', 'lost'].includes(e.stage)).sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
     const sum = `<div class="okenqsum">${ESTAGES.map(s => `<span class="okpill"><b>${open.filter(e => e.stage === s.id).length}</b>${esc(L(s.ar, s.en))}</span>`).join('')}<span class="okpill"><b>${done.filter(e => e.stage === 'won').length}</b>${esc(L('اترست علينا', 'Awarded'))}</span><span class="okpill"><b>${done.filter(e => e.stage === 'lost').length}</b>${esc(L('ماترستش', 'Not awarded'))}</span><span class="okpill"><b>${open.filter(late).length}</b>${esc(L('متأخرة', 'overdue'))}</span></div>`;
     const cols = `<div class="okenq">${ESTAGES.map(s => { const xs = open.filter(e => e.stage === s.id).sort((a, b) => String(a.next || '9').localeCompare(String(b.next || '9'))); return `<div class="okcol"><h4>${esc(L(s.ar, s.en))}<span class="n">${xs.length}</span></h4><div class="tiny muted" style="margin:-4px 0 8px">${esc(L(s.hint[0], s.hint[1]))}</div>${xs.map(card).join('') || `<div class="okempty">—</div>`}</div>`; }).join('')}</div>`;
     const doneH = done.length ? `<details class="okenqdone"><summary>${esc(L('المحسومة', 'Closed'))} · ${done.length}</summary>${done.map(e => `<div class="okrow"><span class="okpill ${e.stage === 'won' ? 'g' : 'r'}">${e.stage === 'won' ? esc(L('اترسى علينا', 'Awarded')) : esc(L('ماترساش / No-Go', 'Not awarded / No-Go'))}</span><b>${esc(e.name)}</b><span class="muted">${esc(e.developer || '')}</span><div class="grow"></div>${e.projectId ? `<a class="btn sm ghost" href="#/projects/${esc(e.projectId)}">${esc(L('المشروع', 'Project'))}</a>` : ''}<button type="button" class="btn sm ghost" data-action="okEnqOpen" data-arg="${e.id}">${esc(L('تفاصيل', 'Details'))}</button></div>`).join('')}</details>` : '';
-    return `<div class="card"><div class="cardhead"><h2 style="margin:0">${esc(L('الفرص والعروض', 'Enquiries & proposals'))}</h2><div class="grow"></div><button class="btn p" data-action="okEnqNew">${icon('plus')}<span>${esc(L('طلب جديد', 'New enquiry'))}</span></button></div>${sum}${cols}${doneH}</div>`;
+    return `<div class="card"><div class="cardhead"><h2 style="margin:0">${esc(L('الفرص والعروض', 'Enquiries & proposals'))}</h2><div class="grow"></div>${ro ? `<span class="tiny muted">${esc(L('الفرص اللي إنت في فريقها — للمتابعة', 'The offers you are on — to follow'))}</span>` : `<button class="btn p" data-action="okEnqNew">${icon('plus')}<span>${esc(L('طلب جديد', 'New enquiry'))}</span></button>`}</div>${sum}${cols}${doneH}</div>`;
   };
   const enqForm = e => `<div class="form">${field(L('اسم المشروع / الطلب', 'Project / enquiry name'), inp('name', e.name || '', 'required'), 'full')}${field(L('المطوّر / العميل', 'Developer / client'), inp('developer', e.developer || ''))}${field(L('الموقع', 'Location'), inp('location', e.location || ''))}
     ${field(L('نوع المشروع', 'Project type'), `<select name="type">${Object.keys(TYPES).map(k => `<option value="${k}" ${e.type === k ? 'selected' : ''}>${esc(L(TYPES[k][0], TYPES[k][1]))}</option>`).join('')}</select>`)}${field(L('المصدر', 'Source'), `<select name="source">${Object.keys(SOURCES).map(k => `<option value="${k}" ${e.source === k ? 'selected' : ''}>${esc(L(SOURCES[k][0], SOURCES[k][1]))}</option>`).join('')}</select>`)}
@@ -1305,7 +1308,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
   ACTIONS.okEnqEdit = id => { const e = byId(COL, id); if (!e || !enqVis()) return; openModal({ title: L('تعديل الطلب', 'Edit enquiry'), wide: true, body: enqForm(e), onSubmit: async f => { const r = await enqSave(f, e); if (!r) return false; rerender(); return true; } }); };
   const enqLog = async (e, text, patch) => { const log = (e.log || []).concat([{ at: nowISO(), by: myName(), text }]).slice(-100); await Store.save(COL, Object.assign({}, e, patch || {}, { log, updatedAt: nowISO() })); rerender(); };
   ACTIONS.okEnqOpen = id => {
-    const e = byId(COL, id); if (!e || !enqVis()) return; const si = ESTAGES.findIndex(s => s.id === e.stage); const closed = ['won', 'lost'].includes(e.stage);
+    const e = byId(COL, id); const ro = !!e && !enqVis() && onOffer(e); if (!e || !(enqVis() || ro)) return; const si = ESTAGES.findIndex(s => s.id === e.stage); const closed = ro || ['won', 'lost'].includes(e.stage);
     const bar = `<div class="okstepbar">${ESTAGES.map((s, i) => `<i class="${i <= si || e.stage === 'won' ? 'on' : ''}" title="${esc(L(s.ar, s.en))}"></i>`).join('')}</div>`;
     const rows = [[L('المطوّر', 'Developer'), e.developer], [L('الموقع', 'Location'), e.location], [L('النوع', 'Type'), TYPES[e.type] ? L(TYPES[e.type][0], TYPES[e.type][1]) : ''], [L('المصدر', 'Source'), SOURCES[e.source] ? L(SOURCES[e.source][0], SOURCES[e.source][1]) : ''], [L('المسؤول', 'Owner'), who(e.ownerId)], [L('فريق العرض', 'Offer team'), (e.team || []).map(who).filter(Boolean).join('، ')], [L('جهة الاتصال', 'Contact'), e.contact], [L('الخطوة الجاية', 'Next action'), e.nextWhat ? `${e.nextWhat} · ${d10(e.next)}` : (e.next ? d10(e.next) : '')]].filter(r => r[1]);
     const acts = closed ? '' : `<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:10px">
@@ -1350,7 +1353,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
     if (typeof VIEW_TITLES === 'object') VIEW_TITLES.enquiries = 'الفرص والعروض';
     if (Array.isArray(NAV) && !NAV.some(n => n.id === 'enquiries')) { const at = NAV.findIndex(n => n.id === 'projects'); NAV.splice(at >= 0 ? at : 1, 0, { id: 'enquiries', label: 'الفرص والعروض', short: 'الفرص', icon: 'quote', count: () => (enqVis() ? enqs().filter(late).length : 0), countCls: 'warn' }); }
     if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('enquiries')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['enquiries']); });
-    if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'enquiries') return enqVis(); return base.apply(this, arguments); })(canSee);
+    if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'enquiries') return enqVis() || teamVis(); return base.apply(this, arguments); })(canSee);
   };
   hookEnq(); document.addEventListener('nf:ready', hookEnq);
   if (typeof OEKO_I18N === 'object') Object.assign(OEKO_I18N, { 'الفرص والعروض': 'Enquiries & proposals', 'الفرص': 'Enquiries' });
@@ -3185,7 +3188,7 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
   } catch (e) { /* ignore */ } });
 
   /* ---------------- «My team» — the Project Owner's people ---------------- */
-  const teamIds = () => { const s = new Set(); (isAdmin() || isPMO() ? live() : myOwned()).forEach(p => (p.team || []).concat(owners(p)).forEach(i => s.add(i))); s.delete(me()); return Array.from(s); };
+  const teamIds = () => { const s = new Set(); (isAdmin() || isPMO() ? live() : myOwned()).forEach(p => (p.team || []).concat(owners(p)).forEach(i => s.add(i))); const m = me(); if (m) list('workers').forEach(w => { if (w && w.managerId === m) s.add(w.id); }); s.delete(m); return Array.from(s); };   /* 19 Nov (PIN): + who reports to me */
   const projOf = wid => live().filter(p => (p.team || []).includes(wid) || owners(p).includes(wid));
   const tm = iso => { try { return fmtTm(String(iso).length > 5 ? new Date(iso).toTimeString().slice(0, 5) : iso); } catch (e) { return ''; } };
   const todayOf = w => { const r = (attendanceFor(todayISO()) || {})[w.id] || {}; const b = (r.brk || []).slice(-1)[0];
@@ -5260,7 +5263,7 @@ html[data-theme="dark"] #oklock{background:#0d1719}
   ];
   /* 19 Nov — «when you change something for someone, it shows on his next refresh with an infographic of where it is»:
      settings.okUpdates = [{ id, to: [workerId…], t, tEn, s: [..], sEn: [..], img: { ar, en } (upd/…jpg), go, at }] — shown to those people only, first */
-  const PERS = () => { try { return ((S.settings && S.settings.okUpdates) || []).filter(u => u && u.id && Array.isArray(u.to)).map(u => ({ id: u.id, mine: true, show: () => u.to.includes(me()), img: u.img, go: u.go, t: L(u.t, u.tEn || u.t), s: (u.s || []).map((x, i) => L(x, (u.sEn || [])[i] || x)) })); } catch (e) { return []; } };
+  const PERS = () => { try { return ((S.settings && S.settings.okUpdates) || []).filter(u => u && u.id && Array.isArray(u.to)).map(u => ({ id: u.id, mine: true, show: () => u.to.includes(me()) || (u.to.includes('admin') && typeof isAdmin === 'function' && isAdmin()), img: u.img, go: u.go, t: L(u.t, u.tEn || u.t), s: (u.s || []).map((x, i) => L(x, (u.sEn || [])[i] || x)) })); } catch (e) { return []; } };
   const mine = () => PERS().concat(ITEMS()).filter(x => { try { return x.show(); } catch (e) { return false; } });
   const FIRST = ['pmo', 'jd', 'check', 'money', 'design', 'lock', 'mail'];   /* the first tour (17 Nov, before the moves) */
   const seenKey = () => 'ok.news.' + (me() || (S.session && S.session.id) || 'x');
@@ -6534,11 +6537,13 @@ html[data-theme="dark"] .okst .pill.okp-g{color:#5fd3a0}html[data-theme="dark"] 
 .okst-h i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-inline-end:6px;vertical-align:middle}
 </style>`);
 
-  const people = () => list('workers').filter(w => w && w.status !== 'inactive' && w.status !== 'left' && !['kiosk', 'admin'].includes(w.role) && w.id !== 'okplayreview');
+  /* the people come from the server's list (a Project Owner's own copy of «workers» holds only his team) */
+  const people = () => { const out = []; const seen = new Set(); Object.values(st.rows || {}).forEach(x => { const w0 = byId('workers', x.w); const w = Object.assign({ id: x.w, name: x.n, title: x.t, deptId: x.d }, w0 || {}); if (x.np) w.noPunch = true; w.__ld = !!x.ld; seen.add(x.w); out.push(w); });
+    if (!st.rows) list('workers').filter(w => w && w.status !== 'inactive' && w.status !== 'left' && !['kiosk', 'admin'].includes(w.role) && w.id !== 'okplayreview').forEach(w => out.push(w)); return out; };
   const ui = () => { S.ui = S.ui || {}; S.ui.okst = S.ui.okst || { q: '', dept: '', show: '', mine: false }; return S.ui.okst; };
   const myPeople = () => { const m = meW(); const s = new Set(); list('projects').filter(p => p && p.status === 'active' && (p.ownerId === m || (p.coOwnerIds || []).includes(m) || (p.team || []).includes(m))).forEach(p => (p.team || []).concat([p.ownerId], p.coOwnerIds || []).forEach(i => i && s.add(i))); s.delete(m); return s; };
   /* the leaders see each other (Mahmoud: «ريم تشوف الاستاتس بتاعت هايدي بتاعت روان») — one tap to see only them */
-  const leader = w => !!w && (['head', 'manager', 'hr'].includes(w.role) || /head of|partner|director/i.test(w.title || '') || list('projects').some(p => p && p.status === 'active' && (p.ownerId === w.id || (p.coOwnerIds || []).includes(w.id))));
+  const leader = w => !!w && (w.__ld || ['head', 'manager', 'hr'].includes(w.role) || /head of|partner|director/i.test(w.title || '') || list('projects').some(p => p && p.status === 'active' && (p.ownerId === w.id || (p.coOwnerIds || []).includes(w.id))));
   const GROUPS = () => [['', L('الكل', 'Everyone')], ['lead', L('الـ Project Owners والهيدز', 'Project Owners & heads')], ['here', L('موجودين', 'Here now')], ['meet', L('في ميتنج', 'In a meeting')], ['leave', L('إجازة', 'On leave')], ['req', L('طالبين إجازة', 'Asked for leave')], ['notyet', L('لسه ما حضروش', 'Not in yet')]];
   const inGroup = (g, s, x, w) => !g || (g === 'lead' ? leader(w) : g === 'here' ? ['in', 'busy', 'meet', 'brk'].includes(s.k) : g === 'req' ? (x && x.lv || []).some(l => l.st === 'pending') : s.k === g);
   const page = () => {
@@ -6650,6 +6655,11 @@ html[data-theme="dark"] .okst .pill.okp-g{color:#5fd3a0}html[data-theme="dark"] 
       if (ceoStep) { const t = ['role:admin']; if (g.ceoDelegate && delegType(r)) ((S.settings && S.settings.okCeoAssist) || []).forEach(a => t.push('w:' + a)); return t; } } catch (e) { /* */ }
     return out; })(reqStepTargets);
 
+  /* a new request from a leader: its first step is written as Dr. Tarek's, so every screen (steps, labels, notices) says so */
+  if (typeof Store === 'object' && Store.save) Store.save = (base => function (col, doc) {
+    try { if (col === 'requests' && doc && cfg().leadersToCeo && (doc.status || 'pending') === 'pending' && !(doc.approvals || []).length && Array.isArray(doc.chain) && doc.chain[0] === 'head' && leaderW(doc.workerId)) {
+      const ch = doc.chain.slice(); ch[0] = 'admin'; doc = Object.assign({}, doc, { chain: ch.filter((x, i) => !(x === 'admin' && ch.indexOf('admin') !== i)) }); } } catch (e) { /* */ }
+    return base.apply(this, [col, doc].concat(Array.from(arguments).slice(2))); })(Store.save);
   /* Ahmed deciding in Dr. Tarek's place: the records carry Dr. Tarek's name, and who really did it */
   let behalf = null;
   if (typeof Store === 'object' && Store.update) Store.update = (base => function (col, id, patch) {
