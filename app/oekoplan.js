@@ -2210,8 +2210,10 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
   const capacity = () => +((S.settings && S.settings.okCapacity) || 8);
   const loads = () => { const m = {}; list('tasks').filter(t => ['open', 'doing'].includes(t.status) && t.assigneeId && t.kind !== 'update').forEach(t => { const r = m[t.assigneeId] = m[t.assigneeId] || { id: t.assigneeId, name: who(t.assigneeId), n: 0, over: 0, urgent: 0 }; r.n++; if (t.dueDate && t.dueDate < T()) r.over++; if (['urgent', 'high'].includes(t.priority)) r.urgent++; }); return Object.values(m).sort((a, b) => b.n - a.n); };
   const balance = () => { const ws = list('workers').filter(w => w.status !== 'left' && w.status !== 'inactive'); const ld = loads(); const cap = capacity(); const byId2 = Object.fromEntries(ld.map(x => [x.id, x])); return ld.filter(x => x.n > cap).map(x => { const w = ws.find(y => y.id === x.id); const mates = ws.filter(y => y.id !== x.id && (!w || !w.deptId || y.deptId === w.deptId)).map(y => ({ y, n: (byId2[y.id] || { n: 0 }).n })).sort((a, b) => a.n - b.n); const to = mates[0]; return { from: x, to: to ? { id: to.y.id, name: to.y.name, n: to.n } : null, excess: x.n - cap }; }); };
+  /* 19 Nov (PIN): the projects timeline is for the CEO and the Head of PMO — before: CEO + Haidy (role manager) → after: CEO + Rawan */
+  const canTL = () => { try { return isAdmin() || !!(window.okAccess && window.okAccess.isPMO && window.okAccess.isPMO()); } catch (e) { return false; } };
   const portfolio = () => {
-    if (!isMgr()) return `<div class="banner warn">${esc(L('الصفحة دي للإدارة', 'This page is for management'))}</div>`;
+    if (!canTL()) return `<div class="banner warn">${esc(L('الصفحة دي للإدارة', 'This page is for management'))}</div>`;
     const ps = list('projects').filter(p => p.status !== 'archived' && stateOf(p) === 'active').map(p => ({ p, pl: plan(p), cr: critical(p), dr: drift(p) }));
     const dates = []; ps.forEach(({ pl, p }) => { Object.values(pl).forEach(x => dates.push(x.start, x.end)); const dl = d0(p.dueDate || p.clientDeadline); if (dl) dates.push(dl); }); dates.push(T());
     const a = addDays(dates.filter(Boolean).sort()[0] || T(), -7), b = addDays(dates.filter(Boolean).sort().pop() || T(), 30); const span = Math.max(1, days(a, b)); const X = d => Math.min(100, Math.max(0, 100 * days(a, d) / span));
@@ -2250,9 +2252,9 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
     EXTRA_VIEWS.oktimeline = () => portfolio();
     if (typeof EXTRA_TITLES === 'object') EXTRA_TITLES.oktimeline = () => ({ title: L('تايم لاين المشاريع', 'Projects timeline'), sub: L('كل المشاريع على خط زمني واحد: الخطة · الفعلي · المسار الحرج · الحمل', 'All projects on one line: plan · actual · critical path · load') });
     if (typeof VIEW_TITLES === 'object') VIEW_TITLES.oktimeline = 'تايم لاين المشاريع';
-    if (Array.isArray(NAV) && !NAV.some(n => n.id === 'oktimeline')) { const at = NAV.findIndex(n => n.id === 'oksmart'); NAV.splice(at >= 0 ? at + 1 : 2, 0, { id: 'oktimeline', label: 'تايم لاين المشاريع', short: 'التايم لاين', icon: 'calendar', count: () => { try { return isMgr() ? list('projects').filter(p => p.status !== 'archived' && stateOf(p) === 'active' && critical(p)).length : 0; } catch (e) { return 0; } }, countCls: 'warn' }); }
+    if (Array.isArray(NAV) && !NAV.some(n => n.id === 'oktimeline')) { const at = NAV.findIndex(n => n.id === 'oksmart'); NAV.splice(at >= 0 ? at + 1 : 2, 0, { id: 'oktimeline', label: 'تايم لاين المشاريع', short: 'التايم لاين', icon: 'calendar', count: () => { try { return canTL() ? list('projects').filter(p => p.status !== 'archived' && stateOf(p) === 'active' && critical(p)).length : 0; } catch (e) { return 0; } }, countCls: 'warn' }); }
     if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('oktimeline')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['oktimeline']); });
-    if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'oktimeline') return !!S.session && isMgr(); return base.apply(this, arguments); })(canSee);
+    if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'oktimeline') return !!S.session && canTL(); return base.apply(this, arguments); })(canSee);
   };
   hook(); document.addEventListener('nf:ready', hook);
   if (typeof OEKO_I18N === 'object') Object.assign(OEKO_I18N, { 'تايم لاين المشاريع': 'Projects timeline', 'التايم لاين': 'Timeline' });
@@ -5144,6 +5146,10 @@ html[data-theme="dark"] #oklock{background:#0d1719}
     design: svg(`<rect x="20" y="22" width="280" height="126" rx="20" fill="${P}"/>${[0, 1, 2, 3].map(i => `<rect x="${44 + i * 62}" y="70" width="50" height="30" rx="9" fill="${[G, B, T, '#94a3b8'][i]}" opacity="${i < 2 ? 1 : .55}"/>`).join('')}${[0, 1, 2].map(i => `<path d="M${94 + i * 62} 85h12" stroke="${K}" stroke-opacity=".35" stroke-width="3" stroke-linecap="round"/>`).join('')}<rect x="44" y="46" width="120" height="8" rx="4" fill="${K}" opacity=".2"/><rect x="44" y="114" width="232" height="8" rx="4" fill="${K}" opacity=".08"/><rect x="44" y="114" width="120" height="8" rx="4" fill="${T}"/>`),
   };
   const ITEMS = () => [
+    { id: 'pmotl', show: () => { try { return !isAdmin() && !!(window.okAccess && window.okAccess.isPMO && window.okAccess.isPMO()); } catch (e) { return false; } }, art: 'pmo', go: '#/oktimeline',
+      t: L('«تايم لاين المشاريع» بقى عندك', 'The «Projects timeline» is now yours'), s: [L('كل المشاريع النشطة على خط زمني واحد: المخطط والفعلي لكل مرحلة، والمسار الحرج، وميعاد التسليم للعميل.', 'Every active project on one line: plan and actual per stage, the critical path and the client deadline.'),
+        L('الزحمة في كل شهر، وحمل الشغل على كل واحد، واقتراحات نقل التاسكات بين الناس.', 'The crowding per month, everyone\'s load, and suggestions to move tasks between people.'),
+        L('هتلاقيها في القايمة تحت «المشاريع».', 'You\'ll find it in the menu under «Projects».')] },
     { id: 'flexpunch', show: () => { try { const w = S.session && S.session.workerId ? byId('workers', S.session.workerId) : null; return !!(window.okIsFlex && window.okIsFlex(w)); } catch (e) { return false; } }, art: 'punch', go: '#/me',
       t: L('بصمتك بقت من الموبايل، بمواعيد مرنة', 'You now punch from your phone, on flexible hours'), s: [L('لما تبدأ شغل: دوس زرار الساعة ⏱ (أو من «بوابتي») ← «تسجيل الحضور». من غير QR ولا كمبيوتر.', 'When you start: tap the clock button ⏱ (or from «My portal») → «Punch in». No QR, no computer.'),
         L('ولما تخلّص: نفس الزرار ← «تسجيل الانصراف». في أي وقت ومن أي مكان — بيتسجّل وقتك ومكانك بس.', 'When you finish: the same button → «Punch out». Any time, from anywhere — only your time and place are written.'),
