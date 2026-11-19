@@ -6201,11 +6201,14 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
 /* ============ «مهمة اليوم» — Daily task from the + menu (19 Nov) ============
    Mahmoud: «في علامة البلس ديلي تاسك … كل واحد يخش … احنا هنشتغل بس الأول كولكتنج للداتا عشان نعرف كل واحد على المشروع بيعمل إيه …
    انا النهارده في ميتنج من الساعة كذا للساعة كذا (روم هاوس / أونلاين / عند الكلاينت) … أو بيعمل تاسك في المشروع الفلاني في المرحلة الفلانية …
-   بالشكل السمارت» + «بيظهرله مشاريعه هو فقط».
-   · two kinds: work on one of HIS projects (stage = the project's current stage, suggestions = his open tasks there) · a meeting (today's
-     meetings from the Meetings page in one tap; from–to; in the office / online / at the client; project optional);
-   · seen by the person, the CEO and the Head of PMO only (ok_daily, RPCs) — the page «مهام اليوم» is theirs;
-   · a gentle nudge on the home page after 11:00 on a working day when nothing is logged yet. */
+   بالشكل السمارت» + «بيظهرله مشاريعه هو فقط» + «تبقى فاتح له فوق كده المهمة دي شغالة … بتكالكوليت عليه الوقت … ستوب انا خلصت … كذا مهمة في
+   نفس اليوم … ونحسب المشروع مكلف كام كوقت مهندسين» + «خلص الميتنج يقوم دايس انا خلصت الميتنج، هعمل مهمة تانية … انتر اكتف وسمارت».
+   · a task or a meeting starts as a TIMER (or is logged afterwards with its hours / its from–to); one runs at a time — starting the next one
+     stops the last; a bar on top of every page shows what runs and for how long, with «خلّصت» → «وبعدين؟» (next task / a meeting now / a break);
+   · his own projects only; the stage = the project's current stage; suggestions = his open tasks there + the usual work;
+   · punching out stops what runs; a timer left from an earlier day closes by itself (≤ 9 h, never after 19:00 that day);
+   · seen by the person, the CEO and the Head of PMO only — «مهام اليوم» (who does what, engineer-hours per project and stage) and a
+     «وقت الفريق» card on the project page for the two of them. */
 (() => { try {
   if (window.__OK_DAILY__) return; window.__OK_DAILY__ = 1;
   const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en'; const L = (a, b) => (en() ? b : a);
@@ -6222,17 +6225,21 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
   const lastPid = () => { try { return localStorage.getItem(lastKey()) || ''; } catch (e) { return ''; } };
   const rpc = async (fn, args) => { const r = await S.sb.rpc(fn, args); if (r.error) throw r.error; return r.data; };
   const hm = s => String(s || '').slice(0, 5);
-  const durH = r => { if (r.hours) return +r.hours; if (r.t_from && r.t_to) { const [a, b] = [r.t_from, r.t_to].map(x => { const [h, m] = x.split(':').map(Number); return h * 60 + (m || 0); }); return b > a ? Math.round((b - a) / 6) / 10 : 0; } return 0; };
+  const ms = r => { if (r.started_at) { const a = Date.parse(r.started_at); const b = r.ended_at ? Date.parse(r.ended_at) : Date.now(); return Math.max(0, b - a); } return 0; };
+  const durH = r => { if (r.started_at) return ms(r) / 36e5; if (r.hours != null && r.hours !== '') return +r.hours; if (r.t_from && r.t_to) { const [a, b] = [r.t_from, r.t_to].map(x => { const [h, m] = x.split(':').map(Number); return h * 60 + (m || 0); }); return b > a ? (b - a) / 60 : 0; } return 0; };
+  const fmtDur = h => { const mins = Math.round(h * 60); const H = Math.floor(mins / 60), M = mins % 60; return H ? `${H}${L(' س', 'h')}${M ? ' ' + M + L(' د', 'm') : ''}` : `${M}${L(' د', 'm')}`; };
+  const clock = msv => { const s = Math.floor(msv / 1000); const p = n => String(n).padStart(2, '0'); return `${p(Math.floor(s / 3600))}:${p(Math.floor(s / 60) % 60)}:${p(s % 60)}`; };
   const PLACE = () => ({ office: L('في المكتب', 'In the office'), online: L('أونلاين', 'Online'), client: L('عند العميل', 'At the client') });
   const pName = id => { const p = id && byId('projects', id); return p ? `${p.code ? p.code + ' · ' : ''}${p.name || ''}` : ''; };
-  const line = r => r.kind === 'meeting'
-    ? `🗓 <bdi dir="ltr">${hm(r.t_from)}${r.t_to ? '–' + hm(r.t_to) : ''}</bdi> · ${esc(PLACE()[r.mplace] || L('ميتنج', 'Meeting'))}${r.title ? ' · ' + esc(r.title) : ''}${r.project_id ? ' · ' + esc(pName(r.project_id)) : ''}`
-    : `🛠 ${esc(pName(r.project_id))} · ${esc(stName(r.stage))}${r.title ? ' · ' + esc(r.title) : ''}${r.hours ? ' · ' + r.hours + L(' س', ' h') : ''}`;
+  const running = r => !!(r && r.started_at && !r.ended_at);
+  const label = r => r.kind === 'meeting' ? [L('ميتنج', 'Meeting') + (r.mplace ? ' ' + (PLACE()[r.mplace] || '') : ''), r.title, r.project_id ? pName(r.project_id) : ''].filter(Boolean).join(' · ') : [pName(r.project_id), stName(r.stage), r.title].filter(Boolean).join(' · ');
+  const line = r => { const t = r.started_at || r.t_from ? `<bdi dir="ltr">${hm(r.t_from)}${r.t_to ? '–' + hm(r.t_to) : running(r) ? '–…' : ''}</bdi> · ` : ''; const d = durH(r); return `${r.kind === 'meeting' ? '🗓' : '🛠'} ${t}${esc(label(r))}${running(r) ? ` · <b class="okrlive">⏱ ${L('شغّال', 'running')}</b>` : d ? ` · <b>${fmtDur(d)}</b>` : ''}${r.auto_end ? ` <span class="tiny muted">(${esc(L('اتقفلت لوحدها', 'closed by itself'))})</span>` : ''}`; };
   let mine = [], mineDay = '';
-  const loadMine = async () => { const d = T(); try { mine = (await rpc('nf_ok_daily_mine', { p_from: d, p_to: d })) || []; mineDay = d; } catch (e) { /* offline: keep */ } return mine; };
-  window.okDaily = { loadMine, mine: () => mine };
+  const cur = () => mine.find(running) || null;
+  const loadMine = async () => { const d = T(); try { mine = (await rpc('nf_ok_daily_mine', { p_from: d, p_to: d })) || []; mineDay = d; } catch (e) { /* offline: keep */ } try { Object.keys(pcRef).forEach(k => delete pcRef[k]); } catch (e) { /* */ } paintBar(); return mine; };
+  const pcRef = {};
+  window.okDaily = { loadMine, mine: () => mine, current: cur };
 
-  /* today's meetings from the Meetings page that are his */
   const todaysMeetings = () => { const m = meId(); const sid = S.session && S.session.id; try { return list('meetings').filter(x => x && x.at && String(x.at).slice(0, 10) === T() && x.status !== 'cancelled' && (x.hostId === sid || x.hostId === m || (Array.isArray(x.invitees) && x.invitees.some(i => i === m || i === sid || (i && (i.id === m || i.id === sid)))))); } catch (e) { return []; } };
   const tasksOn = pid => { const m = meId(); try { return list('tasks').filter(t => t.projectId === pid && t.assigneeId === m && ['open', 'doing'].includes(t.status) && !['update', 'notice', 'daily'].includes(t.kind)).slice(0, 6); } catch (e) { return []; } };
   const GENERIC = () => [L('رسومات', 'Drawings'), L('تعديلات العميل', 'Client revisions'), L('تنسيق', 'Coordination'), L('حصر كميات / BOQ', 'Quantities / BOQ'), L('بريزنتيشن', 'Presentation'), L('زيارة موقع', 'Site visit')];
@@ -6240,26 +6247,38 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
   const stageOpts = sel => PIPE().map(s => opt(s.id, stName(s.id), s.id === sel)).join('');
   const nowHM = add => { const d = new Date(Date.now() + (add || 0) * 60000); d.setMinutes(Math.ceil(d.getMinutes() / 15) * 15, 0, 0); return d.toTimeString().slice(0, 5); };
   const chips = (xs, attr) => xs.map(x => `<button type="button" class="okdc" ${attr}="${esc(x)}">${esc(x)}</button>`).join('');
-  const CSS = `<style>.okdf .seg2{display:flex;gap:6px;margin-bottom:12px}.okdf .seg2 label{flex:1;border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;cursor:pointer;font-weight:600}.okdf .seg2 input{display:none}.okdf .seg2 label:has(input:checked){background:var(--brand,#50b1e7);color:#fff;border-color:transparent}
+  const recent = () => { const seen = new Set(); return mine.filter(r => r.kind === 'work' && r.project_id && !running(r)).filter(r => { const k = r.project_id + '|' + r.stage + '|' + (r.title || ''); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 3); };
+  document.head.insertAdjacentHTML('beforeend', `<style>.okdf .seg2{display:flex;gap:6px;margin-bottom:12px}.okdf .seg2 label{flex:1;border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;cursor:pointer;font-weight:600}.okdf .seg2 input,.okdf .pl input{display:none}.okdf .seg2 label:has(input:checked){background:var(--brand,#50b1e7);color:#fff;border-color:transparent}
 .okdf .okdc{border:1px solid var(--line);background:var(--surface-2,#f4f6f8);border-radius:999px;padding:4px 10px;font-size:12.5px;cursor:pointer;margin:0 4px 6px 0}.okdf .okdc:hover{border-color:var(--brand,#50b1e7)}.okdf .row3{display:flex;gap:8px;flex-wrap:wrap}.okdf .row3>.field{flex:1;min-width:120px}
-.okdf .pl{display:flex;gap:6px;flex-wrap:wrap}.okdf .pl label{border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:13px}.okdf .pl input{display:none}.okdf .pl label:has(input:checked){background:var(--good-soft,#e8f5ee);border-color:var(--good,#2e9d63);font-weight:600}
-.okdf .today{background:var(--surface-2,#f4f6f8);border-radius:12px;padding:8px 10px;margin-bottom:12px;font-size:13px}.okdf .today div{display:flex;align-items:center;gap:6px;padding:3px 0}.okdf .today button{margin-inline-start:auto;border:0;background:none;color:var(--muted);cursor:pointer}
-.okdf [data-sec][hidden]{display:none}.okdf .hint{font-size:12px;color:var(--muted);margin:-4px 0 8px}</style>`;
-  const form = () => {
-    const ps = myProjects(); const p0 = ps[0]; const ms = todaysMeetings(); const kind0 = ps.length ? 'work' : 'meeting';
-    const todayL = mine.length ? `<div class="today"><b>${esc(L('سجّلت النهارده:', 'Logged today:'))}</b>${mine.map(r => `<div>${line(r)}<button type="button" data-okdd="${esc(r.id)}" title="${esc(L('امسح', 'Delete'))}">✕</button></div>`).join('')}</div>` : '';
-    return `${CSS}<div class="okdf">${todayL}
+.okdf .pl{display:flex;gap:6px;flex-wrap:wrap}.okdf .pl label{border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:13px}.okdf .pl label:has(input:checked){background:var(--good-soft,#e8f5ee);border-color:var(--good,#2e9d63);font-weight:600}
+.okdf .today{background:var(--surface-2,#f4f6f8);border-radius:12px;padding:8px 10px;margin-bottom:12px;font-size:13px}.okdf .today div{display:flex;align-items:center;gap:6px;padding:3px 0;flex-wrap:wrap}.okdf .today button{border:0;background:none;color:var(--muted);cursor:pointer}.okdf .today .gap{margin-inline-start:auto}
+.okdf [data-sec][hidden],.okdf [data-when][hidden]{display:none}.okdf .hint{font-size:12px;color:var(--muted);margin:-4px 0 8px}.okdf .warn2{font-size:12px;color:var(--warn-ink,#8a5a00);background:var(--warn-soft,#fff4e5);border-radius:10px;padding:6px 10px;margin-bottom:10px}
+.okrun{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:linear-gradient(135deg,#38a599,#50b1e7);color:#fff;border-radius:14px;padding:9px 12px;margin:0 0 12px;box-shadow:0 8px 24px -12px rgba(56,165,153,.8)}
+.okrun .t{font:600 17px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.03em}.okrun .w{flex:1;min-width:160px;font-size:13.5px;line-height:1.35}.okrun .w b{display:block;font-size:11.5px;opacity:.85;font-weight:600}.okrun button{border:0;border-radius:999px;padding:7px 14px;font-weight:700;cursor:pointer;font-size:13px}.okrun .stop{background:#fff;color:#0f5f58}.okrun .nx{background:rgba(255,255,255,.18);color:#fff}
+.okrlive{color:#0f8a7e}.okdnext{display:grid;gap:8px}.okdnext button{display:flex;align-items:center;gap:10px;text-align:start;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 14px;cursor:pointer;font:inherit;color:inherit}.okdnext button:hover{border-color:var(--brand,#50b1e7)}.okdnext small{color:var(--muted);display:block}
+.dailyfab{position:fixed;left:18px;bottom:calc(350px + env(safe-area-inset-bottom,0px));width:54px;height:54px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;z-index:60;cursor:pointer;font-size:20px}body.printing .dailyfab,body.fab-hide .dailyfab,body.nf-typing .dailyfab,body.nf-chatpage .dailyfab,body.stuboard .dailyfab,body:has(.side.open) .dailyfab{display:none!important}
+.okdn{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#eef8fd,#e8f5f1);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:12px}.okdn b{flex:1}.okdn .x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px}html[data-theme="dark"] .okdn{background:linear-gradient(135deg,#14313f,#12322b)}
+.okpt{margin-top:14px}.okpt .big{font-size:26px;font-weight:700}.okpt .bars div{display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0}.okpt .bars i{display:block;height:8px;border-radius:6px;background:linear-gradient(90deg,#38a599,#50b1e7)}</style>`);
+
+  const form = pre => {
+    pre = pre || {}; const ps = myProjects(); const pSel = (pre.project_id && ps.find(p => p.id === pre.project_id)) || ps[0]; const msx = todaysMeetings();
+    const kind0 = pre.kind || (ps.length ? 'work' : 'meeting'); const run = cur();
+    const todayL = mine.length ? `<div class="today"><b>${esc(L('النهارده:', 'Today:'))}</b>${mine.map(r => `<div>${line(r)}<span class="gap"></span>${r.kind === 'work' && !running(r) ? `<button type="button" data-okdagain="${esc(r.id)}" title="${esc(L('كمّل فيها', 'Continue it'))}">▶ ${esc(L('كمّل', 'Continue'))}</button>` : ''}<button type="button" data-okdd="${esc(r.id)}" title="${esc(L('امسح', 'Delete'))}">✕</button></div>`).join('')}</div>` : '';
+    return `<div class="okdf">${todayL}
+      ${run ? `<div class="warn2">⏱ ${esc(L('لما تبدأ حاجة جديدة، اللي شغّال دلوقتي هيقفل ويتحسب وقته:', 'Starting something new stops what runs now and counts its time:'))} ${esc(label(run))}</div>` : ''}
       <div class="seg2"><label><input type="radio" name="kind" value="work" ${kind0 === 'work' ? 'checked' : ''}>🛠 ${esc(L('شغل على مشروع', 'Project work'))}</label><label><input type="radio" name="kind" value="meeting" ${kind0 === 'meeting' ? 'checked' : ''}>🗓 ${esc(L('ميتنج', 'Meeting'))}</label></div>
       <div data-sec="work" ${kind0 === 'work' ? '' : 'hidden'}>${ps.length ? `
-        <div class="row3"><div class="field"><label>${esc(L('المشروع', 'Project'))}</label><select name="project_id">${ps.map(p => opt(p.id, `${p.code ? p.code + ' · ' : ''}${p.name || ''}`, p === p0)).join('')}</select></div>
-        <div class="field"><label>${esc(L('المرحلة', 'Stage'))}</label><select name="stage">${stageOpts(curStage(p0))}</select></div></div>
-        <div class="field"><label>${esc(L('بتعمل إيه؟', 'What are you doing?'))}</label><input name="w_title" maxlength="200" placeholder="${esc(L('مثلاً: Planting plan للمدخل', 'e.g. Planting plan for the entrance'))}"></div>
-        <div class="okdsug">${chips(tasksOn(p0 && p0.id).map(t => t.title).concat(GENERIC()), 'data-okdt')}</div>
-        <div class="field"><label>${esc(L('هتاخد قد إيه؟ (اختياري)', 'How long? (optional)'))}</label><div class="pl">${[1, 2, 3, 4, 6, 8].map(h => `<label><input type="radio" name="hours" value="${h}">${h}${L(' س', ' h')}</label>`).join('')}</div></div>`
+        <div class="row3"><div class="field"><label>${esc(L('المشروع', 'Project'))}</label><select name="project_id">${ps.map(p => opt(p.id, `${p.code ? p.code + ' · ' : ''}${p.name || ''}`, p === pSel)).join('')}</select></div>
+        <div class="field"><label>${esc(L('المرحلة', 'Stage'))}</label><select name="stage">${stageOpts(pre.stage || curStage(pSel))}</select></div></div>
+        <div class="field"><label>${esc(L('هتعمل إيه؟', 'What will you do?'))}</label><input name="w_title" maxlength="200" value="${esc(pre.title || '')}" placeholder="${esc(L('مثلاً: Planting plan للمدخل', 'e.g. Planting plan for the entrance'))}"></div>
+        <div class="okdsug">${chips(tasksOn(pSel && pSel.id).map(t => t.title).concat(GENERIC()), 'data-okdt')}</div>
+        <div class="field"><div class="pl"><label><input type="radio" name="w_mode" value="start" checked>⏱ ${esc(L('ابدأ دلوقتي — السيستم يحسب الوقت', 'Start now — the system counts the time'))}</label><label><input type="radio" name="w_mode" value="done">✓ ${esc(L('خلّصتها خلاص', 'Already done'))}</label></div></div>
+        <div class="field" data-when="w_done" hidden><label>${esc(L('خدت قد إيه؟', 'How long did it take?'))}</label><div class="pl">${[0.5, 1, 2, 3, 4, 6, 8].map(h => `<label><input type="radio" name="hours" value="${h}">${h === 0.5 ? L('نص ساعة', '½ h') : h + L(' س', ' h')}</label>`).join('')}</div></div>`
         : `<div class="empty small">${esc(L('مفيش مشاريع عليك لسه. سجّل ميتنج، أو كلّم رئيسة الـ PMO تضيفك على مشروعك.', 'No projects on you yet. Log a meeting, or ask the Head of PMO to add you to your project.'))}</div>`}</div>
       <div data-sec="meeting" ${kind0 === 'meeting' ? '' : 'hidden'}>
-        ${ms.length ? `<div class="hint">${esc(L('ميتنجات النهارده من صفحة الاجتماعات — دوس عشان تملا لوحدها:', 'Today\'s meetings from the Meetings page — tap to fill in:'))}</div><div>${ms.map(x => `<button type="button" class="okdc" data-okdm="${esc(x.id)}">${esc(new Date(x.at).toTimeString().slice(0, 5))} · ${esc(x.title || L('ميتنج', 'Meeting'))}</button>`).join('')}</div>` : ''}
-        <div class="row3"><div class="field"><label>${esc(L('من', 'From'))}</label><input type="time" name="t_from" value="${nowHM(0)}"></div><div class="field"><label>${esc(L('لـ', 'To'))}</label><input type="time" name="t_to" value="${nowHM(60)}"></div></div>
+        <div class="field"><div class="pl"><label><input type="radio" name="m_mode" value="start" ${pre.m_mode === 'plan' ? '' : 'checked'}>⏱ ${esc(L('الميتنج بادئ دلوقتي', 'It starts now'))}</label><label><input type="radio" name="m_mode" value="plan" ${pre.m_mode === 'plan' ? 'checked' : ''}>🕑 ${esc(L('بميعاد (من – لـ)', 'At a time (from – to)'))}</label></div></div>
+        ${msx.length ? `<div class="hint">${esc(L('ميتنجات النهارده من صفحة الاجتماعات — دوس عشان تملا لوحدها:', 'Today\'s meetings from the Meetings page — tap to fill in:'))}</div><div>${msx.map(x => `<button type="button" class="okdc" data-okdm="${esc(x.id)}">${esc(new Date(x.at).toTimeString().slice(0, 5))} · ${esc(x.title || L('ميتنج', 'Meeting'))}</button>`).join('')}</div>` : ''}
+        <div class="row3" data-when="m_plan" ${pre.m_mode === 'plan' ? '' : 'hidden'}><div class="field"><label>${esc(L('من', 'From'))}</label><input type="time" name="t_from" value="${nowHM(0)}"></div><div class="field"><label>${esc(L('لـ', 'To'))}</label><input type="time" name="t_to" value="${nowHM(60)}"></div></div>
         <div class="field"><label>${esc(L('فين؟', 'Where?'))}</label><div class="pl">${Object.entries(PLACE()).map(([k, t], i) => `<label><input type="radio" name="mplace" value="${k}" ${i === 0 ? 'checked' : ''}>${esc(t)}</label>`).join('')}</div></div>
         <div class="row3"><div class="field"><label>${esc(L('مع مين / عن إيه', 'With whom / about'))}</label><input name="m_title" maxlength="200" placeholder="${esc(L('مثلاً: العميل — مراجعة الكونسبت', 'e.g. Client — concept review'))}"></div>
         <div class="field"><label>${esc(L('على مشروع؟ (اختياري)', 'On a project? (optional)'))}</label><select name="m_project">${opt('', L('مش على مشروع', 'Not on a project'), true)}${ps.map(p => opt(p.id, `${p.code ? p.code + ' · ' : ''}${p.name || ''}`)).join('')}</select></div></div>
@@ -6267,76 +6286,135 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
   };
   const save = async payload => { const r = await rpc('nf_ok_daily_save', { p: payload }); try { if (payload.project_id) localStorage.setItem(lastKey(), payload.project_id); } catch (e) { /* */ } await loadMine(); return r; };
   const errMsg = e => { const m = String(e && (e.message || e) || ''); return /not_your_project/.test(m) ? L('المشروع ده مش من مشاريعك', 'That project is not one of yours') : /project_needed/.test(m) ? L('اختار المشروع', 'Pick the project') : /no_worker/.test(m) ? L('حسابك مش مربوط بموظف', 'Your account is not linked to an employee') : L('ماتسجّلتش — جرّب تاني', 'Not saved — try again'); };
-  ACTIONS.okDaily = async () => {
+  const openForm = async pre => {
     if (!S.session || !meId()) { toast(L('مهمة اليوم للموظفين', 'The daily task is for employees'), 'err'); return; }
     if (mineDay !== T()) await loadMine();
-    openModal({ title: L('مهمة اليوم', 'Daily task'), submitLabel: L('سجّل', 'Log it'), body: form(), onSubmit: async f => {
+    openModal({ title: L('مهمة اليوم', 'Daily task'), submitLabel: L('يلا', 'Go'), body: form(pre), onSubmit: async f => {
       const d = formData(f); let payload;
-      if (d.kind === 'meeting') { if (!d.t_from) { toast(L('اكتب الميعاد', 'Enter the time'), 'err'); return false; } if (d.t_to && d.t_to <= d.t_from) { toast(L('الميعاد «لـ» لازم بعد «من»', '«To» must be after «From»'), 'err'); return false; } payload = { kind: 'meeting', t_from: d.t_from, t_to: d.t_to || '', mplace: d.mplace || 'office', title: d.m_title || '', project_id: d.m_project || '' }; }
-      else { if (!d.project_id) { toast(L('اختار المشروع', 'Pick the project'), 'err'); return false; } payload = { kind: 'work', project_id: d.project_id, stage: d.stage || '', title: d.w_title || '', hours: d.hours || '' }; }
-      try { await save(payload); toast(L('اتسجّلت ✓ — تقدر تضيف كمان من + ← «مهمة اليوم»', 'Logged ✓ — add more from + → «Daily task»')); rerender(); return true; } catch (e) { toast(errMsg(e), 'err'); return false; } } });
+      if (d.kind === 'meeting') { if (d.m_mode === 'plan') { if (!d.t_from) { toast(L('اكتب الميعاد', 'Enter the time'), 'err'); return false; } if (d.t_to && d.t_to <= d.t_from) { toast(L('الميعاد «لـ» لازم بعد «من»', '«To» must be after «From»'), 'err'); return false; } }
+        payload = { kind: 'meeting', start: d.m_mode !== 'plan', t_from: d.m_mode === 'plan' ? d.t_from : '', t_to: d.m_mode === 'plan' ? (d.t_to || '') : '', mplace: d.mplace || 'office', title: d.m_title || '', project_id: d.m_project || '' }; }
+      else { if (!d.project_id) { toast(L('اختار المشروع', 'Pick the project'), 'err'); return false; } if (d.w_mode === 'done' && !d.hours) { toast(L('اختار خدت قد إيه', 'Pick how long it took'), 'err'); return false; }
+        payload = { kind: 'work', start: d.w_mode !== 'done', project_id: d.project_id, stage: d.stage || '', title: d.w_title || '', hours: d.w_mode === 'done' ? d.hours : '' }; }
+      try { await save(payload); toast(payload.start ? L('⏱ بدأ العدّاد — لما تخلّص دوس «خلّصت» فوق', '⏱ The timer started — press «Done» on top when you finish') : L('اتسجّلت ✓', 'Logged ✓')); rerender(); return true; } catch (e) { toast(errMsg(e), 'err'); return false; } } });
   };
+  ACTIONS.okDaily = () => openForm();
   /* the form's smart bits */
   document.addEventListener('change', ev => { const f = ev.target.closest && ev.target.closest('.okdf'); if (!f) return; const n = ev.target.name;
     if (n === 'kind') f.querySelectorAll('[data-sec]').forEach(s => { s.hidden = s.dataset.sec !== ev.target.value; });
+    if (n === 'w_mode') { const w = f.querySelector('[data-when=w_done]'); if (w) w.hidden = ev.target.value !== 'done'; }
+    if (n === 'm_mode') { const w = f.querySelector('[data-when=m_plan]'); if (w) w.hidden = ev.target.value !== 'plan'; }
     if (n === 'project_id') { const p = byId('projects', ev.target.value); const st = f.querySelector('[name=stage]'); if (st) st.value = curStage(p); const sg = f.querySelector('.okdsug'); if (sg) sg.innerHTML = chips(tasksOn(p && p.id).map(t => t.title).concat(GENERIC()), 'data-okdt'); } });
-  document.addEventListener('click', async ev => { const t = ev.target.closest && ev.target.closest('[data-okdt],[data-okdm],[data-okdd]'); if (!t || !t.closest('.okdf')) return; ev.preventDefault(); const f = t.closest('.okdf');
+  document.addEventListener('click', async ev => { const t = ev.target.closest && ev.target.closest('[data-okdt],[data-okdm],[data-okdd],[data-okdagain]'); if (!t || !t.closest('.okdf')) return; ev.preventDefault(); const f = t.closest('.okdf');
     if (t.dataset.okdt != null) { const i = f.querySelector('[name=w_title]'); if (i) { i.value = t.dataset.okdt; i.focus(); } return; }
-    if (t.dataset.okdm) { const m = byId('meetings', t.dataset.okdm); if (!m) return; const a = new Date(m.at); const set = (n, v) => { const el = f.querySelector(`[name=${n}]`); if (el) el.value = v; }; set('t_from', a.toTimeString().slice(0, 5)); set('t_to', new Date(a.getTime() + 3600000).toTimeString().slice(0, 5)); set('m_title', m.title || ''); const on = f.querySelector('[name=mplace][value=online]'); if (on && (m.link || m.room)) on.checked = true; return; }
+    if (t.dataset.okdm) { const m = byId('meetings', t.dataset.okdm); if (!m) return; const a = new Date(m.at); const set = (n, v) => { const el = f.querySelector(`[name=${n}]`); if (el) el.value = v; }; const soon = Math.abs(a.getTime() - Date.now()) < 15 * 60000;
+      const mm = f.querySelector(`[name=m_mode][value=${soon ? 'start' : 'plan'}]`); if (mm) { mm.checked = true; mm.dispatchEvent(new Event('change', { bubbles: true })); } set('t_from', a.toTimeString().slice(0, 5)); set('t_to', new Date(a.getTime() + 3600000).toTimeString().slice(0, 5)); set('m_title', m.title || ''); const on = f.querySelector('[name=mplace][value=online]'); if (on && (m.link || m.room)) on.checked = true; return; }
+    if (t.dataset.okdagain) { const r = mine.find(x => x.id === t.dataset.okdagain); if (!r) return; closeModal(); try { await save({ kind: 'work', start: true, project_id: r.project_id, stage: r.stage || '', title: r.title || '' }); toast(L('⏱ كمّلت فيها — العدّاد شغّال', '⏱ Continued — the timer is running')); rerender(); } catch (e) { toast(errMsg(e), 'err'); } return; }
     if (t.dataset.okdd) { try { await rpc('nf_ok_daily_del', { p_id: t.dataset.okdd }); await loadMine(); const row = t.closest('div'); if (row) row.remove(); toast(L('اتمسحت', 'Deleted')); } catch (e) { toast(L('ماتمسحتش — جرّب تاني', 'Not deleted — try again'), 'err'); } } });
+
+  /* ---------- the bar on top: what runs now, the clock, «خلّصت» ---------- */
+  let tick = null;
+  function paintBar() {
+    const v = document.getElementById('view'); const r = cur(); let bar = document.querySelector('.okrun');
+    if (!v || !r || !S.session) { if (bar) bar.remove(); if (!r && tick) { clearInterval(tick); tick = null; } return; }
+    if (!bar || bar.parentNode !== v) { if (bar) bar.remove(); v.insertAdjacentHTML('afterbegin', `<div class="okrun" role="status"><span class="t"></span><span class="w"></span><button type="button" class="stop" data-okdstop="1">⏹ ${esc(L('خلّصت', 'Done'))}</button><button type="button" class="nx" data-okdnext="1">↻ ${esc(L('حاجة تانية', 'Something else'))}</button></div>`); bar = v.querySelector('.okrun'); }
+    bar.dataset.id = r.id; bar.querySelector('.w').innerHTML = `<b>${esc(r.kind === 'meeting' ? L('في ميتنج دلوقتي', 'In a meeting now') : L('شغّال دلوقتي على', 'Working now on'))}</b>${esc(label(r))}`;
+    const upd = () => { const b = document.querySelector('.okrun .t'); const x = cur(); if (b && x) b.textContent = clock(ms(x)); }; upd(); if (!tick) tick = setInterval(upd, 1000);
+  }
+  const nextSheet = done => {
+    const rc = recent().filter(r => !done || !(r.project_id === done.project_id && r.stage === done.stage && (r.title || '') === (done.title || '')));
+    openModal({ title: L('وبعدين؟', 'What next?'), footer: `<button type="button" class="btn" data-action="closemodal">${esc(L('مش دلوقتي', 'Not now'))}</button>`, body: `<div class="okdnext">
+      ${done ? `<div class="small muted" style="margin-bottom:4px">✓ ${esc(label(done))} — <b>${fmtDur(durH(done))}</b></div>` : ''}
+      <button type="button" data-okdgo="work">🛠 <span><b>${esc(L('مهمة جديدة على مشروع', 'A new task on a project'))}</b><small>${esc(L('يبدأ العدّاد على طول', 'The timer starts right away'))}</small></span></button>
+      <button type="button" data-okdgo="meeting">🗓 <span><b>${esc(L('رايح ميتنج دلوقتي', 'Going to a meeting now'))}</b><small>${esc(L('في المكتب / أونلاين / عند العميل', 'In the office / online / at the client'))}</small></span></button>
+      ${rc.map(r => `<button type="button" data-okdre="${esc(r.id)}">▶ <span><b>${esc(L('كمّل في', 'Continue'))}: ${esc(label(r))}</b><small>${esc(L('النهارده لحد دلوقتي', 'Today so far'))}: ${fmtDur(mine.filter(x => x.project_id === r.project_id && x.stage === r.stage).reduce((a, x) => a + durH(x), 0))}</small></span></button>`).join('')}
+      <button type="button" data-action="closemodal">☕ <span><b>${esc(L('بريك / خلّصت شغل النهارده', 'A break / done for today'))}</b><small>${esc(L('مفيش عدّاد شغّال', 'No timer running'))}</small></span></button></div>` });
+  };
+  const stopNow = async () => { const r = cur(); if (!r) return null; let done = null; try { done = await rpc('nf_ok_daily_stop', { p_id: r.id }); } catch (e) { toast(L('ماتقفلتش — جرّب تاني', 'Not stopped — try again'), 'err'); return null; } await loadMine(); rerender(); return done || r; };
+  document.addEventListener('click', async ev => { const t = ev.target.closest && ev.target.closest('[data-okdstop],[data-okdnext],[data-okdgo],[data-okdre]'); if (!t) return; ev.preventDefault();
+    if (t.dataset.okdstop) { t.disabled = true; const d = await stopNow(); t.disabled = false; if (d) { toast(L(`اتسجّل ${fmtDur(durH(d))} ✓`, `${fmtDur(durH(d))} logged ✓`)); nextSheet(d); } return; }
+    if (t.dataset.okdnext) { nextSheet(null); return; }
+    if (t.dataset.okdgo) { closeModal(); setTimeout(() => openForm({ kind: t.dataset.okdgo }), 60); return; }
+    if (t.dataset.okdre) { const r = mine.find(x => x.id === t.dataset.okdre); closeModal(); if (!r) return; try { await save({ kind: 'work', start: true, project_id: r.project_id, stage: r.stage || '', title: r.title || '' }); toast(L('⏱ كمّلت فيها — العدّاد شغّال', '⏱ Continued — the timer is running')); rerender(); } catch (e) { toast(errMsg(e), 'err'); } } });
+  /* punching out stops what runs */
+  if (typeof kioskPunch === 'function') kioskPunch = (base => async function (w) { const res = await base.apply(this, arguments); try { if (w && w.id === meId() && cur()) { const row = (attendanceFor(T()) || {})[w.id] || {}; if (row.out) { await rpc('nf_ok_daily_stop_mine', {}); await loadMine(); toast(L('وقفنا عدّاد مهمة اليوم مع الانصراف ✓', 'The daily-task timer stopped with your check-out ✓')); } } } catch (e) { /* the punch stands */ } return res; })(kioskPunch);
 
   /* the + button */
   const fab = () => { const want = !!(S.session && meId() && S.sb && (typeof role !== 'function' || role() !== 'kiosk')); let b = document.querySelector('.dailyfab'); if (!want) { if (b) b.remove(); return; } if (!b) document.body.insertAdjacentHTML('beforeend', `<button type="button" class="dailyfab" data-action="okDaily" title="${esc(L('مهمة اليوم', 'Daily task'))}" aria-label="${esc(L('مهمة اليوم', 'Daily task'))}">📝</button>`); };
-  document.head.insertAdjacentHTML('beforeend', `<style>.dailyfab{position:fixed;left:18px;bottom:calc(350px + env(safe-area-inset-bottom,0px));width:54px;height:54px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;z-index:60;cursor:pointer;font-size:20px}body.printing .dailyfab,body.fab-hide .dailyfab,body.nf-typing .dailyfab,body.nf-chatpage .dailyfab,body.stuboard .dailyfab,body:has(.side.open) .dailyfab{display:none!important}
-.okdn{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#eef8fd,#e8f5f1);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:12px}.okdn b{flex:1}.okdn .x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px}html[data-theme="dark"] .okdn{background:linear-gradient(135deg,#14313f,#12322b)}</style>`);
 
-  /* the nudge on the home page: a working day, after 11:00, nothing logged yet */
-  let nudgeChecked = '';
+  /* every page: the bar; the home page: a nudge on a working day after 11:00 when nothing is logged */
+  let firstLoad = false;
   const nudgeKey = () => 'ok.daily.nudge.' + meId() + '.' + T();
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
-    fab(); if (!S.session || !meId() || isAdmin()) return; const r = S.route || {}; const home = typeof homeView === 'function' ? homeView() : ''; if (r.view !== home || r.id) return;
+    fab(); if (!S.session || !meId()) return;
+    if (mineDay !== T() && !firstLoad) { firstLoad = true; loadMine().then(() => { firstLoad = false; }); } else paintBar();
+    if (isAdmin()) return; const r = S.route || {}; const home = typeof homeView === 'function' ? homeView() : ''; if (r.view !== home || r.id) return;
     const d = new Date(); if ([5, 6].includes(d.getDay()) || d.getHours() < 11) return; try { if (localStorage.getItem(nudgeKey())) return; } catch (e) { /* */ }
-    const v = document.getElementById('view'); if (!v || v.querySelector('.okdn')) return;
-    const show = () => { if (mine.length || v.querySelector('.okdn')) return; v.insertAdjacentHTML('afterbegin', `<div class="okdn">📝 <b>${esc(L('سجّل مهمة النهارده — بتشتغل على إيه؟', 'Log today\'s task — what are you working on?'))}</b><button type="button" class="btn sm p" data-action="okDaily">${esc(L('سجّل', 'Log it'))}</button><button type="button" class="x" data-okdx="1" aria-label="${esc(L('إخفاء', 'Hide'))}">✕</button></div>`); };
-    if (mineDay === T()) show(); else if (nudgeChecked !== T()) { nudgeChecked = T(); loadMine().then(show); }
+    const v = document.getElementById('view'); if (!v || v.querySelector('.okdn') || mineDay !== T() || mine.length) return;
+    v.insertAdjacentHTML('afterbegin', `<div class="okdn">📝 <b>${esc(L('سجّل مهمة النهارده — بتشتغل على إيه دلوقتي؟', 'Log today\'s task — what are you working on now?'))}</b><button type="button" class="btn sm p" data-action="okDaily">${esc(L('ابدأ', 'Start'))}</button><button type="button" class="x" data-okdx="1" aria-label="${esc(L('إخفاء', 'Hide'))}">✕</button></div>`);
   } catch (e) { /* ignore */ } });
   document.addEventListener('click', ev => { const x = ev.target.closest && ev.target.closest('[data-okdx]'); if (!x) return; try { localStorage.setItem(nudgeKey(), '1'); } catch (e) { /* */ } const c = x.closest('.okdn'); if (c) c.remove(); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.session && meId()) loadMine(); });
 
-  /* the assistant can log it too: {"type":"daily", …} */
+  /* the assistant can start / log it too: {"type":"daily", …} */
   window.okDailyAct = a => { const ps = myProjects(); const ref = String(a.project || '').trim().toLowerCase(); const p = ref ? (ps.find(x => String(x.code || '').toLowerCase() === ref) || ps.find(x => String(x.name || '').toLowerCase().includes(ref))) : null;
     const kind = a.kind === 'meeting' ? 'meeting' : 'work'; if (kind === 'work' && !p) return { ok: false, text: L('المشروع ده مش من مشاريعك', 'That project is not one of yours') };
-    const payload = kind === 'meeting' ? { kind, t_from: a.from || nowHM(0), t_to: a.to || '', mplace: ['office', 'online', 'client'].includes(a.place) ? a.place : 'office', title: a.title || '', project_id: p ? p.id : '' } : { kind, project_id: p.id, stage: PIPE().some(s => s.id === a.stage) ? a.stage : curStage(p), title: a.title || '', hours: a.hours || '' };
-    return { ok: true, text: L('مهمة اليوم: ', 'Daily task: ') + line(Object.assign({}, payload)).replace(/&[^;]+;/g, ''), run: async () => { await save(payload); return L('اتسجّلت في مهمة اليوم ✓', 'Logged in the daily task ✓'); } }; };
+    const start = kind === 'meeting' ? !a.from : !a.hours;
+    const payload = kind === 'meeting' ? { kind, start, t_from: a.from || '', t_to: a.to || '', mplace: ['office', 'online', 'client'].includes(a.place) ? a.place : 'office', title: a.title || '', project_id: p ? p.id : '' } : { kind, start, project_id: p.id, stage: PIPE().some(s => s.id === a.stage) ? a.stage : curStage(p), title: a.title || '', hours: a.hours || '' };
+    return { ok: true, text: L('مهمة اليوم: ', 'Daily task: ') + (start ? '⏱ ' : '') + label(payload), run: async () => { await save(payload); rerender(); return start ? L('⏱ بدأ العدّاد', '⏱ The timer started') : L('اتسجّلت في مهمة اليوم ✓', 'Logged in the daily task ✓'); } }; };
 
-  /* ---------- «مهام اليوم» — the CEO and the Head of PMO see everyone's ---------- */
+  /* ---------- «مهام اليوم» — the CEO and the Head of PMO: who does what, engineer-hours per project ---------- */
   const cache = { key: '', rows: null, busy: false };
-  const fetchAll = (from, to) => { const key = from + '|' + to; if (cache.key === key && cache.rows) return cache.rows; if (!cache.busy) { cache.busy = true; rpc('nf_ok_daily_all', { p_from: from, p_to: to }).then(rows => { cache.key = key; cache.rows = rows || []; }).catch(() => { cache.key = key; cache.rows = []; }).finally(() => { cache.busy = false; if (S.route && S.route.view === 'okdaily') rerender(); }); } return null; };
-  const pageDay = () => (S.ui && S.ui.okDailyDay) || T();
+  const fetchRange = (from, to, key) => { if (cache.key === key && cache.rows) return cache.rows; if (!cache.busy) { cache.busy = true; rpc('nf_ok_daily_all', { p_from: from, p_to: to }).then(rows => { cache.key = key; cache.rows = rows || []; }).catch(() => { cache.key = key; cache.rows = []; }).finally(() => { cache.busy = false; if (S.route && S.route.view === 'okdaily') rerender(); }); } return null; };
+  const ui = () => { S.ui = S.ui || {}; return S.ui; };
   const page = () => {
     if (!boss()) return `<div class="banner warn">${esc(L('الصفحة دي للـ CEO ورئيسة الـ PMO', 'This page is for the CEO and the Head of PMO'))}</div>`;
-    const day = pageDay(); const from = new Date(new Date(day + 'T12:00:00').getTime() - 6 * 864e5).toISOString().slice(0, 10);
-    const rows = fetchAll(from, day); if (!rows) return `<div class="empty"><b>${esc(L('بنجيب البيانات…', 'Loading…'))}</b></div>`;
+    const day = ui().okDailyDay || T(); const rng = ui().okDailyRng || 'w';
+    const from = rng === 'all' ? '2026-01-01' : rng === 'm' ? day.slice(0, 8) + '01' : new Date(new Date(day + 'T12:00:00').getTime() - 6 * 864e5).toISOString().slice(0, 10);
+    const lo = from < day ? from : day; const rows = fetchRange(lo, day, lo + '|' + day); if (!rows) return `<div class="empty"><b>${esc(L('بنجيب البيانات…', 'Loading…'))}</b></div>`;
     const todayRows = rows.filter(r => r.day === day); const by = {}; todayRows.forEach(r => { (by[r.wid] = by[r.wid] || []).push(r); });
     const staff = list('workers').filter(w => w && w.status !== 'inactive' && w.status !== 'left' && !['kiosk', 'admin'].includes(w.role) && w.id !== 'okplayreview');
     const missing = staff.filter(w => !by[w.id]).sort((a, b) => String(a.name).localeCompare(String(b.name)));
-    const ppl = Object.keys(by).map(id => ({ w: byId('workers', id) || { name: id }, xs: by[id] })).sort((a, b) => String(a.w.name).localeCompare(String(b.w.name)));
-    const agg = {}; rows.forEach(r => { if (!r.project_id) return; const k = r.project_id + '|' + (r.stage || (r.kind === 'meeting' ? 'meeting' : '')); const a = agg[k] = agg[k] || { pid: r.project_id, st: r.stage, meet: r.kind === 'meeting', h: 0, n: 0, ppl: new Set() }; a.h += durH(r); a.n++; a.ppl.add(r.wid); });
-    const aggRows = Object.values(agg).sort((a, b) => b.h - a.h || b.n - a.n).slice(0, 40);
-    return `<style>.okdp .pp{border-bottom:1px solid var(--line);padding:8px 0}.okdp .pp:last-child{border:0}.okdp .pp div{font-size:13px;padding:2px 0}.okdp .miss span{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:2px 9px;margin:0 4px 6px 0;font-size:12px}</style>
-      <div class="okdp stack"><div class="card"><div class="cardhead"><h3 style="margin:0">${esc(L('مهام اليوم', 'Daily tasks'))}</h3><div class="grow"></div><input type="date" class="input" style="max-width:170px" value="${esc(day)}" data-okdday="1"></div>
-        <div class="small muted" style="margin-bottom:8px">${esc(L(`سجّلوا: ${ppl.length} من ${staff.length}`, `Logged: ${ppl.length} of ${staff.length}`))}</div>
-        ${ppl.length ? ppl.map(x => `<div class="pp"><b>${esc(x.w.name || '')}</b> <span class="tiny muted">${esc(x.w.title || '')}</span>${x.xs.map(r => `<div>${line(r)}</div>`).join('')}</div>`).join('') : `<div class="empty small">${esc(L('محدش سجّل لسه في اليوم ده', 'Nobody logged this day yet'))}</div>`}</div>
-      ${missing.length ? `<div class="card okdp"><h3 style="margin:0 0 8px;font-size:14px">${esc(L('لسه ما سجّلوش', 'Not logged yet'))} · ${missing.length}</h3><div class="miss">${missing.map(w => `<span>${esc(w.name || '')}</span>`).join('')}</div></div>` : ''}
-      <div class="card"><h3 style="margin:0 0 8px;font-size:14px">${esc(L('آخر 7 أيام — الوقت على كل مشروع ومرحلة', 'Last 7 days — time per project and stage'))}</h3>${aggRows.length ? `<div class="tablewrap"><table><thead><tr><th>${esc(L('المشروع', 'Project'))}</th><th>${esc(L('المرحلة', 'Stage'))}</th><th>${esc(L('ساعات', 'Hours'))}</th><th>${esc(L('مرات', 'Entries'))}</th><th>${esc(L('أشخاص', 'People'))}</th></tr></thead><tbody>${aggRows.map(a => `<tr><td>${esc(pName(a.pid))}</td><td>${esc(a.meet && !a.st ? L('ميتنجات', 'Meetings') : stName(a.st))}</td><td class="num">${a.h ? Math.round(a.h * 10) / 10 : '—'}</td><td class="num">${a.n}</td><td class="num">${a.ppl.size}</td></tr>`).join('')}</tbody></table></div>` : `<div class="empty small">${esc(L('لسه مفيش بيانات', 'No data yet'))}</div>`}</div></div>`;
+    const ppl = Object.keys(by).map(id => ({ w: byId('workers', id) || { name: id }, xs: by[id] })).sort((a, b) => (b.xs.some(running) - a.xs.some(running)) || String(a.w.name).localeCompare(String(b.w.name)));
+    const nowRun = todayRows.filter(running).length;
+    const projAgg = {}; rows.filter(r => r.project_id).forEach(r => { const a = projAgg[r.project_id] = projAgg[r.project_id] || { pid: r.project_id, h: 0, st: {}, ppl: {} }; const h = durH(r); a.h += h; const sk = r.kind === 'meeting' ? 'meeting' : (r.stage || '-'); a.st[sk] = (a.st[sk] || 0) + h; a.ppl[r.wid] = (a.ppl[r.wid] || 0) + h; });
+    const projs = Object.values(projAgg).sort((a, b) => b.h - a.h); const totalH = projs.reduce((s, a) => s + a.h, 0); const maxH = Math.max(1, ...projs.map(a => a.h));
+    const nm = id => (byId('workers', id) || {}).name || id;
+    return `<style>.okdpg .pp{border-bottom:1px solid var(--line);padding:8px 0}.okdpg .pp:last-child{border:0}.okdpg .pp div{font-size:13px;padding:2px 0}.okdpg .miss span{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:2px 9px;margin:0 4px 6px 0;font-size:12px}.okdpg .rg button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;cursor:pointer;font-size:12.5px}.okdpg .rg button.on{background:var(--brand,#50b1e7);color:#fff;border-color:transparent}
+.okdpg .pj{border-bottom:1px solid var(--line);padding:10px 0}.okdpg .pj:last-child{border:0}.okdpg .pj .hd{display:flex;align-items:center;gap:10px}.okdpg .pj .hd b{flex:1}.okdpg .pj i{display:block;height:8px;border-radius:6px;background:linear-gradient(90deg,#38a599,#50b1e7);margin:6px 0}.okdpg .pj .sub{font-size:12px;color:var(--muted)}</style>
+      <div class="okdpg stack"><div class="card"><div class="cardhead"><h3 style="margin:0">${esc(L('النهارده', 'Today'))}</h3><div class="grow"></div><input type="date" class="input" style="max-width:170px" value="${esc(day)}" data-okdday="1"></div>
+        <div class="small muted" style="margin-bottom:8px">${esc(L(`سجّلوا: ${ppl.length} من ${staff.length} · شغّالين دلوقتي: ${nowRun}`, `Logged: ${ppl.length} of ${staff.length} · running now: ${nowRun}`))}</div>
+        ${ppl.length ? ppl.map(x => `<div class="pp"><b>${esc(x.w.name || '')}</b> <span class="tiny muted">${esc(x.w.title || '')}</span> <span class="tiny">· ${fmtDur(x.xs.reduce((a, r) => a + durH(r), 0))}</span>${x.xs.map(r => `<div>${line(r)}</div>`).join('')}</div>`).join('') : `<div class="empty small">${esc(L('محدش سجّل لسه في اليوم ده', 'Nobody logged this day yet'))}</div>`}</div>
+      ${missing.length ? `<div class="card"><h3 style="margin:0 0 8px;font-size:14px">${esc(L('لسه ما سجّلوش', 'Not logged yet'))} · ${missing.length}</h3><div class="miss">${missing.map(w => `<span>${esc(w.name || '')}</span>`).join('')}</div></div>` : ''}
+      <div class="card"><div class="cardhead"><h3 style="margin:0;font-size:14px">⏱ ${esc(L('وقت المهندسين على المشاريع', 'Engineer time on the projects'))}</h3><div class="grow"></div><div class="rg">${[['w', L('آخر 7 أيام', 'Last 7 days')], ['m', L('الشهر ده', 'This month')], ['all', L('من الأول', 'All time')]].map(([k, t]) => `<button type="button" class="${rng === k ? 'on' : ''}" data-okdrng="${k}">${esc(t)}</button>`).join(' ')}</div></div>
+        <div class="small muted" style="margin:6px 0 4px">${esc(L(`الإجمالي: ${fmtDur(totalH)} على ${projs.length} مشروع`, `Total: ${fmtDur(totalH)} on ${projs.length} projects`))}</div>
+        ${projs.length ? projs.map(a => `<div class="pj"><div class="hd"><b><a href="#/projects/${esc(a.pid)}">${esc(pName(a.pid))}</a></b><span>${fmtDur(a.h)}</span></div><i style="width:${Math.max(2, 100 * a.h / maxH)}%"></i>
+          <div class="sub">${Object.entries(a.st).sort((x, y) => y[1] - x[1]).map(([k, h]) => `${esc(k === 'meeting' ? L('ميتنجات', 'Meetings') : stName(k))} ${fmtDur(h)}`).join(' · ')}</div>
+          <div class="sub">${Object.entries(a.ppl).sort((x, y) => y[1] - x[1]).slice(0, 8).map(([id, h]) => `${esc(nm(id))} ${fmtDur(h)}`).join(' · ')}</div></div>`).join('') : `<div class="empty small">${esc(L('لسه مفيش بيانات', 'No data yet'))}</div>`}</div></div>`;
   };
-  document.addEventListener('change', ev => { const t = ev.target; if (!t || !t.dataset || !t.dataset.okdday) return; S.ui = S.ui || {}; S.ui.okDailyDay = t.value || T(); cache.key = ''; rerender(); });
+  document.addEventListener('change', ev => { const t = ev.target; if (!t || !t.dataset || !t.dataset.okdday) return; ui().okDailyDay = t.value || T(); cache.key = ''; rerender(); });
+  document.addEventListener('click', ev => { const b = ev.target.closest && ev.target.closest('[data-okdrng]'); if (!b) return; ev.preventDefault(); ui().okDailyRng = b.dataset.okdrng; cache.key = ''; rerender(); });
   if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.okdaily = () => page();
-  if (typeof EXTRA_TITLES === 'object') EXTRA_TITLES.okdaily = () => ({ title: L('مهام اليوم', 'Daily tasks'), sub: L('كل واحد بيعمل إيه النهارده — ميتنجات وشغل على المشاريع', 'What everyone is doing today — meetings and project work') });
+  if (typeof EXTRA_TITLES === 'object') EXTRA_TITLES.okdaily = () => ({ title: L('مهام اليوم', 'Daily tasks'), sub: L('كل واحد بيعمل إيه — ووقت المهندسين على كل مشروع ومرحلة', 'What everyone is doing — and engineer time on each project and stage') });
   if (typeof VIEW_TITLES === 'object') try { Object.defineProperty(VIEW_TITLES, 'okdaily', { configurable: true, enumerable: true, get: () => L('مهام اليوم', 'Daily tasks') }); } catch (e) { /* */ }
   if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okdaily')) { const at = NAV.findIndex(n => n && n.id === 'okpmo'); NAV.splice(at >= 0 ? at + 1 : 2, 0, { id: 'okdaily', label: 'مهام اليوم', short: 'مهام اليوم', icon: 'check' }); }
   if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okdaily')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okdaily']); });
   if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okdaily') return !!S.session && boss(); return base.apply(this, arguments); })(canSee);
   if (typeof OEKO_I18N === 'object') OEKO_I18N['مهام اليوم'] = 'Daily tasks';
+
+  /* the project page: «وقت الفريق على المشروع» for the CEO and the Head of PMO */
+  const pc = pcRef;
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    const r = S.route || {}; if (r.view !== 'projects' || !r.id || !boss()) return; const v = document.getElementById('view'); if (!v || v.querySelector('.okpt')) return;
+    const c = pc[r.id]; if (!c) { pc[r.id] = { busy: true }; rpc('nf_ok_daily_proj', { p_pid: r.id }).then(rows => { pc[r.id] = { rows: rows || [], at: Date.now() }; if (S.route && S.route.id === r.id) rerender(); }).catch(() => { pc[r.id] = { rows: [], at: Date.now() }; }); return; }
+    if (!c.rows) return; if (Date.now() - c.at > 120000) { delete pc[r.id]; return; }
+    const rows = c.rows; const tot = rows.reduce((a, x) => a + durH(x), 0); const mon = T().slice(0, 7); const th = rows.filter(x => String(x.day).slice(0, 7) === mon).reduce((a, x) => a + durH(x), 0);
+    const st = {}, pp = {}; rows.forEach(x => { const h = durH(x); const k = x.kind === 'meeting' ? 'meeting' : (x.stage || '-'); st[k] = (st[k] || 0) + h; pp[x.wid] = (pp[x.wid] || 0) + h; }); const mx = Math.max(0.01, ...Object.values(st));
+    const html = `<div class="card okpt"><div class="cardhead"><h3 style="margin:0;font-size:15px">⏱ ${esc(L('وقت الفريق على المشروع', 'Team time on the project'))}</h3><span class="tiny muted">${esc(L('من «مهام اليوم» — ليك ولرئيسة الـ PMO', 'From «Daily tasks» — you and the Head of PMO'))}</span></div>
+      ${rows.length ? `<div class="row" style="gap:24px;flex-wrap:wrap"><div><div class="big">${fmtDur(tot)}</div><div class="tiny muted">${esc(L('من الأول', 'All time'))}</div></div><div><div class="big">${fmtDur(th)}</div><div class="tiny muted">${esc(L('الشهر ده', 'This month'))}</div></div><div><div class="big">${Object.keys(pp).length}</div><div class="tiny muted">${esc(L('مهندسين', 'Engineers'))}</div></div></div>
+      <div class="bars">${Object.entries(st).sort((a, b) => b[1] - a[1]).map(([k, h]) => `<div><span style="min-width:150px">${esc(k === 'meeting' ? L('ميتنجات', 'Meetings') : stName(k))}</span><i style="width:${Math.max(3, 60 * h / mx)}%"></i><b>${fmtDur(h)}</b></div>`).join('')}</div>
+      <div class="tiny muted" style="margin-top:6px">${Object.entries(pp).sort((a, b) => b[1] - a[1]).map(([id, h]) => `${esc((byId('workers', id) || {}).name || id)} ${fmtDur(h)}`).join(' · ')}</div>` : `<div class="small muted">${esc(L('لسه محدش سجّل وقت على المشروع ده من «مهمة اليوم».', 'Nobody has logged time on this project from «Daily task» yet.'))}</div>`}</div>`;
+    const anchor = v.querySelector('.okprog, .card'); if (anchor) anchor.insertAdjacentHTML('afterend', html); else v.insertAdjacentHTML('beforeend', html);
+  } catch (e) { /* ignore */ } });
 } catch (e) { console.warn('oeko daily', e); } })();
 
 /* ============ The system guide for the support bot and the assistant (19 Nov) ============
