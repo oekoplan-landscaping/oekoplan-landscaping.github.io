@@ -26485,16 +26485,20 @@ window.nfStripSrc = nfStripSrc; window.isSecretLink = isSecretLink;
   }
   /* v6.02: أزرار بتفتح صفحة إشعارات التطبيق/Chrome في إعدادات أندرويد على طول (intent) — والخطوات المكتوبة فاضلة لو الموبايل مافتحهاش */
   const intentTo = (action, pkg) => `intent:#Intent;action=${action};${pkg ? `S.android.provider.extra.APP_PACKAGE=${pkg};` : ''}end`;
-  const andBtns = () => `<a class="btn sm p" href="${intentTo('android.settings.APP_NOTIFICATION_SETTINGS', 'app.ninety.fabrication')}">إعدادات إشعارات التطبيق</a><a class="btn sm" href="${intentTo('android.settings.APP_NOTIFICATION_SETTINGS', 'com.android.chrome')}">إعدادات إشعارات Chrome</a>`;
+  /* 19 Nov: in the system's own name and language (no «Ninety» on Ökoplan; English when the system is in English) */
+  const PL = (a, b) => (typeof I18N !== 'undefined' && I18N.lang === 'en' ? b : a);
+  const APPN = () => { try { return typeof nfConfig === 'function' && nfConfig().brand === 'oekoplan' ? 'Ökoplan' : 'Ninety'; } catch (e) { return 'Ninety'; } };
+  const andBtns = () => `<a class="btn sm p notr" href="${intentTo('android.settings.APP_NOTIFICATION_SETTINGS', APPN() === 'Ökoplan' ? 'com.oekoplan.office' : 'app.ninety.fabrication')}">${PL('إعدادات إشعارات التطبيق', 'App notification settings')}</a><a class="btn sm notr" href="${intentTo('android.settings.APP_NOTIFICATION_SETTINGS', 'com.android.chrome')}">${PL('إعدادات إشعارات Chrome', 'Chrome notification settings')}</a>`;
   function bar() {
-    const why = state.why; const android = /Android/.test(navigator.userAgent);
-    const help = why === 'ndenied' ? 'الإشعارات مقفولة للأبلكيشن: افتح «الإعدادات» في الأيفون ← Ninety ← الإشعارات ← «Allow Notifications» ← وارجع هنا.'
-      : why === 'ndefault' ? 'دوس «فعّل الإشعارات» ووافق على رسالة الأيفون علشان توصلك المهام وأوامر التشغيل أول بأول.'
-      : why === 'ios' ? 'على الآيفون الإشعارات مابتشتغلش غير لما التطبيق يتضاف للشاشة الرئيسية: من Safari اضغط زرار المشاركة ⬆️ ← «Add to Home Screen» ← وافتح السيستم من الأيقونة الجديدة.'
-      : why === 'denied' ? (android ? (standalone() ? 'الموبايل قافل الإشعارات للتطبيق: افتح «الإعدادات» في الموبايل ← التطبيقات ← Ninety (أو Chrome) ← الإشعارات ← «سماح» ← وارجع دوس «حدّثت — راجع تاني».' : 'الموبايل قافل الإشعارات: (1) اضغط علامة القفل 🔒 جنب العنوان فوق ← «الأذونات» ← الإشعارات ← «سماح». (2) لو لسه مقفولة: «الإعدادات» في الموبايل ← التطبيقات ← Chrome ← الإشعارات ← «سماح». وبعدين دوس «حدّثت — راجع تاني».') : 'المتصفح قافل الإشعارات: من إعدادات المتصفح ← إعدادات الموقع ← الإشعارات ← «سماح» للسيستم، وبعدين حدّث الصفحة.')
-      : 'لازم تفعّل الإشعارات علشان توصلك المهام وأوامر التشغيل أول بأول.';
-    return `<div id="pushreq" class="banner crit" style="position:sticky;top:0;z-index:30;margin:0 0 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">${icon('bell')}<span style="flex:1 1 240px"><b>الإشعارات مش شغالة عندك.</b> ${help}</span>${why === 'default' || why === 'nosub' || why === 'ndefault' ? `<button class="btn sm p" data-pushreq>فعّل الإشعارات</button>` : why === 'denied' ? (android ? andBtns() : '') + `<button class="btn sm" data-pushreload>حدّثت — راجع تاني</button>` : ''}</div>`;
+    const why = state.why; const android = /Android/.test(navigator.userAgent); const N = APPN();
+    const help = why === 'ndenied' ? PL(`الإشعارات مقفولة للأبلكيشن: افتح «الإعدادات» في الأيفون ← ${N} ← الإشعارات ← «Allow Notifications» ← وارجع هنا.`, `Notifications are off for the app: open iPhone «Settings» → ${N} → Notifications → «Allow Notifications», then come back here.`)
+      : why === 'ndefault' ? PL('دوس «فعّل الإشعارات» ووافق على رسالة الأيفون علشان توصلك المهام والتحديثات أول بأول.', 'Press «Turn on notifications» and accept the iPhone message, so tasks and updates reach you right away.')
+      : why === 'ios' ? PL('على الآيفون الإشعارات مابتشتغلش غير لما التطبيق يتضاف للشاشة الرئيسية: من Safari اضغط زرار المشاركة ⬆️ ← «Add to Home Screen» ← وافتح السيستم من الأيقونة الجديدة.', 'On iPhone, notifications only work once the app is on the home screen: in Safari press Share ⬆️ → «Add to Home Screen» → and open the system from the new icon.')
+      : why === 'denied' ? (android ? (standalone() ? PL(`الموبايل قافل الإشعارات للتطبيق: افتح «الإعدادات» في الموبايل ← التطبيقات ← ${N} (أو Chrome) ← الإشعارات ← «سماح» ← وارجع دوس «حدّثت — راجع تاني».`, `The phone has notifications off for the app: open phone «Settings» → Apps → ${N} (or Chrome) → Notifications → «Allow», then come back and press «I updated it — check again».`) : PL('الموبايل قافل الإشعارات: (1) اضغط علامة القفل 🔒 جنب العنوان فوق ← «الأذونات» ← الإشعارات ← «سماح». (2) لو لسه مقفولة: «الإعدادات» في الموبايل ← التطبيقات ← Chrome ← الإشعارات ← «سماح». وبعدين دوس «حدّثت — راجع تاني».', 'The phone has notifications off: (1) tap the lock 🔒 by the address at the top → «Permissions» → Notifications → «Allow». (2) If still off: phone «Settings» → Apps → Chrome → Notifications → «Allow». Then press «I updated it — check again».')) : PL('المتصفح قافل الإشعارات: من إعدادات المتصفح ← إعدادات الموقع ← الإشعارات ← «سماح» للسيستم، وبعدين حدّث الصفحة.', 'The browser has notifications off: browser settings → Site settings → Notifications → «Allow» for the system, then refresh the page.'))
+      : PL('لازم تفعّل الإشعارات علشان توصلك المهام والتحديثات أول بأول.', 'Turn on notifications so tasks and updates reach you right away.');
+    return `<div id="pushreq" class="banner crit notr" style="position:sticky;top:0;z-index:30;margin:0 0 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">${icon('bell')}<span style="flex:1 1 240px"><b>${PL('الإشعارات مش شغالة عندك.', 'Notifications are not working for you.')}</b> ${help}</span>${why === 'default' || why === 'nosub' || why === 'ndefault' ? `<button class="btn sm p" data-pushreq>${PL('فعّل الإشعارات', 'Turn on notifications')}</button>` : why === 'denied' ? (android ? andBtns() : '') + `<button class="btn sm" data-pushreload>${PL('حدّثت — راجع تاني', 'I updated it — check again')}</button>` : ''}</div>`;
   }
+
   async function paint() {
     if (Date.now() - state.checked > 30000 || state.ok === null) { state.checked = Date.now(); await check(); }
     const v = document.getElementById('view'); const old = document.getElementById('pushreq');
@@ -51750,6 +51754,15 @@ html.rdopen,html.rdopen body{overflow:hidden!important;overscroll-behavior:none}
   const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
   const L = (a, b) => (en() ? b : a);
   const MONEY = /(\d[\d.,\s]*\s*(جنيه|جنية|ج\.?م|EGP|LE|USD|\$|دولار|ريال|SAR|€))|((EGP|USD|SAR|\$|€)\s*\d[\d.,]*)|\d{4,}/gi;
+  /* 19 Nov (Mahmoud): support answers in the system's language; a «translate» button sits by every reply, and when the person
+     translates one, his language becomes that — the next replies (the bot, the owner's drafts, ours) come in it, button still there */
+  const SUPLK = () => 'ok.sup.lang.' + String((S.session && (S.session.workerId || S.session.id)) || '');
+  const supLang = () => { const v = lsGet(SUPLK()); return v === 'ar' || v === 'en' ? v : (en() ? 'en' : 'ar'); };
+  const SL = (a, b) => (supLang() === 'en' ? b : a);
+  const SLT = (a, b) => ({ text: SL(a, b), tr: { ar: a, en: b } });
+  const inLang = (l, fn) => { const o = I18N.lang; I18N.lang = l; try { return fn(); } finally { I18N.lang = o; } };
+  const langOf = s => { const t = String(s || ''); const a = (t.match(/[\u0600-\u06FF]/g) || []).length, b = (t.match(/[A-Za-z]/g) || []).length; return a >= b ? 'ar' : 'en'; };
+  if (typeof ICONS === 'object' && !ICONS.globe) ICONS.globe = '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.4 2.6 3.6 5.6 3.6 9s-1.2 6.4-3.6 9c-2.4-2.6-3.6-5.6-3.6-9S9.6 5.6 12 3z"/>';
   const clean = s => String(s || '').replace(MONEY, '…');
   const me = () => S.session || {};
   const myId = () => String(me().id || '');
@@ -51828,7 +51841,7 @@ html.rdopen,html.rdopen body{overflow:hidden!important;overscroll-behavior:none}
     const first = String(W.name || '').trim().split(/\s+/)[0] || '';
     let guide = ''; try { guide = typeof window.okSupKB === 'function' ? String(window.okSupKB() || '').slice(0, 5000) : ''; } catch (e) { guide = ''; }
     const prompt = `أنت «الدعم الفني» لسيستم إدارة شركة ${coName()}. موظف${first ? ` اسمه ${first}` : ''} بيبلّغ عن مشكلة أو سؤال في السيستم.
-اتكلم زي زميل محترم وودود وإيجابي: ابدأ باسمه الأول، طمّنه بجملة قصيرة، وادخل في الحل على طول. لو الحل أو المكان موجود في «دليل السيستم» تحت، قوله بالظبط (القايمة ← …). لو محتاج قرار من الإدارة أو صلاحية، قوله إن طلبه وصل للدعم الفني وهيتابع معاه، من غير ما توعد بالقرار. رد بنفس لغة الموظف (مصري أو إنجليزي؛ لو كاتب فرانكو رد بالمصري بالحروف العربي).
+اتكلم زي زميل محترم وودود وإيجابي: ابدأ باسمه الأول، طمّنه بجملة قصيرة، وادخل في الحل على طول. لو الحل أو المكان موجود في «دليل السيستم» تحت، قوله بالظبط (القايمة ← …). لو محتاج قرار من الإدارة أو صلاحية، قوله إن طلبه وصل للدعم الفني وهيتابع معاه، من غير ما توعد بالقرار. ${supLang() === 'en' ? 'اكتب answer و questions بالإنجليزي (English) — دي لغته في السيستم، حتى لو هو كاتب بالعربي.' : 'اكتب answer و questions بالعربي المصري (بالحروف العربي) — دي لغته في السيستم، حتى لو هو كاتب إنجليزي أو فرانكو.'} أما title و summary و report فبالمصري دايمًا (دول للمالك).
 رجّع JSON بس بالشكل ده من غير أي كلام تاني:
 {"kind":"how|rule|bug|access|idea","answer":"","questions":[],"title":"","summary":"","report":"","urgent":false}
 - kind: how = بيسأل إزاي يعمل حاجة في السيستم؛ rule = سؤال عن قاعدة أو لائحة أو رصيد بيتجاوب من بياناته؛ bug = عطل أو حاجة مش شغالة؛ access = مش شايف صفحة أو مالوش صلاحية؛ idea = اقتراح.
@@ -51996,12 +52009,55 @@ ${guide ? 'دليل السيستم (اللي الموظف ده يقدر يشوف
   }
 
   /* ---------- the chat (a new problem) ---------- */
-  function newChat() { SUP.files.chat = []; SUP.draft.supq = ''; SUP.chat = { step: 'write', page: SUP.last || null, t0: null, text: '', files0: [], local: '', bot: null, qs: [], answers: '', files1: [], msgs: [{ from: 'bot', text: L('اكتب المشكلة اللي قابلتك في السيستم — حصل إيه وفي أنهي صفحة. وممكن تبعت صورة أو تسجّل صوت أو فيديو للشاشة. هتوصل للإدارة على طول.', 'Write the problem you ran into in the system — what happened and on which page. You can add a picture, a voice note or a screen video. It reaches the management right away.') }], ticketId: null }; }
+  function newChat() { SUP.files.chat = []; SUP.draft.supq = ''; SUP.chat = { step: 'write', page: SUP.last || null, t0: null, text: '', files0: [], local: '', bot: null, qs: [], answers: '', files1: [], msgs: [Object.assign({ from: 'bot' }, SLT('اكتب المشكلة اللي قابلتك في السيستم — حصل إيه وفي أنهي صفحة. وممكن تبعت صورة أو تسجّل صوت أو فيديو للشاشة. هتوصل للإدارة على طول.', 'Write the problem you ran into in the system — what happened and on which page. You can add a picture, a voice note or a screen video. It reaches the management right away.'))], ticketId: null }; }
   const bubble = (m, viewerIsOwner) => {
     const lab = m.from === 'bot' ? L('البوت', 'Bot') : m.from === 'owner' ? (viewerIsOwner ? L('إنت', 'You') : L('الدعم الفني', 'Support')) : m.from === 'sys' ? '' : (viewerIsOwner ? (m.byName || '') : L('إنت', 'You'));
     const side = viewerIsOwner ? (m.from === 'owner' ? 'me' : m.from === 'sys' ? 'sys' : 'bot') : (m.from === 'me' ? 'me' : m.from === 'sys' ? 'sys' : 'bot');
-    return `<div class="supb ${side}${m.from === 'bot' ? ' isbot' : ''}">${lab ? `<div class="who"><span class="notr">${esc(lab)}</span>${m.at ? ` · <span class="tiny">${esc(when(m.at))}</span>` : ''}</div>` : ''}${m.html || (m.text ? `<div class="tx notr">${nl(m.text)}</div>` : '')}${media(m.files)}${m.acts || ''}</div>`;
+    const txt = String(m.text || ''); let body = m.html || (txt ? `<div class="tx notr">${nl(txt)}</div>` : ''); let trb = '';
+    if (!m.html && txt.trim() && m.from !== 'sys' && side !== 'me' && !m.thinking) {
+      const k = trKey(txt); const to = langOf(txt) === 'ar' ? 'en' : 'ar'; const pref = viewerIsOwner ? '' : supLang();
+      const ready = trGet(m, k, to); const on = TR.show[k] != null ? TR.show[k] : (pref === to && !!ready);   /* already in his language → shown so */
+      TR.src[k] = { text: txt, tr: m.tr || null, on: on && !!ready };
+      if (on && ready) body = `<div class="tx notr" dir="auto">${nl(ready)}</div>`;
+      trb = `<button type="button" class="suptrb notr" data-suptr="${k}" data-to="${to}"${viewerIsOwner ? '' : ' data-me="1"'}>${icon('globe')}<span>${TR.busy[k] ? (to === 'ar' ? 'بيترجم…' : 'Translating…') : on && ready ? (to === 'ar' ? 'الأصل (English)' : 'Original (عربي)') : (to === 'ar' ? 'ترجم للعربي' : 'Translate to English')}</span></button>`;
+    }
+    return `<div class="supb ${side}${m.from === 'bot' ? ' isbot' : ''}">${lab ? `<div class="who"><span class="notr">${esc(lab)}</span>${m.at ? ` · <span class="tiny">${esc(when(m.at))}</span>` : ''}</div>` : ''}${body}${trb}${media(m.files)}${m.acts || ''}</div>`;
   };
+  /* the translation: ready on the message (m.tr, written with it), or kept from an earlier one, or asked of the AI once */
+  const TR = { c: null, show: {}, busy: {}, src: {} };
+  const trKey = s => { let h = 0; const t = String(s || ''); for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return 'k' + (h >>> 0).toString(36) + t.length; };
+  const trCache = () => { if (TR.c) return TR.c; try { TR.c = JSON.parse(lsGet('ok.sup.tr') || '{}') || {}; } catch (e) { TR.c = {}; } return TR.c; };
+  const trPut = (k, l, v) => { const c = trCache(); delete c[k + l]; c[k + l] = v; const ks = Object.keys(c); if (ks.length > 150) ks.slice(0, ks.length - 150).forEach(x => delete c[x]); try { lsSet('ok.sup.tr', JSON.stringify(c)); } catch (e) { /* full */ } };
+  const trGet = (m, k, l) => (m && m.tr && m.tr[l]) || trCache()[k + l] || '';
+  function glossary(text, to) {   /* names of pages and buttons («…») as the system itself shows them in that language */
+    try { const ex = I18N.exact; if (!ex || typeof ex.get !== 'function') return ''; const segs = Array.from(new Set((String(text).match(/«([^»]{1,60})»/g) || []).map(x => x.slice(1, -1).trim())));
+      const out = []; segs.forEach(sg => { if (to === 'en') { const v = ex.get(sg); if (v) out.push(`«${sg}» = «${v}»`); } else { for (const [a, b] of ex) { if (b === sg) { out.push(`«${sg}» = «${a}»`); break; } } } });
+      return out.slice(0, 20).join('\n'); } catch (e) { return ''; }
+  }
+  async function trAI(text, to) {
+    if (typeof aiAvailable !== 'function' || !aiAvailable() || typeof aiJson !== 'function') return '';
+    const g = glossary(text, to);
+    const p = `Translate this message from the support chat of a company management system into ${to === 'ar' ? 'Egyptian Arabic (natural, warm, in Arabic script)' : 'clear, warm English'}. Keep the meaning, names, numbers, emojis and line breaks; keep page and button names inside «».${g ? ' Use these exact names for pages and buttons:\n' + g : ''} Do not add or explain anything.
+Return JSON only: {"t":"..."}
+
+${text}`;
+    try { const j = await Promise.race([aiJson(p, { max_tokens: 1000 }), new Promise(r => setTimeout(() => r(null), 25000))]); return j && j.t ? String(j.t).trim().slice(0, 2500) : ''; } catch (e) { return ''; }
+  }
+  function setSupLang(to) {
+    if (to !== 'ar' && to !== 'en' || lsGet(SUPLK()) === to && supLang() === to) return; const was = supLang(); lsSet(SUPLK(), to); if (was === to) return;
+    toast(to === 'ar' ? 'تمام ✓ — ردود الدعم الفني الجاية هتوصلك بالعربي، وزرار الترجمة موجود دايمًا لو حبيت تقلبها.' : 'Done ✓ — support replies will now come to you in English; the translate button is always there to flip it.');
+    /* his open problems carry his language, so the owner's drafts and our replies come in it too */
+    try { mine().filter(t => t.status !== 'solved' && t.lang !== to).forEach(t => { Store.update(COL, t.id, { lang: to }).catch(() => { }); }); } catch (e) { /* later */ }
+  }
+  document.addEventListener('click', async e => {
+    const b = e.target && e.target.closest ? e.target.closest('[data-suptr]') : null; if (!b) return; e.preventDefault(); e.stopPropagation();
+    const k = b.getAttribute('data-suptr'), to = b.getAttribute('data-to'), me1 = b.getAttribute('data-me') === '1'; const s = TR.src[k]; if (!s || TR.busy[k]) return;
+    if (s.on) { TR.show[k] = false; render(false); return; }
+    let v = trGet({ tr: s.tr }, k, to);
+    if (!v) { TR.busy[k] = 1; render(false); v = await trAI(s.text, to); delete TR.busy[k]; if (v) trPut(k, to, v); }
+    if (!v) { toast(L('الترجمة مش متاحة دلوقتي — جرّب كمان شوية', 'Translation is not available right now — try again in a bit'), 'err'); render(false); return; }
+    TR.show[k] = true; if (me1) setSupLang(to); render(false);
+  }, true);
   const ctxChips = (page, dev) => `<div class="supctx">${page && page.title ? `<span>${icon('link')}<span class="notr">${esc(page.title)}</span></span>` : ''}${dev ? `<span>${esc(devTxt(dev))}</span>` : ''}<span>${esc(sysName(sysKey()))}</span></div>`;
   const composer = (id, slot, action, ph, arg) => {
     const pc = device().kind === 'computer'; const scr = pc && canScreen();
@@ -52032,14 +52088,14 @@ ${guide ? 'دليل السيستم (اللي الموظف ده يقدر يشوف
     c.msgs.push({ from: 'me', text, files, at: nowISO() });
     if (c.step === 'clarify' || c.step === 'answer') { c.answers = [c.answers, text].filter(Boolean).join('\n'); c.files1 = c.files1.concat(files); await sendTicket(false); return; }
     c.text = text; c.said = said; c.files0 = files; c.t0 = nowISO();
-    const local = said ? ruleAnswer(said) : '';
-    if (local) { c.local = local; c.msgs.push({ from: 'bot', text: local + '\n' + L('ده حلّ مشكلتك؟', 'Did that solve it?') }); c.step = 'answer'; render(false); return; }
-    c.step = 'think'; c.msgs.push({ from: 'bot', html: `<div class="tx muted">${esc(md.frames.length || md.said.length ? L('بشوف الفيديو وبكتب الملخص…', 'Watching the video and writing the summary…') : L('بفكّر…', 'Thinking…'))}</div>`, thinking: 1 }); render(false);
+    const local = said ? inLang(supLang(), () => ruleAnswer(said)) : '';
+    if (local) { c.local = local; c.msgs.push({ from: 'bot', text: local + '\n' + SL('ده حلّ مشكلتك؟', 'Did that solve it?') }); c.step = 'answer'; render(false); return; }
+    c.step = 'think'; c.msgs.push({ from: 'bot', html: `<div class="tx muted">${esc(md.frames.length || md.said.length ? SL('بشوف الفيديو وبكتب الملخص…', 'Watching the video and writing the summary…') : SL('بفكّر…', 'Thinking…'))}</div>`, thinking: 1 }); render(false);
     c.md = md; const bot = (said || pics.length || md.frames.length) ? await botThink(said, c.page, pics, md) : null; c.msgs = c.msgs.filter(m => !m.thinking); c.bot = bot;
-    if (bot && bot.answer && (bot.kind === 'how' || bot.kind === 'rule')) { c.msgs.push({ from: 'bot', text: bot.answer + '\n' + L('ده حلّ مشكلتك؟', 'Did that solve it?') }); c.step = 'answer'; render(false); return; }
+    if (bot && bot.answer && (bot.kind === 'how' || bot.kind === 'rule')) { c.msgs.push({ from: 'bot', text: bot.answer + '\n' + SL('ده حلّ مشكلتك؟', 'Did that solve it?') }); c.step = 'answer'; render(false); return; }
     if (bot && bot.answer) c.msgs.push({ from: 'bot', text: bot.answer });   /* 19 Nov: a warm answer for every kind, then the question or the ticket */
-    if (bot && bot.questions.length) { c.qs = bot.questions; c.msgs.push({ from: 'bot', text: (bot.answer ? '' : L('عشان نحلها أسرع:', 'To fix it faster:') + '\n') + bot.questions.join('\n') }); c.step = 'clarify'; render(false); return; }
-    if (!bot && said.length < 40 && !files.length) { c.qs = [L('حصل إيه بالظبط؟ وكنت متوقع إيه يحصل؟', 'What exactly happened, and what did you expect?')]; c.msgs.push({ from: 'bot', text: L('عشان نحلها أسرع: حصل إيه بالظبط؟ وكنت متوقع إيه يحصل؟', 'To fix it faster: what exactly happened, and what did you expect?') }); c.step = 'clarify'; render(false); return; }
+    if (bot && bot.questions.length) { c.qs = bot.questions; c.msgs.push({ from: 'bot', text: (bot.answer ? '' : SL('عشان نحلها أسرع:', 'To fix it faster:') + '\n') + bot.questions.join('\n') }); c.step = 'clarify'; render(false); return; }
+    if (!bot && said.length < 40 && !files.length) { c.qs = [SL('حصل إيه بالظبط؟ وكنت متوقع إيه يحصل؟', 'What exactly happened, and what did you expect?')]; c.msgs.push(Object.assign({ from: 'bot' }, SLT('عشان نحلها أسرع: حصل إيه بالظبط؟ وكنت متوقع إيه يحصل؟', 'To fix it faster: what exactly happened, and what did you expect?'))); c.step = 'clarify'; render(false); return; }
     await sendTicket(false);
   };
   ACTIONS.supBotOk = () => sendTicket(true);
@@ -52056,7 +52112,7 @@ ${guide ? 'دليل السيستم (اللي الموظف ده يقدر يشوف
     const mk = (c.files0 || []).concat(c.files1 || []); const mediaName = mk.some(f => f.kind === 'video') ? L('فيديو للشاشة', 'A screen video') : mk.some(f => f.kind === 'audio') ? L('رسالة صوت', 'A voice message') : L('صورة من الشاشة', 'A screenshot');
     const subj = clean((c.bot && c.bot.title) || firstLine(c.said || c.text).slice(0, 80) || mediaName);
     const heard = ((c.md && c.md.said) || []).filter(Boolean); const report = clean((c.bot && c.bot.report) || (heard.length ? `${L('بيقول', 'Says')}: ${heard.join(' ')}` : '')).slice(0, 1200);
-    const t = { id, byId: W.id, byName: W.name, workerId: W.workerId, deptId: W.deptId, dept: W.dept, role: W.role, roleName: W.roleName, job: W.job, sys: sysKey(), page: c.page || null, dev: device(), build: String(window.NF_BUILD || ''), lang: en() ? 'en' : 'ar', mgr: W.mgr, urgent: !!((c.bot && c.bot.urgent) || STUCK.test([c.said, c.text, c.answers].join(' '))), subj, sum: (c.bot && c.bot.summary) || '', report, kind: (c.bot && c.bot.kind) || (c.local ? 'rule' : 'bug'), status: byBot ? 'solved' : 'new', solvedBy: byBot ? 'bot' : null, solvedAt: byBot ? now : null, thread, lastAt: now, unreadOwner: !byBot, unreadMe: false };
+    const t = { id, byId: W.id, byName: W.name, workerId: W.workerId, deptId: W.deptId, dept: W.dept, role: W.role, roleName: W.roleName, job: W.job, sys: sysKey(), page: c.page || null, dev: device(), build: String(window.NF_BUILD || ''), lang: supLang(), mgr: W.mgr, urgent: !!((c.bot && c.bot.urgent) || STUCK.test([c.said, c.text, c.answers].join(' '))), subj, sum: (c.bot && c.bot.summary) || '', report, kind: (c.bot && c.bot.kind) || (c.local ? 'rule' : 'bug'), status: byBot ? 'solved' : 'new', solvedBy: byBot ? 'bot' : null, solvedAt: byBot ? now : null, thread, lastAt: now, unreadOwner: !byBot, unreadMe: false };
     try { await Store.save(COL, t); }
     catch (e) { c.step = c.qs.length ? 'clarify' : 'write'; c.msgs.push({ from: 'bot', text: L('ماقدرتش أبعتها دلوقتي — اتأكد من النت وجرّب تاني.', 'Could not send it now — check the connection and try again.') }); render(false); return; }
     c.ticketId = id; c.step = 'sent';
@@ -52231,6 +52287,7 @@ ${guide ? 'دليل السيستم (اللي الموظف ده يقدر يشوف
 .supb.me{align-self:flex-end;background:color-mix(in srgb,var(--accent) 13%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 32%,var(--line))}
 .supb.sys{align-self:center;max-width:100%;background:none;border:0;padding:2px 8px;font-size:12.5px;color:var(--ink-2)}
 .supb .who{font-size:11.5px;color:var(--ink-2);margin-bottom:2px;font-weight:600}
+.suptrb{display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--accent,#2b8a9e);font:inherit;font-size:12px;font-weight:600;cursor:pointer;line-height:1.6}.suptrb:hover{background:var(--bg-2,rgba(0,0,0,.04))}.suptrb svg{width:14px;height:14px}
 .supctx{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}.supctx>span{display:inline-flex;align-items:center;gap:4px;font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 9px;color:var(--ink-2);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.supctx svg{width:13px;height:13px}
 .supcomp textarea{display:block;width:100%;min-height:86px;resize:vertical;font:inherit;font-size:15px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);box-sizing:border-box}
 .supcomp .row,.supacts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
