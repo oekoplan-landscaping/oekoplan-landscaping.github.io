@@ -4792,6 +4792,7 @@ html[data-theme="dark"] #oklock{background:#0d1719}
   let pendSeen = '', pendBusy = false, pendUntil = 0;
   const scanning = () => !!document.getElementById('okqr-v');
   const pendWhy = r => { const p = r.project ? byId('projects', r.project) : null;
+    if (r.purpose === 'cost') return L('الكمبيوتر مستني موبايلك عشان يفتح تكلفة المهندسين — وجّه الكاميرا على الكود اللي على الشاشة', 'The computer is waiting for your phone to open the engineer cost — point the camera at the code on the screen');
     return r.purpose === 'unlock' ? L('الكمبيوتر بتاعك مستني موبايلك عشان يتفتح — وجّه الكاميرا على الكود اللي على الشاشة', 'Your computer is waiting for your phone to unlock — point the camera at the code on the screen')
       : L(`الكمبيوتر مستني موبايلك عشان يفتح فلوس ${p && p.name ? p.name : 'المشروع'} — وجّه الكاميرا على الكود اللي على الشاشة`, `The computer is waiting for your phone to open ${p && p.name ? p.name : 'the project'} money — point the camera at the code on the screen`); };
   const pendFallback = why => openModal({ title: L('موبايلك مطلوب', 'Your phone is needed'), footer: `<button type="button" class="btn" data-action="closemodal">${esc(L('مش دلوقتي', 'Not now'))}</button>`,
@@ -4813,6 +4814,7 @@ html[data-theme="dark"] #oklock{background:#0d1719}
   let pendBoot = false;
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { if (pendBoot || !S.session || !phone()) return; pendBoot = true; setTimeout(pendWake, 600); });
   window.okPendingCheck = pendWake;
+  window.okKeyKit = { flow: (...a) => keyFlow(...a), stop: () => stopWait(), dev: () => devKey(), phone: () => phone() };   /* 19 Nov: the engineer-cost view opens the same way */
 
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
     if (!S.session || !(S.route && S.route.view === 'okkey')) return; const h = location.hash || ''; if (window.__okkeyDone === h) return; window.__okkeyDone = h;
@@ -6389,12 +6391,54 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
     const payload = kind === 'office' ? { kind, start, cat: CATS().some(c => c[0] === a.cat) ? a.cat : 'other', title: a.title || '', hours: a.hours || '' } : kind === 'meeting' ? { kind, start, t_from: a.from || '', t_to: a.to || '', mplace: ['office', 'online', 'client'].includes(a.place) ? a.place : 'office', title: a.title || '', project_id: p ? p.id : '' } : { kind, start, project_id: p.id, stage: PIPE().some(s => s.id === a.stage) ? a.stage : curStage(p), title: a.title || '', hours: a.hours || '' };
     return { ok: true, text: L('مهمة اليوم: ', 'Daily task: ') + (start ? '⏱ ' : '') + label(payload), run: async () => { await save(payload); rerender(); return start ? L('⏱ بدأ العدّاد', '⏱ The timer started') : L('اتسجّلت في مهمة اليوم ✓', 'Logged in the daily task ✓'); } }; };
 
+  /* ---------- engineer cost (19 Nov, PIN): hourly rate per grade (job title) and per person — Dr. Tarek and the Head of PMO only.
+     The rates come from the server (nf_ok_cost_view): Dr. Tarek straight away, the Head of PMO after her phone approves — like the project money.
+     Closed again when she leaves the page or the window. ---------- */
+  const COST = { rates: null, busy: false };
+  const costOpen = () => !!COST.rates;
+  const costClose = () => { if (COST.rates) { COST.rates = null; try { if (window.okKeyKit) window.okKeyKit.stop(); } catch (e) { /* */ } rerender(); } };
+  const rateOf = wid => { const R = COST.rates || {}; const w = byId('workers', wid) || {}; const v = R['w:' + wid] != null ? R['w:' + wid] : (w.title && R['g:' + w.title] != null ? R['g:' + w.title] : R.default); return v == null ? null : +v; };
+  const egp = n => `${fmtMoney(Math.round(+n || 0))} ${L('ج.م', 'EGP')}`;
+  const costOf = rows => { let c = 0, miss = 0; rows.forEach(r => { const h = durH(r); const rt = rateOf(r.wid); if (rt == null) miss += h; else c += h * rt; }); return { c, miss }; };
+  const costTxt = rows => { const k = costOf(rows); return `${egp(k.c)}${k.miss ? ` <span class="tiny muted">· ${esc(L('ناقص سعر لـ', 'no rate for'))} ${fmtDur(k.miss)}</span>` : ''}`; };
+  const costDone = d => { COST.busy = false; if (!d || d.status !== 'ok') { toast(d && d.status === 'other_phone' ? L('ده مش الموبايل المتسجّل بتاعك', 'This is not your registered phone') : d && d.status === 'denied' ? L('التكلفة دي للـ CEO ورئيسة الـ PMO بس', 'The cost is for the CEO and the Head of PMO only') : L('ما اتفتحتش — جرّب تاني', 'Not opened — try again'), 'err'); return; } COST.rates = d.rates || {}; rerender(); };
+  const costUnlock = () => {
+    if (COST.busy) return; COST.busy = true; const kit = window.okKeyKit;
+    if (isAdmin()) { rpc('nf_ok_cost_view', { p_key: null, p_device: null }).then(costDone).catch(() => { COST.busy = false; }); return; }
+    if (kit && kit.phone()) { rpc('nf_ok_cost_view', { p_key: null, p_device: kit.dev() }).then(costDone).catch(() => { COST.busy = false; }); return; }
+    if (!kit) { COST.busy = false; return; }
+    openModal({ title: L('تكلفة المهندسين', 'Engineer cost'), footer: `<button type="button" class="btn" data-action="closemodal">${esc(L('إلغاء', 'Cancel'))}</button>`,
+      body: `<div class="okkey"><b class="t">🔒 ${esc(L('افتحها من موبايلك', 'Open it with your phone'))}</b><p>${esc(L('افتحي تطبيق Ökoplan على موبايلك — الكاميرا هتفتح لوحدها، وجّهيها على الكود ده. بتفضل مفتوحة لحد ما تخرجي من الصفحة.', 'Open the Ökoplan app on your phone — the camera opens by itself; point it at this code. It stays open until you leave the page.'))}</p><div data-okhost></div></div>`,
+      onOpen: f => { const host = (f || document).querySelector('[data-okhost]'); kit.flow('cost', null, host, async kid => { const d = await rpc('nf_ok_cost_view', { p_key: kid, p_device: null }); try { closeModal(); } catch (e) { /* */ } costDone(d); }); } });
+    setTimeout(() => { COST.busy = false; }, 1500);
+  };
+  window.addEventListener('hashchange', () => { if (COST.rates && !(S.route && (S.route.view === 'okdaily' || (S.route.view === 'projects' && S.route.id)))) costClose(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && !isAdmin()) costClose(); });
+  const costBtn = () => costOpen() ? `<button type="button" class="btn sm ghost" data-okcost="rates">💰 ${esc(L('سعر الساعة', 'Hourly rates'))}</button><button type="button" class="btn sm ghost" data-okcost="close">${esc(L('اخفي المبالغ', 'Hide amounts'))}</button>` : `<button type="button" class="btn sm" data-okcost="open">💰 ${esc(L('التكلفة بالجنيه', 'Cost in EGP'))}</button>`;
+  /* the rates: a default, one per grade (job title), and per person when it differs */
+  const ratesForm = () => {
+    const R = COST.rates || {}; const ws = list('workers').filter(w => w && w.status !== 'inactive' && w.status !== 'left' && !['kiosk', 'admin'].includes(w.role) && w.id !== 'okplayreview').sort((a, b) => String(a.title || '').localeCompare(String(b.title || '')) || String(a.name || '').localeCompare(String(b.name || '')));
+    const titles = Array.from(new Set(ws.map(w => w.title).filter(Boolean))).sort();
+    const inp = (k, v, ph) => `<input type="number" min="0" step="1" inputmode="decimal" data-okrate="${esc(k)}" value="${v != null ? esc(v) : ''}" placeholder="${esc(ph || '')}" style="width:110px">`;
+    return `<style>.okrates table{width:100%;border-collapse:collapse}.okrates td{padding:5px 4px;border-bottom:1px solid var(--line);font-size:13.5px}.okrates td:last-child{text-align:end;white-space:nowrap}.okrates h4{margin:14px 0 6px}.okrates input{font:inherit;border:1px solid var(--line);border-radius:10px;padding:6px 8px;background:var(--surface);color:var(--ink)}</style>
+      <div class="okrates"><p class="small muted" style="margin:0 0 8px">${esc(L('بالجنيه في الساعة. سعر الشخص لو مكتوب بيغلب سعر درجته، وسعر الدرجة بيغلب السعر العام.', 'EGP per hour. A person\'s own rate wins over his grade, and the grade over the default.'))}</p>
+      <table><tr><td><b>${esc(L('السعر العام (لأي حد مالوش سعر)', 'Default (anyone without a rate)'))}</b></td><td>${inp('default', R.default)}</td></tr></table>
+      <h4>${esc(L('لكل درجة', 'Per grade'))}</h4><table>${titles.map(t => `<tr><td>${esc(t)} <span class="tiny muted">· ${ws.filter(w => w.title === t).length}</span></td><td>${inp('g:' + t, R['g:' + t], R.default != null ? String(R.default) : '')}</td></tr>`).join('')}</table>
+      <h4>${esc(L('لكل شخص (لو مختلف عن درجته)', 'Per person (when it differs from the grade)'))}</h4><table>${ws.map(w => { const g = w.title && R['g:' + w.title] != null ? R['g:' + w.title] : R.default; return `<tr><td>${esc(w.name || '')}<div class="tiny muted">${esc(w.title || '')}</div></td><td>${inp('w:' + w.id, R['w:' + w.id], g != null ? String(g) : '')}</td></tr>`; }).join('')}</table></div>`;
+  };
+  const ratesOpen = () => { if (!costOpen()) return; openModal({ title: L('سعر الساعة', 'Hourly rates'), wide: true, body: ratesForm(), submitLabel: L('حفظ', 'Save'), onSubmit: async f => {
+    const R = COST.rates || {}; const ch = {}; f.querySelectorAll('[data-okrate]').forEach(i => { const k = i.dataset.okrate; const v = String(i.value || '').trim(); const old = R[k] != null ? String(R[k]) : ''; if (v !== old) ch[k] = v === '' ? null : +v; });
+    if (!Object.keys(ch).length) return true;
+    try { const r = await rpc('nf_ok_rates_set', { p: ch }); if (!r || r.status !== 'ok') throw new Error('x'); Object.keys(ch).forEach(k => { if (ch[k] == null) delete R[k]; else R[k] = ch[k]; }); COST.rates = Object.assign({}, R); toast(L('اتحفظت ✓', 'Saved ✓')); rerender(); return true; } catch (e) { toast(L('ما اتحفظتش — جرّب تاني', 'Not saved — try again'), 'err'); return false; } } }); };
+  document.addEventListener('click', ev => { const b = ev.target.closest && ev.target.closest('[data-okcost]'); if (!b) return; ev.preventDefault(); const a = b.dataset.okcost; if (a === 'open') costUnlock(); else if (a === 'close') costClose(); else if (a === 'rates') ratesOpen(); });
+
   /* ---------- «مهام اليوم» — the CEO and the Head of PMO: who does what, engineer-hours per project ---------- */
   const cache = { key: '', rows: null, busy: false };
   const fetchRange = (from, to, key) => { if (cache.key === key && cache.rows) return cache.rows; if (!cache.busy) { cache.busy = true; rpc('nf_ok_daily_all', { p_from: from, p_to: to }).then(rows => { cache.key = key; cache.rows = rows || []; }).catch(() => { cache.key = key; cache.rows = []; }).finally(() => { cache.busy = false; if (S.route && S.route.view === 'okdaily') rerender(); }); } return null; };
   const ui = () => { S.ui = S.ui || {}; return S.ui; };
   const page = () => {
     if (!boss()) return `<div class="banner warn">${esc(L('الصفحة دي للـ CEO ورئيسة الـ PMO', 'This page is for the CEO and the Head of PMO'))}</div>`;
+    if (!isAdmin() && window.okDirReload && !window.__okdirDaily) { window.__okdirDaily = 1; try { window.okDirReload(); } catch (e) { /* */ } }   /* names and titles of everyone (grades for the cost) */
     const day = ui().okDailyDay || T(); const rng = ui().okDailyRng || 'w';
     const from = rng === 'all' ? '2026-01-01' : rng === 'm' ? day.slice(0, 8) + '01' : new Date(new Date(day + 'T12:00:00').getTime() - 6 * 864e5).toISOString().slice(0, 10);
     const lo = from < day ? from : day; const rows = fetchRange(lo, day, lo + '|' + day); if (!rows) return `<div class="empty"><b>${esc(L('بنجيب البيانات…', 'Loading…'))}</b></div>`;
@@ -6415,11 +6459,11 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
         ${ppl.length ? ppl.map(x => `<div class="pp"><b>${esc(x.w.name || '')}</b> <span class="tiny muted">${esc(x.w.title || '')}</span> <span class="tiny">· ${fmtDur(x.xs.reduce((a, r) => a + durH(r), 0))}</span>${x.xs.map(r => `<div>${line(r)}</div>`).join('')}</div>`).join('') : `<div class="empty small">${esc(L('محدش سجّل لسه في اليوم ده', 'Nobody logged this day yet'))}</div>`}</div>
       ${missing.length ? `<div class="card"><h3 style="margin:0 0 8px;font-size:14px">${esc(L('لسه ما سجّلوش', 'Not logged yet'))} · ${missing.length}</h3><div class="miss">${missing.map(w => `<span>${esc(w.name || '')}</span>`).join('')}</div></div>` : ''}
       <div class="card"><div class="cardhead"><h3 style="margin:0;font-size:14px">⏱ ${esc(L('وقت المهندسين على المشاريع', 'Engineer time on the projects'))}</h3><div class="grow"></div><div class="rg">${[['w', L('آخر 7 أيام', 'Last 7 days')], ['m', L('الشهر ده', 'This month')], ['all', L('من الأول', 'All time')]].map(([k, t]) => `<button type="button" class="${rng === k ? 'on' : ''}" data-okdrng="${k}">${esc(t)}</button>`).join(' ')}</div></div>
-        <div class="small muted" style="margin:6px 0 4px">${esc(L(`الإجمالي: ${fmtDur(totalH)} على ${projs.length} مشروع`, `Total: ${fmtDur(totalH)} on ${projs.length} projects`))}</div>
-        ${projs.length ? projs.map(a => `<div class="pj"><div class="hd"><b><a href="#/projects/${esc(a.pid)}">${esc(pName(a.pid))}</a></b><span>${fmtDur(a.h)}</span></div><i style="width:${Math.max(2, 100 * a.h / maxH)}%"></i>
+        <div class="row" style="gap:8px;flex-wrap:wrap;margin:6px 0 4px;align-items:center"><span class="small muted">${esc(L(`الإجمالي: ${fmtDur(totalH)} على ${projs.length} مشروع`, `Total: ${fmtDur(totalH)} on ${projs.length} projects`))}</span>${costOpen() ? `<b class="small">· 💰 ${costTxt(rows.filter(r => r.project_id))}</b>` : ''}<span class="grow"></span>${costBtn()}</div>
+        ${projs.length ? projs.map(a => `<div class="pj"><div class="hd"><b><a href="#/projects/${esc(a.pid)}">${esc(pName(a.pid))}</a></b><span>${fmtDur(a.h)}${costOpen() ? ` · <b>${costTxt(rows.filter(r => r.project_id === a.pid))}</b>` : ''}</span></div><i style="width:${Math.max(2, 100 * a.h / maxH)}%"></i>
           <div class="sub">${Object.entries(a.st).sort((x, y) => y[1] - x[1]).map(([k, h]) => `${esc(k === 'meeting' ? L('ميتنجات', 'Meetings') : stName(k))} ${fmtDur(h)}`).join(' · ')}</div>
-          <div class="sub">${Object.entries(a.ppl).sort((x, y) => y[1] - x[1]).slice(0, 8).map(([id, h]) => `${esc(nm(id))} ${fmtDur(h)}`).join(' · ')}</div></div>`).join('') : `<div class="empty small">${esc(L('لسه مفيش بيانات', 'No data yet'))}</div>`}</div>
-      ${offTot ? `<div class="card"><h3 style="margin:0 0 6px;font-size:14px">💼 ${esc(L('وقت مش على مشاريع', 'Time not on projects'))} · ${fmtDur(offTot)}</h3>
+          <div class="sub">${Object.entries(a.ppl).sort((x, y) => y[1] - x[1]).slice(0, 8).map(([id, h]) => `${esc(nm(id))} ${fmtDur(h)}${costOpen() && rateOf(id) != null ? ` (${egp(h * rateOf(id))})` : ''}`).join(' · ')}</div></div>`).join('') : `<div class="empty small">${esc(L('لسه مفيش بيانات', 'No data yet'))}</div>`}</div>
+      ${offTot ? `<div class="card"><h3 style="margin:0 0 6px;font-size:14px">💼 ${esc(L('وقت مش على مشاريع', 'Time not on projects'))} · ${fmtDur(offTot)}${costOpen() ? ` · ${costTxt(rows.filter(r => r.kind === 'office'))}` : ''}</h3>
         ${Object.entries(offCat).sort((x, y) => y[1].h - x[1].h).map(([k, a]) => `<div class="pj"><div class="hd"><b>${esc(catName(k))}</b><span>${fmtDur(a.h)}</span></div><i style="width:${Math.max(2, 100 * a.h / offMax)}%"></i><div class="sub">${Object.entries(a.ppl).sort((x, y) => y[1] - x[1]).slice(0, 8).map(([id, h]) => `${esc(nm(id))} ${fmtDur(h)}`).join(' · ')}</div></div>`).join('')}</div>` : ''}</div>`;
   };
   document.addEventListener('change', ev => { const t = ev.target; if (!t || !t.dataset || !t.dataset.okdday) return; ui().okDailyDay = t.value || T(); cache.key = ''; rerender(); });
@@ -6440,7 +6484,8 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
     if (!c.rows) return; if (Date.now() - c.at > 120000) { delete pc[r.id]; return; }
     const rows = c.rows; const tot = rows.reduce((a, x) => a + durH(x), 0); const mon = T().slice(0, 7); const th = rows.filter(x => String(x.day).slice(0, 7) === mon).reduce((a, x) => a + durH(x), 0);
     const st = {}, pp = {}; rows.forEach(x => { const h = durH(x); const k = x.kind === 'meeting' ? 'meeting' : (x.stage || '-'); st[k] = (st[k] || 0) + h; pp[x.wid] = (pp[x.wid] || 0) + h; }); const mx = Math.max(0.01, ...Object.values(st));
-    const html = `<div class="card okpt"><div class="cardhead"><h3 style="margin:0;font-size:15px">⏱ ${esc(L('وقت الفريق على المشروع', 'Team time on the project'))}</h3><span class="tiny muted">${esc(L('من «مهام اليوم» — ليك ولرئيسة الـ PMO', 'From «Daily tasks» — you and the Head of PMO'))}</span></div>
+    const html = `<div class="card okpt"><div class="cardhead"><h3 style="margin:0;font-size:15px">⏱ ${esc(L('وقت الفريق على المشروع', 'Team time on the project'))}</h3><span class="tiny muted">${esc(L('من «مهام اليوم» — ليك ولرئيسة الـ PMO', 'From «Daily tasks» — you and the Head of PMO'))}</span><div class="grow"></div>${rows.length ? costBtn() : ''}</div>
+      ${rows.length && costOpen() ? `<div class="row" style="gap:24px;flex-wrap:wrap;margin-bottom:6px"><div><div class="big">💰 ${costTxt(rows)}</div><div class="tiny muted">${esc(L('تكلفة المهندسين من الأول', 'Engineer cost, all time'))}</div></div><div><div class="big">${costTxt(rows.filter(x => String(x.day).slice(0, 7) === mon))}</div><div class="tiny muted">${esc(L('الشهر ده', 'This month'))}</div></div></div>` : ''}
       ${rows.length ? `<div class="row" style="gap:24px;flex-wrap:wrap"><div><div class="big">${fmtDur(tot)}</div><div class="tiny muted">${esc(L('من الأول', 'All time'))}</div></div><div><div class="big">${fmtDur(th)}</div><div class="tiny muted">${esc(L('الشهر ده', 'This month'))}</div></div><div><div class="big">${Object.keys(pp).length}</div><div class="tiny muted">${esc(L('مهندسين', 'Engineers'))}</div></div></div>
       <div class="bars">${Object.entries(st).sort((a, b) => b[1] - a[1]).map(([k, h]) => `<div><span style="min-width:150px">${esc(k === 'meeting' ? L('ميتنجات', 'Meetings') : stName(k))}</span><i style="width:${Math.max(3, 60 * h / mx)}%"></i><b>${fmtDur(h)}</b></div>`).join('')}</div>
       <div class="tiny muted" style="margin-top:6px">${Object.entries(pp).sort((a, b) => b[1] - a[1]).map(([id, h]) => `${esc((byId('workers', id) || {}).name || id)} ${fmtDur(h)}`).join(' · ')}</div>` : `<div class="small muted">${esc(L('لسه محدش سجّل وقت على المشروع ده من «مهمة اليوم».', 'Nobody has logged time on this project from «Daily task» yet.'))}</div>`}</div>`;
@@ -6508,6 +6553,7 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
     if (lv || a.s === 'L') return { k: 'leave', dot: 'b', t: L('إجازة', 'On leave'), sub: lv ? L('راجع ', 'Back ') + dn(nextWork(lv.t)) + ' ' + dm(nextWork(lv.t)) : '' };
     if (x.now && !a.out) { const lb = nowLabel(x.now); return x.now.k === 'meeting' ? { k: 'meet', dot: 'p', t: L('في ميتنج', 'In a meeting'), sub: [L('من ', 'since ') + hm(x.now.since), lb].filter(Boolean).join(' · ') } : { k: 'busy', dot: 'g', t: L('شغّال', 'Working'), sub: [lb, L('من ', 'since ') + hm(x.now.since)].filter(Boolean).join(' · ') }; }
     if (a.brk && !a.out) return { k: 'brk', dot: 'y', t: L('في بريك', 'On a break'), sub: L('من ', 'since ') + hm(a.brk) };
+    if (a.s === 'A') return { k: 'abs', dot: 'r', t: L('غياب', 'Absent'), sub: '' };
     if (a.out) return { k: 'out', dot: 'n', t: L('انصرف', 'Left'), sub: hm(a.out) };
     if (a.in) return { k: 'in', dot: 'g', t: L('حاضر', 'In'), sub: L('من ', 'since ') + hm(a.in) };
     if (off(d)) return { k: 'off', dot: 'n', t: L('أجازة أسبوعية', 'Weekend'), sub: '' };
@@ -6530,8 +6576,8 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
 .okst .c.me{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}.okst .c .you{display:inline-block;font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:1px 8px;vertical-align:middle}.okst .c .nm{min-width:0;flex:1}.okst .c .nm b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.okst .c .nm small{display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .okst .pill{display:inline-flex;align-items:center;gap:6px;margin-top:8px;border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:700}.okst .sub{display:block;margin-top:4px;font-size:12px;color:var(--ink-2)}
 .okst .ah{margin-top:6px;font-size:12px;border-radius:10px;padding:4px 8px}.okst .ah.b{background:var(--accent-soft);color:var(--accent)}.okst .ah.y{background:var(--warn-soft);color:var(--warn-ink)}
-.okd-g{background:#22a06b}.okd-p{background:#7c5cff}.okd-b{background:#2f80ed}.okd-y{background:#f2a516}.okd-n{background:#a0a7b0}
-.okst .pill.okp-g{background:rgba(34,160,107,.12);color:#16784f}.okst .pill.okp-p{background:rgba(124,92,255,.12);color:#5a3fd6}.okst .pill.okp-b{background:rgba(47,128,237,.12);color:#1f63c2}.okst .pill.okp-y{background:rgba(242,165,22,.15);color:#9a6400}.okst .pill.okp-n{background:var(--surface-2);color:var(--muted)}
+.okd-r{background:#e5484d}.okd-g{background:#22a06b}.okd-p{background:#7c5cff}.okd-b{background:#2f80ed}.okd-y{background:#f2a516}.okd-n{background:#a0a7b0}
+.okst .pill.okp-g{background:rgba(34,160,107,.12);color:#16784f}.okst .pill.okp-p{background:rgba(124,92,255,.12);color:#5a3fd6}.okst .pill.okp-b{background:rgba(47,128,237,.12);color:#1f63c2}.okst .pill.okp-y{background:rgba(242,165,22,.15);color:#9a6400}.okst .pill.okp-n{background:var(--surface-2);color:var(--muted)}.okst .pill.okp-r{background:rgba(229,72,77,.12);color:#c22f35}
 html[data-theme="dark"] .okst .pill.okp-g{color:#5fd3a0}html[data-theme="dark"] .okst .pill.okp-p{color:#b3a2ff}html[data-theme="dark"] .okst .pill.okp-b{color:#8cbcff}html[data-theme="dark"] .okst .pill.okp-y{color:#f5c76b}
 .okst-h{margin-top:6px;font-size:12.5px;border-radius:12px;padding:8px 10px;background:var(--surface-2);line-height:1.5}.okst-h.warn{background:var(--warn-soft);color:var(--warn-ink)}.okst-h .alt{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.okst-h .alt button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:3px 10px;font:inherit;font-size:12px;cursor:pointer}
 .okst-h i.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-inline-end:6px;vertical-align:middle}
@@ -6544,7 +6590,7 @@ html[data-theme="dark"] .okst .pill.okp-g{color:#5fd3a0}html[data-theme="dark"] 
   const myPeople = () => { const m = meW(); const s = new Set(); list('projects').filter(p => p && p.status === 'active' && (p.ownerId === m || (p.coOwnerIds || []).includes(m) || (p.team || []).includes(m))).forEach(p => (p.team || []).concat([p.ownerId], p.coOwnerIds || []).forEach(i => i && s.add(i))); s.delete(m); return s; };
   /* the leaders see each other (Mahmoud: «ريم تشوف الاستاتس بتاعت هايدي بتاعت روان») — one tap to see only them */
   const leader = w => !!w && (w.__ld || ['head', 'manager', 'hr'].includes(w.role) || /head of|partner|director/i.test(w.title || '') || list('projects').some(p => p && p.status === 'active' && (p.ownerId === w.id || (p.coOwnerIds || []).includes(w.id))));
-  const GROUPS = () => [['', L('الكل', 'Everyone')], ['lead', L('الـ Project Owners والهيدز', 'Project Owners & heads')], ['here', L('موجودين', 'Here now')], ['meet', L('في ميتنج', 'In a meeting')], ['leave', L('إجازة', 'On leave')], ['req', L('طالبين إجازة', 'Asked for leave')], ['notyet', L('لسه ما حضروش', 'Not in yet')]];
+  const GROUPS = () => [['', L('الكل', 'Everyone')], ['lead', L('الـ Project Owners والهيدز', 'Project Owners & heads')], ['here', L('موجودين', 'Here now')], ['meet', L('في ميتنج', 'In a meeting')], ['leave', L('إجازة', 'On leave')], ['abs', L('غياب', 'Absent')], ['req', L('طالبين إجازة', 'Asked for leave')], ['notyet', L('لسه ما حضروش', 'Not in yet')]];
   const inGroup = (g, s, x, w) => !g || (g === 'lead' ? leader(w) : g === 'here' ? ['in', 'busy', 'meet', 'brk'].includes(s.k) : g === 'req' ? (x && x.lv || []).some(l => l.st === 'pending') : s.k === g);
   const page = () => {
     if (!allowed()) return `<div class="banner warn">${esc(L('الصفحة دي للإدارة والهيدز والـ Project Owners', 'This page is for the management, the heads and the Project Owners'))}</div>`;
@@ -6552,7 +6598,7 @@ html[data-theme="dark"] .okst .pill.okp-g{color:#5fd3a0}html[data-theme="dark"] 
     const u = ui(); const mine = u.mine ? myPeople() : null; const q = String(u.q || '').trim().toLowerCase();
     const all = people().map(w => { const x = st.rows[w.id]; return { w, x, s: stateOf(w, x) }; });
     const counts = {}; GROUPS().forEach(([g]) => { counts[g] = all.filter(r => inGroup(g, r.s, r.x, r.w)).length; });
-    const ORDER = { meet: 1, busy: 2, in: 3, brk: 4, leave: 5, notyet: 6, out: 7, off: 8, np: 9 };
+    const ORDER = { meet: 1, busy: 2, in: 3, brk: 4, leave: 5, abs: 6, notyet: 7, out: 8, off: 9, np: 10 };
     const xs = all.filter(r => inGroup(u.show, r.s, r.x, r.w) && (!u.dept || r.w.deptId === u.dept) && (!mine || mine.has(r.w.id)) && (!q || String(r.w.name || '').toLowerCase().includes(q) || String(r.w.title || '').toLowerCase().includes(q)))
       .sort((a, b) => ((b.w.id === meW()) - (a.w.id === meW())) || (ORDER[a.s.k] - ORDER[b.s.k]) || String(a.w.name || '').localeCompare(String(b.w.name || '')));
     const depts = Array.from(new Set(people().map(w => w.deptId).filter(Boolean)));
