@@ -39085,7 +39085,7 @@ ${A} .fab{background:var(--primary)!important;color:var(--primary-ink)!important
     },
     studioz: {
       top: ['dashboard', 'door', 'okday', 'okdash'],   /* Ökoplan 13 Nov: the CEO's day and office dashboard sit at the top of the menu, not inside «My account» */
-      add: [{ key: 'pmo', ar: 'إدارة المشروعات', en: 'PMO', ids: ['okpmo', 'okask', 'okmyproj', 'okcrm', 'okorgjd'], before: 'clients' }, { key: 'intel', ar: 'الذكاء', en: 'AI', ids: ['okbrain', 'oksmart', 'ai', 'oklearn', 'okrules'], before: 'clients' }, { key: 'design', ar: 'التصميم', en: 'Design', ids: ['concept', 'studio'], before: 'clients' }, { key: 'comm', ar: 'التواصل', en: 'Communication', ids: ['tasks', 'pchats', 'meetings', 'okmeets', 'mail'], before: 'clients' }],
+      add: [{ key: 'pmo', ar: 'إدارة المشروعات', en: 'PMO', ids: ['okpmo', 'okdaily', 'okask', 'okmyproj', 'okcrm', 'okorgjd'], before: 'clients' }, { key: 'intel', ar: 'الذكاء', en: 'AI', ids: ['okbrain', 'oksmart', 'ai', 'oklearn', 'okrules'], before: 'clients' }, { key: 'design', ar: 'التصميم', en: 'Design', ids: ['concept', 'studio'], before: 'clients' }, { key: 'comm', ar: 'التواصل', en: 'Communication', ids: ['tasks', 'pchats', 'meetings', 'okmeets', 'mail'], before: 'clients' }],
       into: [{ near: 'projects', ids: ['projects', 'pm', 'studioos', 'oktimeline', 'portfolio', 'okpipeedit'] }, { near: 'clients', ids: ['enquiries', 'clients', 'quotes'] }, { near: 'settings', ids: ['reports', 'org', 'stuorg', 'audit', 'regulation', 'okabout', 'okweb', 'rdesk', 'settings'] }],
       rename: [{ near: 'clients', ar: 'تطوير الأعمال', en: 'Business development' }],
     },
@@ -39341,6 +39341,7 @@ html.apple .ngfly .cnt.crit,html.apple .ngfly .cnt.bad{background:#ff453a}
     add: G('<path d="M11.2 4.6H7.6a3 3 0 0 0-3 3v8.8a3 3 0 0 0 3 3h8.8a3 3 0 0 0 3-3v-3.6"/><path d="M17.7 3.9a1.85 1.85 0 0 1 2.6 2.6l-7.4 7.4-3.4.8.8-3.4z"/>'),
     ai: G('<path d="M10 3.6c.55 3.75 2.45 5.65 6.2 6.2-3.75.55-5.65 2.45-6.2 6.2-.55-3.75-2.45-5.65-6.2-6.2 3.75-.55 5.65-2.45 6.2-6.2z"/><path d="M18.2 14.6c.25 1.55.95 2.25 2.5 2.5-1.55.25-2.25.95-2.5 2.5-.25-1.55-.95-2.25-2.5-2.5 1.55-.25 2.25-.95 2.5-2.5z"/>'),
     memo: G('<rect x="5.2" y="3.4" width="13.6" height="17.2" rx="2.6"/><path d="M8.8 8.2h6.4M8.8 12h6.4M8.8 15.8h3.8"/>'),
+    daily: G('<rect x="4.6" y="5" width="14.8" height="15" rx="2.6"/><path d="M8.4 3.2v3.4M15.6 3.2v3.4M4.6 9.6h14.8"/><path d="M8.8 14.2l2.2 2.2 4.2-4.4"/>'),
     qrscan: G('<path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/><rect x="8" y="8" width="3" height="3"/><rect x="13" y="8" width="3" height="3"/><rect x="8" y="13" width="3" height="3"/><path d="M13 13h3v3"/>'),
     punch: G('<path d="M12 11a2.5 2.5 0 0 0-2.5 2.5V17"/><path d="M7.5 13.5a4.5 4.5 0 0 1 9 0V18"/><path d="M5.5 11.5A6.5 6.5 0 0 1 18.5 11"/><path d="M4 9.2A8.5 8.5 0 0 1 20 9"/><path d="M12 16v4"/>'),
     notes: G('<path d="M5 4.5h14v9.5l-4.5 4.5H5z"/><path d="M14.5 18.5V14H19"/><path d="M8.5 9h7M8.5 12h4"/>'),
@@ -39350,6 +39351,7 @@ html.apple .ngfly .cnt.crit,html.apple .ngfly .cnt.bad{background:#ff453a}
   const addLabel = el => { const a = el.dataset.action || ''; return a === 'materialNew' ? L('خامة جديدة', 'New material') : a === 'drvTripNew' ? L('مشوار جديد', 'New trip') : a === 'fabMenu' ? (typeof role === 'function' && role() === 'driver' ? L('مشوار جديد', 'New trip') : L('إضافة', 'Add')) : L('مهمة جديدة', 'New task'); };
   /* the actions, in Mahmoud's order */
   const SRC = [
+    { k: 'daily', sel: '.dailyfab', label: () => L('مهمة اليوم', 'Daily task'), cls: 'daily' },   /* 19 Nov (Ökoplan): what I am doing today — a meeting or work on my project */
     { k: 'add', sel: '.fab', label: addLabel, cls: 'add' },
     { k: 'ai', sel: '.aifab', label: () => L('المساعد', 'Assistant'), cls: 'ai' },
     { k: 'memo', sel: '.memofab', label: () => L('المذكرة', 'Memo'), cls: 'memo' },
@@ -51815,7 +51817,7 @@ html.rdopen,html.rdopen body{overflow:hidden!important;overscroll-behavior:none}
     const out = [];
     if (has(/سلف|advance/) && typeof advanceRoom === 'function') { try { const r = advanceRoom(w); out.push(L(`السلفة: حدّك الشهر ده ${fmtMoney(r.limit)} ${cur} (نص قيمة الأيام اللي اشتغلتها، من غير الإجازات) — طلبت منه ${fmtMoney(r.used)}، فباقي لك ${fmtMoney(r.room)} ${cur}. تقدر تطلب أكتر من سلفة طول ما إنت جوه الحد، ولو محتاج أكتر علّم «طلب استثناء» واكتب السبب.`, `Advance: your limit this month is ${fmtMoney(r.limit)} ${cur} (half the value of the days you worked, leave not counted) — you asked ${fmtMoney(r.used)} of it, so ${fmtMoney(r.room)} ${cur} is left. You can ask more than once while inside the limit; for more, tick «Exception request» and write the reason.`)); } catch (e) { /* skip */ } }
     if (has(/اجاز|إجاز|رصيد|leave/) && typeof leaveBalances === 'function') { try { const b = leaveBalances(w).filter(x => x.type && !x.type.noBalance && x.remaining != null); out.push((b.length ? L('رصيد إجازاتك: ', 'Your leave balance: ') + b.map(x => `${x.type.name}: ${fmtNum(Math.max(0, x.remaining))}`).join(' · ') + '\n' : '') + L('الإجازة بتتطلب من «طلب جديد» ← «إجازة»، ويعتمدها رئيس قسمك وبعدين الموارد البشرية.', 'Leave is asked from «New request» → «Leave»; your head of department approves it, then HR.')); } catch (e) { /* skip */ } }
-    if (has(/بصم|حضور|انصراف|punch|check.?in/) && typeof attendanceFor === 'function') { try { const row = (attendanceFor(todayISO()) || {})[w.id] || null; out.push(row && row.in ? L(`بصمتك النهارده: دخول ${fmtTm(row.in)}${row.out ? ` · انصراف ${fmtTm(row.out)}` : ' · لسه ما سجلتش انصراف'}.`, `Your punches today: in ${fmtTm(row.in)}${row.out ? ` · out ${fmtTm(row.out)}` : ' · no check-out yet'}.`) : L('مفيش بصمة دخول متسجلة ليك النهارده. لو بصمت ومش ظاهرة، ابعتها للدعم وقول الساعة كام والمكان.', 'There is no check-in for you today. If you punched and it is not showing, send it to support with the time and the place.')); } catch (e) { /* skip */ } }
+    if (has(/بصم|حضور|انصراف|punch|check.?in/) && !has(/خط[أا]ء?|error|مش عارف|مش شغال|مش راضي|مشكل|بيطلع/) && typeof attendanceFor === 'function') { try { const row = (attendanceFor(todayISO()) || {})[w.id] || null; out.push(row && row.in ? L(`بصمتك النهارده: دخول ${fmtTm(row.in)}${row.out ? ` · انصراف ${fmtTm(row.out)}` : ' · لسه ما سجلتش انصراف'}.`, `Your punches today: in ${fmtTm(row.in)}${row.out ? ` · out ${fmtTm(row.out)}` : ' · no check-out yet'}.`) : L('مفيش بصمة دخول متسجلة ليك النهارده. لو بصمت ومش ظاهرة، ابعتها للدعم وقول الساعة كام والمكان.', 'There is no check-in for you today. If you punched and it is not showing, send it to support with the time and the place.')); } catch (e) { /* skip */ } }
     return out.join('\n');
   }
   async function botThink(text, page, pics, md) {
@@ -51823,16 +51825,19 @@ html.rdopen,html.rdopen body{overflow:hidden!important;overscroll-behavior:none}
     if (typeof aiAvailable !== 'function' || !aiAvailable() || typeof aiJson !== 'function') return null;
     const W = who(); const w = W.workerId ? byId('workers', W.workerId) : null;
     let facts = ''; try { if (w && sysKey() === 'factory' && typeof askContext === 'function') facts = askContext(w).slice(0, 3500); } catch (e) { facts = ''; }
-    const prompt = `أنت «الدعم الفني» لسيستم إدارة شركة ${coName()}. موظف بيبلّغ عن مشكلة أو سؤال في السيستم.
+    const first = String(W.name || '').trim().split(/\s+/)[0] || '';
+    let guide = ''; try { guide = typeof window.okSupKB === 'function' ? String(window.okSupKB() || '').slice(0, 5000) : ''; } catch (e) { guide = ''; }
+    const prompt = `أنت «الدعم الفني» لسيستم إدارة شركة ${coName()}. موظف${first ? ` اسمه ${first}` : ''} بيبلّغ عن مشكلة أو سؤال في السيستم.
+اتكلم زي زميل محترم وودود وإيجابي: ابدأ باسمه الأول، طمّنه بجملة قصيرة، وادخل في الحل على طول. لو الحل أو المكان موجود في «دليل السيستم» تحت، قوله بالظبط (القايمة ← …). لو محتاج قرار من الإدارة أو صلاحية، قوله إن طلبه وصل للدعم الفني وهيتابع معاه، من غير ما توعد بالقرار. رد بنفس لغة الموظف (مصري أو إنجليزي؛ لو كاتب فرانكو رد بالمصري بالحروف العربي).
 رجّع JSON بس بالشكل ده من غير أي كلام تاني:
 {"kind":"how|rule|bug|access|idea","answer":"","questions":[],"title":"","summary":"","report":"","urgent":false}
 - kind: how = بيسأل إزاي يعمل حاجة في السيستم؛ rule = سؤال عن قاعدة أو لائحة أو رصيد بيتجاوب من بياناته؛ bug = عطل أو حاجة مش شغالة؛ access = مش شايف صفحة أو مالوش صلاحية؛ idea = اقتراح.
-- answer: لو how أو rule وإنت متأكد من الإجابة من البيانات اللي تحت، اكتب رد قصير بالمصري (3 سطور بالكتير). غير كده سيبها فاضية. ما تخترعش خطوات مش متأكد منها وما توعدش بأي قرار.
-- questions: لو الكلام مش واضح كفاية علشان حد يصلّح المشكلة، اسأل سؤال أو اتنين قصيرين جدًا (حصل إيه بالظبط؟ كنت متوقع إيه؟ إمتى؟). لو واضح سيبها [].
+- answer: اكتب دايمًا رد ودود ومفيد (5 سطور بالكتير): how/rule = الحل أو المكان بالظبط من الدليل أو البيانات؛ access = مين بيقرر الصلاحية دي وإن طلبه وصل؛ bug = اعتذار لطيف + حل مؤقت لو فيه في الدليل + إن الدعم الفني استلمها وهيرد عليه؛ idea = شكر + إن الاقتراح وصل للإدارة. ما تخترعش خطوات أو صفحات مش في الدليل، وما توعدش بأي قرار.
+- questions: لو محتاج معلومة علشان تحل المشكلة، اسأل سؤال واحد بس محدد وسهل (مثلاً: «بيظهرلك إيه بالظبط لما تدوس …؟»). لو واضح سيبها [].
 - urgent: true لو باين إن شغله واقف بسبب المشكلة أو مش قادر يكمّل، غير كده false.
 - title: عنوان قصير للمشكلة (6 كلمات بالكتير). summary: سطر واحد للمالك يلخّص المشكلة. ما تكتبش أي مبالغ فلوس في title ولا summary.
 ${hasMedia ? '- report: ملخص مكتوب للمالك من 3 لـ 6 سطور قصيرة بالمصري، كل سطر بيبدأ بكلمة: «بيقول:» (اللي قاله بصوته أو كتبه) / «في الفيديو:» أو «في الصورة:» (اللي باين على الشاشة خطوة بخطوة) / «الصفحة:» / «المطلوب:» (اللي هو عايزه يتصلّح). ما تخترعش حاجة مش باينة ولا مقالة، ومن غير أي مبالغ فلوس.\n' : '- report: سيبها فاضية.\n'}الصفحة اللي كان فيها: ${(page && page.title) || '—'} (${(page && page.hash) || ''}) · الجهاز: ${devTxt(device())} · الدور: ${W.roleName}${W.dept ? ' · القسم: ' + W.dept : ''}
-${facts ? 'بيانات الموظف (ليه هو بس):\n' + facts + '\n' : ''}${pics && pics.length ? 'مرفق صورة من الشاشة — بص عليها وإنت بتحدد المشكلة.\n' : ''}${md.frames.length ? `مرفق ${md.frames.length} صور متتابعة من فيديو لشاشته وهو بيشرح المشكلة (بالترتيب${md.pages && md.pages.length ? '، الصفحات اللي عدّى عليها: ' + md.pages.join(' ← ') : ''}).\n` : ''}${md.said.length ? 'كلامه في الفيديو / رسالة الصوت (مكتوب من صوته):\n' + md.said.join('\n') + '\n' : ''}كلام الموظف: ${text || '(مفيش كلام مكتوب — بص على الصور وكلامه)'}`;
+${guide ? 'دليل السيستم (اللي الموظف ده يقدر يشوفه ويعمله):\n' + guide + '\n' : ''}${facts ? 'بيانات الموظف (ليه هو بس):\n' + facts + '\n' : ''}${pics && pics.length ? 'مرفق صورة من الشاشة — بص عليها وإنت بتحدد المشكلة.\n' : ''}${md.frames.length ? `مرفق ${md.frames.length} صور متتابعة من فيديو لشاشته وهو بيشرح المشكلة (بالترتيب${md.pages && md.pages.length ? '، الصفحات اللي عدّى عليها: ' + md.pages.join(' ← ') : ''}).\n` : ''}${md.said.length ? 'كلامه في الفيديو / رسالة الصوت (مكتوب من صوته):\n' + md.said.join('\n') + '\n' : ''}كلام الموظف: ${text || '(مفيش كلام مكتوب — بص على الصور وكلامه)'}`;
     try {
       let input = prompt; const imgs = [];
       for (const b of (pics || []).slice(0, 2)) { try { imgs.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: await b64Of(b) } }); } catch (e) { /* skip */ } }
@@ -51841,7 +51846,7 @@ ${facts ? 'بيانات الموظف (ليه هو بس):\n' + facts + '\n' : ''}
       const j = await Promise.race([aiJson(input, { max_tokens: hasMedia ? 900 : 600 }), new Promise(res => setTimeout(() => res(null), hasMedia ? 45000 : 25000))]);
       if (!j || typeof j !== 'object') return null;
       const kind = ['how', 'rule', 'bug', 'access', 'idea'].includes(j.kind) ? j.kind : 'bug';
-      return { kind, answer: String(j.answer || '').trim().slice(0, 900), questions: (Array.isArray(j.questions) ? j.questions : []).map(x => String(x || '').trim()).filter(Boolean).slice(0, 2), title: clean(String(j.title || '').trim()).slice(0, 80), summary: clean(String(j.summary || '').trim()).slice(0, 200), report: hasMedia ? clean(String(j.report || '').trim()).slice(0, 1200) : '', urgent: j.urgent === true };
+      return { kind, answer: String(j.answer || '').trim().slice(0, 900), questions: (Array.isArray(j.questions) ? j.questions : []).map(x => String(x || '').trim()).filter(Boolean).slice(0, 1), title: clean(String(j.title || '').trim()).slice(0, 80), summary: clean(String(j.summary || '').trim()).slice(0, 200), report: hasMedia ? clean(String(j.report || '').trim()).slice(0, 1200) : '', urgent: j.urgent === true };
     } catch (e) { return null; }
   }
 
@@ -52032,7 +52037,8 @@ ${facts ? 'بيانات الموظف (ليه هو بس):\n' + facts + '\n' : ''}
     c.step = 'think'; c.msgs.push({ from: 'bot', html: `<div class="tx muted">${esc(md.frames.length || md.said.length ? L('بشوف الفيديو وبكتب الملخص…', 'Watching the video and writing the summary…') : L('بفكّر…', 'Thinking…'))}</div>`, thinking: 1 }); render(false);
     c.md = md; const bot = (said || pics.length || md.frames.length) ? await botThink(said, c.page, pics, md) : null; c.msgs = c.msgs.filter(m => !m.thinking); c.bot = bot;
     if (bot && bot.answer && (bot.kind === 'how' || bot.kind === 'rule')) { c.msgs.push({ from: 'bot', text: bot.answer + '\n' + L('ده حلّ مشكلتك؟', 'Did that solve it?') }); c.step = 'answer'; render(false); return; }
-    if (bot && bot.questions.length) { c.qs = bot.questions; c.msgs.push({ from: 'bot', text: L('عشان نحلها أسرع:', 'To fix it faster:') + '\n' + bot.questions.map(q => '• ' + q).join('\n') }); c.step = 'clarify'; render(false); return; }
+    if (bot && bot.answer) c.msgs.push({ from: 'bot', text: bot.answer });   /* 19 Nov: a warm answer for every kind, then the question or the ticket */
+    if (bot && bot.questions.length) { c.qs = bot.questions; c.msgs.push({ from: 'bot', text: (bot.answer ? '' : L('عشان نحلها أسرع:', 'To fix it faster:') + '\n') + bot.questions.join('\n') }); c.step = 'clarify'; render(false); return; }
     if (!bot && said.length < 40 && !files.length) { c.qs = [L('حصل إيه بالظبط؟ وكنت متوقع إيه يحصل؟', 'What exactly happened, and what did you expect?')]; c.msgs.push({ from: 'bot', text: L('عشان نحلها أسرع: حصل إيه بالظبط؟ وكنت متوقع إيه يحصل؟', 'To fix it faster: what exactly happened, and what did you expect?') }); c.step = 'clarify'; render(false); return; }
     await sendTicket(false);
   };

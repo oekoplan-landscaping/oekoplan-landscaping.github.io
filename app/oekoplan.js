@@ -1727,7 +1727,10 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
     const enq = (isMgr() ? list('enquiries').filter(e => !e.deleted && !['won', 'lost'].includes(e.stage)) : []).map(e => ({ name: e.name, developer: e.developer, stage: e.stage, next: e.nextWhat ? `${e.nextWhat} @ ${e.next}` : e.next, owner: who(e.ownerId) }));
     return { today: T(), me: myName(), role: role(), pipeline: PIPE().map(s => `${s.id}: ${s.name} (${s.riba})`), projects: ps, enquiries: enq, workload: isMgr() ? workload().map(w => `${w.name}: ${w.active} active, ${w.risk} at risk, ${w.idle} idle`) : undefined, alerts: alerts().slice(0, 40).map(a => `${a.sev}: ${a.text}`) };
   };
-  const SYS = () => `You are the Ökoplan Landscaping office assistant (a landscape-architecture consultancy in Egypt; pipeline per RIBA 2020 / ISO 9001 / ISO 19650 / FIDIC). Answer in the language the user writes in (Egyptian Arabic or English), briefly and concretely, using ONLY the data below. Never invent projects, dates or people. No money figures ever. When asked to write an email or message to a client, write it in professional English unless asked otherwise, signed by the user.\nYou can also ACT inside the system. When the user asks you to do something (create a task, log a client event, open a project), answer briefly and append ONE fenced code block whose opening fence is three backticks followed by the word action (\u0060\u0060\u0060action … \u0060\u0060\u0060) containing JSON, e.g. {"type":"create_task","title":"...","project":"OK-031","assignee":"<person name or empty>","due":"YYYY-MM-DD or empty","priority":"normal|high|urgent"} or {"type":"client_event","project":"OK-031","stage":"<stage id>","k":"sub|cmt|res|app|rej","rev":"A","note":"..."} or {"type":"open","project":"OK-031"}. The user confirms before anything is executed, so never claim it is done. People available: ${(typeof window.okTwinPeople === 'function' ? window.okTwinPeople() : [])}. Data (JSON):\n${JSON.stringify(snapshot())}`;
+  const SYS = () => `You are the Ökoplan Landscaping office assistant (a landscape-architecture consultancy in Egypt; pipeline per RIBA 2020 / ISO 9001 / ISO 19650 / FIDIC). Answer in the language the user writes in (Egyptian Arabic or English), briefly and concretely, using ONLY the data below. Never invent projects, dates or people. No money figures ever. When asked to write an email or message to a client, write it in professional English unless asked otherwise, signed by the user.\nYou can also ACT inside the system. When the user asks you to do something (create a task, log a client event, open a project), answer briefly and append ONE fenced code block whose opening fence is three backticks followed by the word action (\u0060\u0060\u0060action … \u0060\u0060\u0060) containing JSON, e.g. {"type":"create_task","title":"...","project":"OK-031","assignee":"<person name or empty>","due":"YYYY-MM-DD or empty","priority":"normal|high|urgent"} or {"type":"client_event","project":"OK-031","stage":"<stage id>","k":"sub|cmt|res|app|rej","rev":"A","note":"..."} or {"type":"open","project":"OK-031"} or, to log the user's own daily task, {"type":"daily","kind":"work|meeting","project":"OK-031 (one of the user's projects; optional for a meeting)","stage":"<stage id>","title":"...","hours":2,"from":"14:00","to":"15:00","place":"office|online|client"}. The user confirms before anything is executed, so never claim it is done.
+Tone: warm, positive and proactive, like a helpful colleague — use the user's first name now and then, answer first, then offer ONE concrete next step you can do for them (create a task, log today's daily task, open the project, draft the client email). If the user sounds stuck or annoyed, acknowledge it in a few words and solve it. For «how / where in the system» questions use the system guide below and give the exact menu path; never invent pages.
+System guide:
+${typeof window.okSupKB === 'function' ? window.okSupKB() : ''} People available: ${(typeof window.okTwinPeople === 'function' ? window.okTwinPeople() : [])}. Data (JSON):\n${JSON.stringify(snapshot())}`;
   const chat = []; let busy = false;
   const askHTML = () => `<div class="okask"><div class="okmsgs" id="okmsgs">${chat.length ? chat.map(m => `<div class="okm ${m.role}">${m.role === 'assistant' ? md(m.text) : esc(m.text)}</div>`).join('') : `<div class="okm hint">${esc(L('اسأل عن مشاريعك: «إيه اللي مستني اعتماد عميل؟» · «لخّصلي OK-031» · «اكتب إيميل متابعة للعميل بتاع …» · «مين عنده أكتر مشاريع؟»', 'Ask about your projects: “what is waiting for client approval?” · “summarise OK-031” · “write a follow-up email to the client of …” · “who has the most projects?”'))}</div>`}${busy ? `<div class="okm assistant">…</div>` : ''}</div><form class="okaskf" id="okaskf"><input name="q" autocomplete="off" placeholder="${esc(L('اكتب سؤالك…', 'Type your question…'))}" dir="auto" ${busy ? 'disabled' : ''}><button class="btn p" ${busy ? 'disabled' : ''}>${icon('send')}</button>${chat.length ? `<button type="button" class="btn ghost" data-okclear="1" title="${esc(L('ابدأ من جديد', 'Start over'))}">${icon('x')}</button>` : ''}</form>${typeof aiAvailable === 'function' && !aiAvailable() ? `<div class="small muted" style="margin-top:6px">${esc(L('المساعد محتاج مفتاح Anthropic على السيرفر — من الإعدادات.', 'The assistant needs the Anthropic key on the server — see Settings.'))}</div>` : ''}</div>`;
   const md = t => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^- (.*)$/gm, '• $1').replace(/\n/g, '<br>');
@@ -2037,6 +2040,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
   const actCard = a => { const p = findProj(a.project); const w = findPerson(a.assignee); if (a.type === 'create_task') return { ok: true, text: L(`تاسك: «${a.title}»${p ? ' · ' + (p.code || p.name) : ''}${w ? ' · ' + w.name : ''}${a.due ? ' · ' + a.due : ''}`, `Task: "${a.title}"${p ? ' · ' + (p.code || p.name) : ''}${w ? ' · ' + w.name : ''}${a.due ? ' · ' + a.due : ''}`), run: async () => { const t = { id: uid(), title: String(a.title || '').slice(0, 160), desc: L('اتعملت من المساعد', 'Created from the assistant'), projectId: p ? p.id : null, assigneeId: w ? w.id : (p ? p.ownerId : null), dueDate: a.due || null, priority: ['high', 'urgent'].includes(a.priority) ? a.priority : 'normal', status: 'open', kind: 'task', source: 'assistant', createdBy: S.session && S.session.id, createdByName: myName(), createdAt: nowISO(), updatedAt: nowISO() }; await Store.save('tasks', t); return L('اتعمل التاسك', 'Task created'); } };
     if (a.type === 'client_event' && p) { const sid = PIPE().some(s => s.id === a.stage) ? a.stage : (PIPE()[SM().stageIdx ? SM().stageIdx(p) : 0] || {}).id; const K = { sub: 'اتسلّم للعميل', cmt: 'تعليقات العميل', res: 'رد المكتب', app: 'اعتماد العميل', rej: 'مرفوض' }; return { ok: true, text: L(`حركة عميل على ${p.code || p.name} · ${(PIPE().find(s => s.id === sid) || {}).ar || sid}: ${K[a.k] || a.k}${a.rev ? ' Rev ' + a.rev : ''}`, `Client event on ${p.code || p.name} · ${(PIPE().find(s => s.id === sid) || {}).name || sid}: ${a.k}${a.rev ? ' rev ' + a.rev : ''}`), run: async () => { const S2 = Object.assign({}, p.okSub || {}); const cur = Object.assign({ events: [] }, S2[sid] || {}); cur.events = (cur.events || []).concat([{ k: ['sub', 'cmt', 'res', 'app', 'rej'].includes(a.k) ? a.k : 'sub', at: T(), rev: a.rev || '', note: a.note || '', by: myName(), viaAssistant: true }]); S2[sid] = cur; await Store.update('projects', p.id, { okSub: S2 }); return L('اتسجّلت الحركة', 'Event recorded'); } }; }
     if (a.type === 'open' && p) return { ok: true, text: L(`افتح ${p.code || p.name}`, `Open ${p.code || p.name}`), run: async () => { go('projects/' + p.id); return ''; } };
+    if (a.type === 'daily' && typeof window.okDailyAct === 'function') return window.okDailyAct(a);   /* 19 Nov: «I'm in a meeting 2–3» / «working on OK-031 today» */
     return { ok: false, text: L('مش فاهم الأكشن ده أو المشروع مش موجود', 'Unknown action or project not found') }; };
   const pending = {};
   const mo = new MutationObserver(() => { const box = document.getElementById('okmsgs'); if (!box) return; box.querySelectorAll('.okm.assistant').forEach(m => { if (m.dataset.okact) return; m.dataset.okact = '1'; const txt = m.textContent || ''; const mm = /```action\s*([\s\S]*?)```/.exec(txt.replace(/<br>/g, '\n')); if (!mm) return; let a = null; try { a = JSON.parse(mm[1].trim()); } catch (e) { return; } const c = actCard(a); const id = 'a' + uid(); pending[id] = c; m.innerHTML = m.innerHTML.replace(/```action[\s\S]*?```/, ''); m.insertAdjacentHTML('beforeend', `<div class="okactc"><span>⚡ ${esc(c.text)}</span>${c.ok ? `<button type="button" class="btn xs p" data-okrun="${id}">${esc(L('نفّذ', 'Do it'))}</button>` : ''}</div>`); }); });
@@ -6193,3 +6197,171 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try { document.querySelectorAll('[data-action="stuProjectEdit"]').forEach(b => { const p = byId('projects', b.dataset.arg); if (p && !canEditProj(p)) b.remove(); }); } catch (e) { /* ignore */ } });
   if (typeof Store === 'object' && Store.save) Store.save = (base => async function (col) { try { return await base.apply(this, arguments); } catch (e) { const m = String(e && (e.message || e)); if (col === 'projects' && /project_edit_owner_only|project_owner_change_pmo_only/.test(m)) { toast(/pmo_only/.test(m) ? L('تغيير الـ Project Owner من رئيسة الـ PMO أو الـ CEO', 'The Head of PMO or the CEO changes the Project Owner') : NO(), 'err'); return null; } throw e; } })(Store.save);
 } catch (e) { console.warn('oeko po edit', e); } })();
+
+/* ============ «مهمة اليوم» — Daily task from the + menu (19 Nov) ============
+   Mahmoud: «في علامة البلس ديلي تاسك … كل واحد يخش … احنا هنشتغل بس الأول كولكتنج للداتا عشان نعرف كل واحد على المشروع بيعمل إيه …
+   انا النهارده في ميتنج من الساعة كذا للساعة كذا (روم هاوس / أونلاين / عند الكلاينت) … أو بيعمل تاسك في المشروع الفلاني في المرحلة الفلانية …
+   بالشكل السمارت» + «بيظهرله مشاريعه هو فقط».
+   · two kinds: work on one of HIS projects (stage = the project's current stage, suggestions = his open tasks there) · a meeting (today's
+     meetings from the Meetings page in one tap; from–to; in the office / online / at the client; project optional);
+   · seen by the person, the CEO and the Head of PMO only (ok_daily, RPCs) — the page «مهام اليوم» is theirs;
+   · a gentle nudge on the home page after 11:00 on a working day when nothing is logged yet. */
+(() => { try {
+  if (window.__OK_DAILY__) return; window.__OK_DAILY__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en'; const L = (a, b) => (en() ? b : a);
+  const meId = () => (S.session && S.session.workerId) || '';
+  const PIPE = () => window.OEKO_PIPELINE || [];
+  const stName = id => { const s = PIPE().find(x => x.id === id); return s ? (en() ? s.name : (s.ar || s.name)) : (id || ''); };
+  const curStage = p => (p && (p.osStatus || p.stage)) || ((PIPE()[0] || {}).id || '');
+  const pmo = () => { try { return !!(window.okAccess && window.okAccess.isPMO && window.okAccess.isPMO()); } catch (e) { return false; } };
+  const boss = () => { try { return isAdmin() || pmo(); } catch (e) { return false; } };
+  const T = () => todayISO();
+  const isMineP = (p, m) => !!p && (p.ownerId === m || p.leadId === m || (p.team || []).includes(m) || (p.coOwnerIds || []).includes(m));
+  const myProjects = () => { const m = meId(); if (!m) return []; const last = lastPid(); return list('projects').filter(p => !['archived', 'done', 'cancelled'].includes(p.status) && isMineP(p, m)).sort((a, b) => (b.id === last) - (a.id === last) || String(a.code || a.name).localeCompare(String(b.code || b.name))); };
+  const lastKey = () => 'ok.daily.last.' + meId();
+  const lastPid = () => { try { return localStorage.getItem(lastKey()) || ''; } catch (e) { return ''; } };
+  const rpc = async (fn, args) => { const r = await S.sb.rpc(fn, args); if (r.error) throw r.error; return r.data; };
+  const hm = s => String(s || '').slice(0, 5);
+  const durH = r => { if (r.hours) return +r.hours; if (r.t_from && r.t_to) { const [a, b] = [r.t_from, r.t_to].map(x => { const [h, m] = x.split(':').map(Number); return h * 60 + (m || 0); }); return b > a ? Math.round((b - a) / 6) / 10 : 0; } return 0; };
+  const PLACE = () => ({ office: L('في المكتب', 'In the office'), online: L('أونلاين', 'Online'), client: L('عند العميل', 'At the client') });
+  const pName = id => { const p = id && byId('projects', id); return p ? `${p.code ? p.code + ' · ' : ''}${p.name || ''}` : ''; };
+  const line = r => r.kind === 'meeting'
+    ? `🗓 <bdi dir="ltr">${hm(r.t_from)}${r.t_to ? '–' + hm(r.t_to) : ''}</bdi> · ${esc(PLACE()[r.mplace] || L('ميتنج', 'Meeting'))}${r.title ? ' · ' + esc(r.title) : ''}${r.project_id ? ' · ' + esc(pName(r.project_id)) : ''}`
+    : `🛠 ${esc(pName(r.project_id))} · ${esc(stName(r.stage))}${r.title ? ' · ' + esc(r.title) : ''}${r.hours ? ' · ' + r.hours + L(' س', ' h') : ''}`;
+  let mine = [], mineDay = '';
+  const loadMine = async () => { const d = T(); try { mine = (await rpc('nf_ok_daily_mine', { p_from: d, p_to: d })) || []; mineDay = d; } catch (e) { /* offline: keep */ } return mine; };
+  window.okDaily = { loadMine, mine: () => mine };
+
+  /* today's meetings from the Meetings page that are his */
+  const todaysMeetings = () => { const m = meId(); const sid = S.session && S.session.id; try { return list('meetings').filter(x => x && x.at && String(x.at).slice(0, 10) === T() && x.status !== 'cancelled' && (x.hostId === sid || x.hostId === m || (Array.isArray(x.invitees) && x.invitees.some(i => i === m || i === sid || (i && (i.id === m || i.id === sid)))))); } catch (e) { return []; } };
+  const tasksOn = pid => { const m = meId(); try { return list('tasks').filter(t => t.projectId === pid && t.assigneeId === m && ['open', 'doing'].includes(t.status) && !['update', 'notice', 'daily'].includes(t.kind)).slice(0, 6); } catch (e) { return []; } };
+  const GENERIC = () => [L('رسومات', 'Drawings'), L('تعديلات العميل', 'Client revisions'), L('تنسيق', 'Coordination'), L('حصر كميات / BOQ', 'Quantities / BOQ'), L('بريزنتيشن', 'Presentation'), L('زيارة موقع', 'Site visit')];
+  const opt = (v, t, sel) => `<option value="${esc(v)}" ${sel ? 'selected' : ''}>${esc(t)}</option>`;
+  const stageOpts = sel => PIPE().map(s => opt(s.id, stName(s.id), s.id === sel)).join('');
+  const nowHM = add => { const d = new Date(Date.now() + (add || 0) * 60000); d.setMinutes(Math.ceil(d.getMinutes() / 15) * 15, 0, 0); return d.toTimeString().slice(0, 5); };
+  const chips = (xs, attr) => xs.map(x => `<button type="button" class="okdc" ${attr}="${esc(x)}">${esc(x)}</button>`).join('');
+  const CSS = `<style>.okdf .seg2{display:flex;gap:6px;margin-bottom:12px}.okdf .seg2 label{flex:1;border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;cursor:pointer;font-weight:600}.okdf .seg2 input{display:none}.okdf .seg2 label:has(input:checked){background:var(--brand,#50b1e7);color:#fff;border-color:transparent}
+.okdf .okdc{border:1px solid var(--line);background:var(--surface-2,#f4f6f8);border-radius:999px;padding:4px 10px;font-size:12.5px;cursor:pointer;margin:0 4px 6px 0}.okdf .okdc:hover{border-color:var(--brand,#50b1e7)}.okdf .row3{display:flex;gap:8px;flex-wrap:wrap}.okdf .row3>.field{flex:1;min-width:120px}
+.okdf .pl{display:flex;gap:6px;flex-wrap:wrap}.okdf .pl label{border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:13px}.okdf .pl input{display:none}.okdf .pl label:has(input:checked){background:var(--good-soft,#e8f5ee);border-color:var(--good,#2e9d63);font-weight:600}
+.okdf .today{background:var(--surface-2,#f4f6f8);border-radius:12px;padding:8px 10px;margin-bottom:12px;font-size:13px}.okdf .today div{display:flex;align-items:center;gap:6px;padding:3px 0}.okdf .today button{margin-inline-start:auto;border:0;background:none;color:var(--muted);cursor:pointer}
+.okdf [data-sec][hidden]{display:none}.okdf .hint{font-size:12px;color:var(--muted);margin:-4px 0 8px}</style>`;
+  const form = () => {
+    const ps = myProjects(); const p0 = ps[0]; const ms = todaysMeetings(); const kind0 = ps.length ? 'work' : 'meeting';
+    const todayL = mine.length ? `<div class="today"><b>${esc(L('سجّلت النهارده:', 'Logged today:'))}</b>${mine.map(r => `<div>${line(r)}<button type="button" data-okdd="${esc(r.id)}" title="${esc(L('امسح', 'Delete'))}">✕</button></div>`).join('')}</div>` : '';
+    return `${CSS}<div class="okdf">${todayL}
+      <div class="seg2"><label><input type="radio" name="kind" value="work" ${kind0 === 'work' ? 'checked' : ''}>🛠 ${esc(L('شغل على مشروع', 'Project work'))}</label><label><input type="radio" name="kind" value="meeting" ${kind0 === 'meeting' ? 'checked' : ''}>🗓 ${esc(L('ميتنج', 'Meeting'))}</label></div>
+      <div data-sec="work" ${kind0 === 'work' ? '' : 'hidden'}>${ps.length ? `
+        <div class="row3"><div class="field"><label>${esc(L('المشروع', 'Project'))}</label><select name="project_id">${ps.map(p => opt(p.id, `${p.code ? p.code + ' · ' : ''}${p.name || ''}`, p === p0)).join('')}</select></div>
+        <div class="field"><label>${esc(L('المرحلة', 'Stage'))}</label><select name="stage">${stageOpts(curStage(p0))}</select></div></div>
+        <div class="field"><label>${esc(L('بتعمل إيه؟', 'What are you doing?'))}</label><input name="w_title" maxlength="200" placeholder="${esc(L('مثلاً: Planting plan للمدخل', 'e.g. Planting plan for the entrance'))}"></div>
+        <div class="okdsug">${chips(tasksOn(p0 && p0.id).map(t => t.title).concat(GENERIC()), 'data-okdt')}</div>
+        <div class="field"><label>${esc(L('هتاخد قد إيه؟ (اختياري)', 'How long? (optional)'))}</label><div class="pl">${[1, 2, 3, 4, 6, 8].map(h => `<label><input type="radio" name="hours" value="${h}">${h}${L(' س', ' h')}</label>`).join('')}</div></div>`
+        : `<div class="empty small">${esc(L('مفيش مشاريع عليك لسه. سجّل ميتنج، أو كلّم رئيسة الـ PMO تضيفك على مشروعك.', 'No projects on you yet. Log a meeting, or ask the Head of PMO to add you to your project.'))}</div>`}</div>
+      <div data-sec="meeting" ${kind0 === 'meeting' ? '' : 'hidden'}>
+        ${ms.length ? `<div class="hint">${esc(L('ميتنجات النهارده من صفحة الاجتماعات — دوس عشان تملا لوحدها:', 'Today\'s meetings from the Meetings page — tap to fill in:'))}</div><div>${ms.map(x => `<button type="button" class="okdc" data-okdm="${esc(x.id)}">${esc(new Date(x.at).toTimeString().slice(0, 5))} · ${esc(x.title || L('ميتنج', 'Meeting'))}</button>`).join('')}</div>` : ''}
+        <div class="row3"><div class="field"><label>${esc(L('من', 'From'))}</label><input type="time" name="t_from" value="${nowHM(0)}"></div><div class="field"><label>${esc(L('لـ', 'To'))}</label><input type="time" name="t_to" value="${nowHM(60)}"></div></div>
+        <div class="field"><label>${esc(L('فين؟', 'Where?'))}</label><div class="pl">${Object.entries(PLACE()).map(([k, t], i) => `<label><input type="radio" name="mplace" value="${k}" ${i === 0 ? 'checked' : ''}>${esc(t)}</label>`).join('')}</div></div>
+        <div class="row3"><div class="field"><label>${esc(L('مع مين / عن إيه', 'With whom / about'))}</label><input name="m_title" maxlength="200" placeholder="${esc(L('مثلاً: العميل — مراجعة الكونسبت', 'e.g. Client — concept review'))}"></div>
+        <div class="field"><label>${esc(L('على مشروع؟ (اختياري)', 'On a project? (optional)'))}</label><select name="m_project">${opt('', L('مش على مشروع', 'Not on a project'), true)}${ps.map(p => opt(p.id, `${p.code ? p.code + ' · ' : ''}${p.name || ''}`)).join('')}</select></div></div>
+      </div></div>`;
+  };
+  const save = async payload => { const r = await rpc('nf_ok_daily_save', { p: payload }); try { if (payload.project_id) localStorage.setItem(lastKey(), payload.project_id); } catch (e) { /* */ } await loadMine(); return r; };
+  const errMsg = e => { const m = String(e && (e.message || e) || ''); return /not_your_project/.test(m) ? L('المشروع ده مش من مشاريعك', 'That project is not one of yours') : /project_needed/.test(m) ? L('اختار المشروع', 'Pick the project') : /no_worker/.test(m) ? L('حسابك مش مربوط بموظف', 'Your account is not linked to an employee') : L('ماتسجّلتش — جرّب تاني', 'Not saved — try again'); };
+  ACTIONS.okDaily = async () => {
+    if (!S.session || !meId()) { toast(L('مهمة اليوم للموظفين', 'The daily task is for employees'), 'err'); return; }
+    if (mineDay !== T()) await loadMine();
+    openModal({ title: L('مهمة اليوم', 'Daily task'), submitLabel: L('سجّل', 'Log it'), body: form(), onSubmit: async f => {
+      const d = formData(f); let payload;
+      if (d.kind === 'meeting') { if (!d.t_from) { toast(L('اكتب الميعاد', 'Enter the time'), 'err'); return false; } if (d.t_to && d.t_to <= d.t_from) { toast(L('الميعاد «لـ» لازم بعد «من»', '«To» must be after «From»'), 'err'); return false; } payload = { kind: 'meeting', t_from: d.t_from, t_to: d.t_to || '', mplace: d.mplace || 'office', title: d.m_title || '', project_id: d.m_project || '' }; }
+      else { if (!d.project_id) { toast(L('اختار المشروع', 'Pick the project'), 'err'); return false; } payload = { kind: 'work', project_id: d.project_id, stage: d.stage || '', title: d.w_title || '', hours: d.hours || '' }; }
+      try { await save(payload); toast(L('اتسجّلت ✓ — تقدر تضيف كمان من + ← «مهمة اليوم»', 'Logged ✓ — add more from + → «Daily task»')); rerender(); return true; } catch (e) { toast(errMsg(e), 'err'); return false; } } });
+  };
+  /* the form's smart bits */
+  document.addEventListener('change', ev => { const f = ev.target.closest && ev.target.closest('.okdf'); if (!f) return; const n = ev.target.name;
+    if (n === 'kind') f.querySelectorAll('[data-sec]').forEach(s => { s.hidden = s.dataset.sec !== ev.target.value; });
+    if (n === 'project_id') { const p = byId('projects', ev.target.value); const st = f.querySelector('[name=stage]'); if (st) st.value = curStage(p); const sg = f.querySelector('.okdsug'); if (sg) sg.innerHTML = chips(tasksOn(p && p.id).map(t => t.title).concat(GENERIC()), 'data-okdt'); } });
+  document.addEventListener('click', async ev => { const t = ev.target.closest && ev.target.closest('[data-okdt],[data-okdm],[data-okdd]'); if (!t || !t.closest('.okdf')) return; ev.preventDefault(); const f = t.closest('.okdf');
+    if (t.dataset.okdt != null) { const i = f.querySelector('[name=w_title]'); if (i) { i.value = t.dataset.okdt; i.focus(); } return; }
+    if (t.dataset.okdm) { const m = byId('meetings', t.dataset.okdm); if (!m) return; const a = new Date(m.at); const set = (n, v) => { const el = f.querySelector(`[name=${n}]`); if (el) el.value = v; }; set('t_from', a.toTimeString().slice(0, 5)); set('t_to', new Date(a.getTime() + 3600000).toTimeString().slice(0, 5)); set('m_title', m.title || ''); const on = f.querySelector('[name=mplace][value=online]'); if (on && (m.link || m.room)) on.checked = true; return; }
+    if (t.dataset.okdd) { try { await rpc('nf_ok_daily_del', { p_id: t.dataset.okdd }); await loadMine(); const row = t.closest('div'); if (row) row.remove(); toast(L('اتمسحت', 'Deleted')); } catch (e) { toast(L('ماتمسحتش — جرّب تاني', 'Not deleted — try again'), 'err'); } } });
+
+  /* the + button */
+  const fab = () => { const want = !!(S.session && meId() && S.sb && (typeof role !== 'function' || role() !== 'kiosk')); let b = document.querySelector('.dailyfab'); if (!want) { if (b) b.remove(); return; } if (!b) document.body.insertAdjacentHTML('beforeend', `<button type="button" class="dailyfab" data-action="okDaily" title="${esc(L('مهمة اليوم', 'Daily task'))}" aria-label="${esc(L('مهمة اليوم', 'Daily task'))}">📝</button>`); };
+  document.head.insertAdjacentHTML('beforeend', `<style>.dailyfab{position:fixed;left:18px;bottom:calc(350px + env(safe-area-inset-bottom,0px));width:54px;height:54px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;z-index:60;cursor:pointer;font-size:20px}body.printing .dailyfab,body.fab-hide .dailyfab,body.nf-typing .dailyfab,body.nf-chatpage .dailyfab,body.stuboard .dailyfab,body:has(.side.open) .dailyfab{display:none!important}
+.okdn{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#eef8fd,#e8f5f1);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:12px}.okdn b{flex:1}.okdn .x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px}html[data-theme="dark"] .okdn{background:linear-gradient(135deg,#14313f,#12322b)}</style>`);
+
+  /* the nudge on the home page: a working day, after 11:00, nothing logged yet */
+  let nudgeChecked = '';
+  const nudgeKey = () => 'ok.daily.nudge.' + meId() + '.' + T();
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    fab(); if (!S.session || !meId() || isAdmin()) return; const r = S.route || {}; const home = typeof homeView === 'function' ? homeView() : ''; if (r.view !== home || r.id) return;
+    const d = new Date(); if ([5, 6].includes(d.getDay()) || d.getHours() < 11) return; try { if (localStorage.getItem(nudgeKey())) return; } catch (e) { /* */ }
+    const v = document.getElementById('view'); if (!v || v.querySelector('.okdn')) return;
+    const show = () => { if (mine.length || v.querySelector('.okdn')) return; v.insertAdjacentHTML('afterbegin', `<div class="okdn">📝 <b>${esc(L('سجّل مهمة النهارده — بتشتغل على إيه؟', 'Log today\'s task — what are you working on?'))}</b><button type="button" class="btn sm p" data-action="okDaily">${esc(L('سجّل', 'Log it'))}</button><button type="button" class="x" data-okdx="1" aria-label="${esc(L('إخفاء', 'Hide'))}">✕</button></div>`); };
+    if (mineDay === T()) show(); else if (nudgeChecked !== T()) { nudgeChecked = T(); loadMine().then(show); }
+  } catch (e) { /* ignore */ } });
+  document.addEventListener('click', ev => { const x = ev.target.closest && ev.target.closest('[data-okdx]'); if (!x) return; try { localStorage.setItem(nudgeKey(), '1'); } catch (e) { /* */ } const c = x.closest('.okdn'); if (c) c.remove(); });
+
+  /* the assistant can log it too: {"type":"daily", …} */
+  window.okDailyAct = a => { const ps = myProjects(); const ref = String(a.project || '').trim().toLowerCase(); const p = ref ? (ps.find(x => String(x.code || '').toLowerCase() === ref) || ps.find(x => String(x.name || '').toLowerCase().includes(ref))) : null;
+    const kind = a.kind === 'meeting' ? 'meeting' : 'work'; if (kind === 'work' && !p) return { ok: false, text: L('المشروع ده مش من مشاريعك', 'That project is not one of yours') };
+    const payload = kind === 'meeting' ? { kind, t_from: a.from || nowHM(0), t_to: a.to || '', mplace: ['office', 'online', 'client'].includes(a.place) ? a.place : 'office', title: a.title || '', project_id: p ? p.id : '' } : { kind, project_id: p.id, stage: PIPE().some(s => s.id === a.stage) ? a.stage : curStage(p), title: a.title || '', hours: a.hours || '' };
+    return { ok: true, text: L('مهمة اليوم: ', 'Daily task: ') + line(Object.assign({}, payload)).replace(/&[^;]+;/g, ''), run: async () => { await save(payload); return L('اتسجّلت في مهمة اليوم ✓', 'Logged in the daily task ✓'); } }; };
+
+  /* ---------- «مهام اليوم» — the CEO and the Head of PMO see everyone's ---------- */
+  const cache = { key: '', rows: null, busy: false };
+  const fetchAll = (from, to) => { const key = from + '|' + to; if (cache.key === key && cache.rows) return cache.rows; if (!cache.busy) { cache.busy = true; rpc('nf_ok_daily_all', { p_from: from, p_to: to }).then(rows => { cache.key = key; cache.rows = rows || []; }).catch(() => { cache.key = key; cache.rows = []; }).finally(() => { cache.busy = false; if (S.route && S.route.view === 'okdaily') rerender(); }); } return null; };
+  const pageDay = () => (S.ui && S.ui.okDailyDay) || T();
+  const page = () => {
+    if (!boss()) return `<div class="banner warn">${esc(L('الصفحة دي للـ CEO ورئيسة الـ PMO', 'This page is for the CEO and the Head of PMO'))}</div>`;
+    const day = pageDay(); const from = new Date(new Date(day + 'T12:00:00').getTime() - 6 * 864e5).toISOString().slice(0, 10);
+    const rows = fetchAll(from, day); if (!rows) return `<div class="empty"><b>${esc(L('بنجيب البيانات…', 'Loading…'))}</b></div>`;
+    const todayRows = rows.filter(r => r.day === day); const by = {}; todayRows.forEach(r => { (by[r.wid] = by[r.wid] || []).push(r); });
+    const staff = list('workers').filter(w => w && w.status !== 'inactive' && w.status !== 'left' && !['kiosk', 'admin'].includes(w.role) && w.id !== 'okplayreview');
+    const missing = staff.filter(w => !by[w.id]).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    const ppl = Object.keys(by).map(id => ({ w: byId('workers', id) || { name: id }, xs: by[id] })).sort((a, b) => String(a.w.name).localeCompare(String(b.w.name)));
+    const agg = {}; rows.forEach(r => { if (!r.project_id) return; const k = r.project_id + '|' + (r.stage || (r.kind === 'meeting' ? 'meeting' : '')); const a = agg[k] = agg[k] || { pid: r.project_id, st: r.stage, meet: r.kind === 'meeting', h: 0, n: 0, ppl: new Set() }; a.h += durH(r); a.n++; a.ppl.add(r.wid); });
+    const aggRows = Object.values(agg).sort((a, b) => b.h - a.h || b.n - a.n).slice(0, 40);
+    return `<style>.okdp .pp{border-bottom:1px solid var(--line);padding:8px 0}.okdp .pp:last-child{border:0}.okdp .pp div{font-size:13px;padding:2px 0}.okdp .miss span{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:2px 9px;margin:0 4px 6px 0;font-size:12px}</style>
+      <div class="okdp stack"><div class="card"><div class="cardhead"><h3 style="margin:0">${esc(L('مهام اليوم', 'Daily tasks'))}</h3><div class="grow"></div><input type="date" class="input" style="max-width:170px" value="${esc(day)}" data-okdday="1"></div>
+        <div class="small muted" style="margin-bottom:8px">${esc(L(`سجّلوا: ${ppl.length} من ${staff.length}`, `Logged: ${ppl.length} of ${staff.length}`))}</div>
+        ${ppl.length ? ppl.map(x => `<div class="pp"><b>${esc(x.w.name || '')}</b> <span class="tiny muted">${esc(x.w.title || '')}</span>${x.xs.map(r => `<div>${line(r)}</div>`).join('')}</div>`).join('') : `<div class="empty small">${esc(L('محدش سجّل لسه في اليوم ده', 'Nobody logged this day yet'))}</div>`}</div>
+      ${missing.length ? `<div class="card okdp"><h3 style="margin:0 0 8px;font-size:14px">${esc(L('لسه ما سجّلوش', 'Not logged yet'))} · ${missing.length}</h3><div class="miss">${missing.map(w => `<span>${esc(w.name || '')}</span>`).join('')}</div></div>` : ''}
+      <div class="card"><h3 style="margin:0 0 8px;font-size:14px">${esc(L('آخر 7 أيام — الوقت على كل مشروع ومرحلة', 'Last 7 days — time per project and stage'))}</h3>${aggRows.length ? `<div class="tablewrap"><table><thead><tr><th>${esc(L('المشروع', 'Project'))}</th><th>${esc(L('المرحلة', 'Stage'))}</th><th>${esc(L('ساعات', 'Hours'))}</th><th>${esc(L('مرات', 'Entries'))}</th><th>${esc(L('أشخاص', 'People'))}</th></tr></thead><tbody>${aggRows.map(a => `<tr><td>${esc(pName(a.pid))}</td><td>${esc(a.meet && !a.st ? L('ميتنجات', 'Meetings') : stName(a.st))}</td><td class="num">${a.h ? Math.round(a.h * 10) / 10 : '—'}</td><td class="num">${a.n}</td><td class="num">${a.ppl.size}</td></tr>`).join('')}</tbody></table></div>` : `<div class="empty small">${esc(L('لسه مفيش بيانات', 'No data yet'))}</div>`}</div></div>`;
+  };
+  document.addEventListener('change', ev => { const t = ev.target; if (!t || !t.dataset || !t.dataset.okdday) return; S.ui = S.ui || {}; S.ui.okDailyDay = t.value || T(); cache.key = ''; rerender(); });
+  if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.okdaily = () => page();
+  if (typeof EXTRA_TITLES === 'object') EXTRA_TITLES.okdaily = () => ({ title: L('مهام اليوم', 'Daily tasks'), sub: L('كل واحد بيعمل إيه النهارده — ميتنجات وشغل على المشاريع', 'What everyone is doing today — meetings and project work') });
+  if (typeof VIEW_TITLES === 'object') try { Object.defineProperty(VIEW_TITLES, 'okdaily', { configurable: true, enumerable: true, get: () => L('مهام اليوم', 'Daily tasks') }); } catch (e) { /* */ }
+  if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okdaily')) { const at = NAV.findIndex(n => n && n.id === 'okpmo'); NAV.splice(at >= 0 ? at + 1 : 2, 0, { id: 'okdaily', label: 'مهام اليوم', short: 'مهام اليوم', icon: 'check' }); }
+  if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okdaily')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okdaily']); });
+  if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okdaily') return !!S.session && boss(); return base.apply(this, arguments); })(canSee);
+  if (typeof OEKO_I18N === 'object') OEKO_I18N['مهام اليوم'] = 'Daily tasks';
+} catch (e) { console.warn('oeko daily', e); } })();
+
+/* ============ The system guide for the support bot and the assistant (19 Nov) ============
+   Mahmoud: «الدعم الفني … اكتف شوية مع الناس … يشوفوا إيه المشكلة وإيه اللي ممكن هم عايزينه … ازاي نحل الموضوع بشكل بروفيشنال … والـ AI assist».
+   Where things are, in the person's own words of the menu, and only what this person can open. */
+(() => { try {
+  if (window.__OK_SUPKB__) return; window.__OK_SUPKB__ = 1;
+  const meW = () => { try { return S.session && S.session.workerId ? byId('workers', S.session.workerId) : null; } catch (e) { return null; } };
+  const can = v => { try { return typeof canSee === 'function' && canSee(v); } catch (e) { return false; } };
+  const pmo = () => { try { return !!(window.okAccess && window.okAccess.isPMO && window.okAccess.isPMO()); } catch (e) { return false; } };
+  window.okSupKB = () => { const w = meW(); const flex = !!(w && window.okIsFlex && window.okIsFlex(w)); const out = [];
+    out.push(flex ? '- البصمة (مديرين بمواعيد مرنة): من الموبايل علامة + ← «البصمة» في أي وقت ومن أي مكان، حضور لما يبدأ وانصراف لما يخلّص. مفيش تأخير ولا غياب بيتحسب.'
+      : '- البصمة: افتح السيستم على الكمبيوتر بحسابك ← «تسجيل الحضور» ← هيطلع كود QR ← من الموبايل علامة + ← «امسح الكود». لازم يكون جوه المكتب (100 متر). أول مرة الموبايل ممكن يطلب الموقع: «اسمح». لو نسيت بصمة: «طلب جديد» ← «نسيان بصمة».');
+    out.push('- مهمة اليوم: علامة + ← «مهمة اليوم»: «شغل على مشروع» (المشروع من مشاريعك + المرحلة + بتعمل إيه) أو «ميتنج» (من–لـ، في المكتب / أونلاين / عند العميل). ممكن أكتر من واحدة في اليوم.');
+    out.push('- المهام والتحديثات: القايمة ← «التواصل» ← «المهام والتحديثات». الرقم جنبها = الحاجات المفتوحة عليك (مهام، تنبيهات، تقارير). بعد ما تخلّص دوس «تم» والرقم يقل.');
+    out.push('- الطلبات (إجازة، إذن، نسيان بصمة، سلفة): من «بوابتي» ← «طلب جديد»، ويعتمدها المدير المباشر.');
+    out.push('- صفحة المشروع: القايمة ← «المشاريع» ← اختار المشروع. زرار «تعديل» (الكود، ميعاد التسليم، أعضاء الفريق) للـ Project Owner بتاع المشروع ورئيسة الـ PMO والـ CEO بس. تغيير الـ Project Owner من رئيسة الـ PMO أو الـ CEO.');
+    if (can('okteam')) out.push('- «فريقي»: حالة كل واحد على مشاريعك النهارده (حاضر من الساعة كام / في بريك / أجازة / انصرف / لسه ماحضرش). عمود «حضور» = أيام الحضور الشهر ده (المديرين بمواعيد مرنة بيتحسب لهم كل يوم شغل).');
+    if (can('oktimeline')) out.push('- «تايم لاين المشاريع»: القايمة ← «المشاريع» ← «تايم لاين المشاريع»: كل المشاريع على خط زمني (المخطط والفعلي، المسار الحرج، الزحمة، حمل الشغل).');
+    if (can('okdash')) out.push('- «لوحة المكتب»: من القايمة. قسم «الفلوس» الأرقام بتظهر بالضغط على العين وبتتخفى بعد 20 ثانية.');
+    if (can('okdaily')) out.push('- «مهام اليوم» (إدارة المشروعات): مين سجّل إيه النهارده ومين لسه، والوقت على كل مشروع ومرحلة آخر 7 أيام.');
+    if (pmo() || (typeof isAdmin === 'function' && isAdmin())) out.push('- «طلبات الموافقة» (إدارة المشروعات): الحاجات اللي مستنية موافقة قبل ما تتنفذ.');
+    out.push('- الأبلكيشن على الموبايل: القايمة ← «نزّل الأبلكيشن».');
+    out.push('- لو حاجة جديدة مش ظاهرة: ريفرش (السيستم بيتحدّث لوحده كمان). لو فيه خطأ: علامة + ← «صوّر الشاشة» وابعتها للدعم الفني.');
+    out.push('- الدعم الفني: من القايمة «الدعم الفني» — اكتب المشكلة أو سجّل فويس أو صوّر الشاشة.');
+    try { const pages = (Array.isArray(NAV) ? NAV : []).filter(n => n && n.id && can(n.id)).map(n => (typeof I18N !== 'undefined' && I18N.lang === 'en' && typeof tr === 'function') ? tr(n.label) : n.label).filter(Boolean); if (pages.length) out.push('- الصفحات اللي يقدر يفتحها: ' + Array.from(new Set(pages)).slice(0, 60).join('، ')); } catch (e) { /* */ }
+    return out.join('\n'); };
+} catch (e) { console.warn('oeko supkb', e); } })();
