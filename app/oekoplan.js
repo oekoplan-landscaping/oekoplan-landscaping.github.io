@@ -6989,3 +6989,133 @@ html[data-theme="dark"] .okst .pill.okp-g{color:#5fd3a0}html[data-theme="dark"] 
     const [pid, k] = (t.dataset.okpstok || t.dataset.okpstno).split(':'); return decide(pid, +k, !!t.dataset.okpstok); });
   if (typeof OEKO_I18N === 'object') Object.assign(OEKO_I18N, { 'مستندات الطرح (IFT)': 'Tender Documents (IFT)', 'الرسومات التنفيذية (IFC)': 'Construction Documents (IFC)' });
 })();
+
+/* =====================================================================
+   22 Nov 2026 (Rawan's ticket, Mahmoud: «ابنيه دلوقتي»): the calendar — «الكالندر» under Communication.
+   · Everyone's own calendar, month and week (the phone opens on the week list): his appointments (in the office, at the client,
+     on site, a submission, anything else), the Zoom / Meet meetings he made or is invited to, his projects' client deadlines and
+     planned stage ends, and his open tasks with a due date.
+   · «+ Appointment»: title, kind, day, from–to (or all day), place, project, who is on it (they are told), notes.
+     Ahmed (the CEO's assistant) puts appointments on Dr. Tarek's calendar by adding «Dr. Tarek» to the people.
+   · Data: docs col «okcal» — seen by whoever made it, the people on it and the CEO (server: nf_okcal_vis).
+   · Outlook: once the office mail is connected, the same appointments sync — not yet.
+   ===================================================================== */
+(() => {
+  if (window.__OK_CAL__) return; window.__OK_CAL__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const COL = 'okcal';
+  if (typeof COLS !== 'undefined' && Array.isArray(COLS) && !COLS.includes(COL)) COLS.push(COL);
+  S.data[COL] = S.data[COL] || new Map();
+  if (typeof Store === 'object' && typeof Store.subscribeAll === 'function') Store.subscribeAll = (base => function () { base.call(this); const db = S.db; if (!db || !db.collection) return; try { S.unsub.push(db.collection(COL).onSnapshot(snap => { S.data[COL] = new Map(snap.docs.map(d => [d.id, d.data()])); S.loaded[COL] = true; rerender(); }, e => console.warn('snapshot', COL, e))); } catch (e) { console.warn('okcal sub', e); } })(Store.subscribeAll);
+  const me = () => (S.session && S.session.workerId) || (isAdmin() ? 'owner' : '');
+  const myName = () => (S.session && S.session.name) || '';
+  const ceoName = () => (S.settings && S.settings.ownerName) || L('د. طارق صبحي', 'Dr. Tarek Sobhy');
+  const assist = () => ((S.settings && S.settings.okCeoAssist) || []).includes((S.session && S.session.workerId) || '~');
+  const nm = id => id === 'owner' ? ceoName() : ((byId('workers', id) || {}).name || '');
+  const owners = p => [p.leadId, p.ownerId].concat(p.coOwnerIds || []).filter(Boolean);
+  const isPMO = () => !!(window.okAccess && window.okAccess.isPMO && window.okAccess.isPMO());
+  const pad = n => String(n).padStart(2, '0');
+  const dkey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const parseD = k => { const [y, m, d] = String(k).slice(0, 10).split('-').map(Number); return new Date(y, (m || 1) - 1, d || 1, 12); };
+  const addD = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const hm = iso => { const d = new Date(iso); return isNaN(d) ? '' : (typeof fmtAtTm === 'function' ? fmtAtTm(d) : `${pad(d.getHours())}:${pad(d.getMinutes())}`); };
+  const KINDS = [['office', '🏢', 'ميتنج في المكتب', 'Meeting at the office'], ['client', '🤝', 'عند العميل', 'At the client'], ['online', '💻', 'أونلاين', 'Online'], ['site', '📍', 'زيارة موقع', 'Site visit'], ['submission', '📤', 'تسليم', 'Submission'], ['other', '🗓', 'تاني', 'Other']];
+  const kOf = k => KINDS.find(x => x[0] === k) || KINDS[KINDS.length - 1];
+  const weekStart = () => { const w = S.settings && S.settings.weekStart; return w == null ? 6 : +w; };   /* Egypt: the week starts Saturday unless the office says otherwise */
+  const CS = () => { S.ui = S.ui || {}; S.ui.okcal = S.ui.okcal || { view: (window.innerWidth <= 760 ? 'week' : 'month'), at: dkey(new Date()) }; return S.ui.okcal; };
+
+  /* ---------- what goes on the calendar (for me) ---------- */
+  const mineEv = e => { if (!e || e.deleted) return false; const id = me(); return isAdmin() || e.byUid === ((S.sbUser && S.sbUser.id) || '~') || (Array.isArray(e.people) && e.people.includes(id)) || (assist() && Array.isArray(e.people) && e.people.includes('owner')); };
+  const myProj = () => list('projects').filter(p => p && p.status !== 'archived' && (isAdmin() || isPMO() || owners(p).includes(me()) || (p.team || []).includes(me())));
+  const items = (from, to) => {   /* from / to: 'YYYY-MM-DD' inclusive */
+    const out = []; const inR = k => k >= from && k <= to;
+    list(COL).filter(mineEv).forEach(e => { const k = String(e.day || e.start || '').slice(0, 10); if (!inR(k)) return; const kk = kOf(e.kind); out.push({ day: k, t: e.allDay ? '' : (e.from || ''), t2: e.allDay ? '' : (e.to || ''), title: e.title, icon: kk[1], cls: 'k-' + kk[0], ref: 'ev:' + e.id, sub: [e.place, e.projectId && (byId('projects', e.projectId) || {}).name].filter(Boolean).join(' · ') }); });
+    list('okmeets').filter(m => m && m.startAt && (isAdmin() || m.createdBy === me() || m.by === me() || (Array.isArray(m.invitees) && m.invitees.includes(me())))).forEach(m => { const d = new Date(m.startAt); const k = dkey(d); if (!inR(k)) return; out.push({ day: k, t: `${pad(d.getHours())}:${pad(d.getMinutes())}`, title: m.title || 'Zoom / Meet', icon: '🎥', cls: 'k-online', ref: 'mt:' + m.id, sub: `${m.duration || 60} ${L('دقيقة', 'min')}` }); });
+    myProj().forEach(p => { const add = (k, txt) => { if (k && inR(String(k).slice(0, 10))) out.push({ day: String(k).slice(0, 10), t: '', title: `${p.code ? p.code + ' · ' : ''}${p.name}`, icon: '📌', cls: 'k-sub', ref: 'pj:' + p.id, sub: txt }); };
+      add(p.clientDeadline, L('ميعاد التسليم للعميل', 'Client deadline')); if (p.dueDate && p.dueDate !== p.clientDeadline) add(p.dueDate, L('ميعاد التسليم', 'Due date'));
+      const pl = p.okPlan && p.okPlan.stages; if (pl) Object.keys(pl).forEach(sid => { if (window.okSkipped && window.okSkipped(p, sid)) return; const st = (window.OEKO_PIPELINE || []).find(x => x.id === sid); if (pl[sid] && pl[sid].end) add(pl[sid].end, L('آخر مرحلة', 'End of') + ' ' + (st ? L(st.ar, st.name) : sid)); }); });
+    list('tasks').filter(t => t && t.dueDate && t.assigneeId === me() && !['done', 'closed', 'cancelled'].includes(t.status) && t.kind !== 'notice' && t.kind !== 'update').forEach(t => { const k = String(t.dueDate).slice(0, 10); if (inR(k)) out.push({ day: k, t: '', title: t.title, icon: '✔', cls: 'k-task', ref: 'tk:' + t.id, sub: L('تاسك', 'Task') }); });
+    return out.sort((a, b) => (a.day + (a.t || '99')).localeCompare(b.day + (b.t || '99')));
+  };
+
+  /* ---------- the page ---------- */
+  document.head.insertAdjacentHTML('beforeend', `<style>
+.okcal .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.okcal .bar h3{margin:0;font-size:17px;min-width:150px}.okcal .bar .grow{flex:1}
+.okcal .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}.okcal .seg button{border:0;background:var(--surface);padding:6px 14px;font:600 12.5px var(--font,system-ui);cursor:pointer;color:var(--ink)}.okcal .seg button.on{background:#50b1e7;color:#fff}
+.okcal .okcg{display:grid;gap:0;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
+.okcal .dh{padding:7px 8px;font-size:11.5px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.okcal .dc{min-height:104px;padding:6px;border-top:1px solid var(--line);border-inline-start:1px solid var(--line);display:flex;flex-direction:column;gap:3px;cursor:pointer}.okcal .dc:nth-child(7n+1){border-inline-start:0}
+.okcal .dc.out{background:color-mix(in srgb,var(--surface-2) 60%,transparent);color:var(--muted)}.okcal .dc .n{font-size:12px;font-weight:700}.okcal .dc.today .n{background:#50b1e7;color:#fff;border-radius:999px;padding:1px 7px;align-self:flex-start}
+.okcal .ev{font-size:11.5px;line-height:1.3;border-radius:7px;padding:3px 6px;background:color-mix(in srgb,#50b1e7 14%,transparent);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer}
+.okcal .ev.k-sub{background:color-mix(in srgb,#f5b301 18%,transparent)}.okcal .ev.k-task{background:color-mix(in srgb,#22c55e 15%,transparent)}.okcal .ev.k-online{background:color-mix(in srgb,#8b5cf6 15%,transparent)}.okcal .ev.k-client,.okcal .ev.k-site{background:color-mix(in srgb,#38a599 18%,transparent)}
+.okcal .more{font-size:11px;color:var(--muted)}
+.okcal .wk{display:flex;flex-direction:column;gap:10px}.okcal .wd{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:10px 12px}.okcal .wd.today{border-color:#50b1e7}.okcal .wd h4{margin:0 0 6px;font-size:13.5px;display:flex;gap:8px;align-items:center}.okcal .wd h4 .grow{flex:1}
+.okcal .wd .row1{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--line);cursor:pointer}.okcal .wd .row1:first-of-type{border-top:0}.okcal .wd .tm{min-width:92px;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}.okcal .wd .tt{flex:1;font-size:13.5px}.okcal .wd .tt small{display:block;color:var(--muted);font-size:12px}
+.okcal .empty1{font-size:12.5px;color:var(--muted)}.okcal .note{font-size:12px;color:var(--muted);margin-top:10px}
+@media (max-width:760px){.okcal .dc{min-height:64px;padding:4px}.okcal .ev{font-size:10.5px;padding:2px 4px}}
+</style>`);
+  const dayNames = () => { const base = en() ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] : ['الأحد', 'الاتنين', 'التلات', 'الأربع', 'الخميس', 'الجمعة', 'السبت']; const ws = weekStart(); return Array.from({ length: 7 }, (_, i) => base[(ws + i) % 7]); };
+  const monthName = d => d.toLocaleDateString(en() ? 'en-GB' : 'ar-EG', { month: 'long', year: 'numeric' });
+  const dayTitle = d => d.toLocaleDateString(en() ? 'en-GB' : 'ar-EG', { weekday: 'long', day: 'numeric', month: 'long' });
+  const evHTML = x => `<div class="ev ${x.cls}" data-okcalref="${esc(x.ref)}" title="${esc(x.title)}">${x.icon} ${x.t ? `<b>${esc(x.t)}</b> ` : ''}<span class="notr">${esc(x.title)}</span></div>`;
+  const page = () => {
+    const c = CS(); const at = parseD(c.at); const today = dkey(new Date());
+    let body = '', title = '';
+    if (c.view === 'month') {
+      const first = new Date(at.getFullYear(), at.getMonth(), 1, 12); const off = (first.getDay() - weekStart() + 7) % 7; const start = addD(first, -off); const cells = Array.from({ length: 42 }, (_, i) => addD(start, i));
+      const xs = items(dkey(cells[0]), dkey(cells[41])); const by = {}; xs.forEach(x => { (by[x.day] = by[x.day] || []).push(x); });
+      title = monthName(at);
+      body = `<div class="okcg">${dayNames().map(n => `<div class="dh">${esc(n)}</div>`).join('')}${cells.map(d => { const k = dkey(d); const ev = by[k] || []; return `<div class="dc${d.getMonth() !== at.getMonth() ? ' out' : ''}${k === today ? ' today' : ''}" data-okcalday="${k}"><span class="n">${d.getDate()}</span>${ev.slice(0, 3).map(evHTML).join('')}${ev.length > 3 ? `<span class="more">+${ev.length - 3}</span>` : ''}</div>`; }).join('')}</div>`;
+    } else {
+      const off = (at.getDay() - weekStart() + 7) % 7; const start = addD(at, -off); const days = Array.from({ length: 7 }, (_, i) => addD(start, i));
+      const xs = items(dkey(days[0]), dkey(days[6])); title = `${days[0].toLocaleDateString(en() ? 'en-GB' : 'ar-EG', { day: 'numeric', month: 'short' })} – ${days[6].toLocaleDateString(en() ? 'en-GB' : 'ar-EG', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+      body = `<div class="wk">${days.map(d => { const k = dkey(d); const ev = xs.filter(x => x.day === k); return `<div class="wd${k === today ? ' today' : ''}"><h4><span>${esc(dayTitle(d))}</span><span class="grow"></span><button type="button" class="btn sm ghost" data-okcaladd="${k}">+</button></h4>${ev.length ? ev.map(x => `<div class="row1" data-okcalref="${esc(x.ref)}"><span class="tm">${x.t ? `<bdi dir="ltr">${esc(x.t) + (x.t2 ? '–' + esc(x.t2) : '')}</bdi>` : esc(L('طول اليوم', 'All day'))}</span><span class="tt">${x.icon} <span class="notr">${esc(x.title)}</span>${x.sub ? `<small class="notr">${esc(x.sub)}</small>` : ''}</span></div>`).join('') : `<div class="empty1">${esc(L('مفيش حاجة', 'Nothing'))}</div>`}</div>`; }).join('')}</div>`;
+    }
+    return `<div class="okcal"><div class="bar"><button type="button" class="btn sm" data-okcalnav="-1" aria-label="${esc(L('اللي فات', 'Previous'))}">${L('›', '‹')}</button><button type="button" class="btn sm" data-okcalnav="0">${esc(L('النهارده', 'Today'))}</button><button type="button" class="btn sm" data-okcalnav="1" aria-label="${esc(L('اللي جاي', 'Next'))}">${L('‹', '›')}</button><h3>${esc(title)}</h3><span class="grow"></span><span class="seg"><button type="button" class="${c.view === 'month' ? 'on' : ''}" data-okcalv="month">${esc(L('شهر', 'Month'))}</button><button type="button" class="${c.view === 'week' ? 'on' : ''}" data-okcalv="week">${esc(L('أسبوع', 'Week'))}</button></span><button type="button" class="btn p sm" data-okcaladd="${esc(c.at)}">+ ${esc(L('موعد', 'Appointment'))}</button></div>${body}
+      <div class="note">${esc(L('🗓 مواعيدك · 🎥 اجتماعات Zoom وMeet · 📌 مواعيد تسليم مشاريعك · ✔ تاسكاتك. الربط مع Outlook هييجي لما إيميل المكتب يتوصّل.', '🗓 your appointments · 🎥 Zoom & Meet meetings · 📌 your projects\' deadlines · ✔ your tasks. Outlook sync comes once the office email is connected.'))}</div></div>`;
+  };
+
+  /* ---------- add / open / edit ---------- */
+  const people = () => { const out = list('workers').filter(w => w && !['inactive', 'left', 'suspended'].includes(w.status) && w.id !== me()).map(w => ({ id: w.id, name: w.name, title: w.title || '' })); if (!isAdmin()) out.unshift({ id: 'owner', name: ceoName(), title: 'CEO' }); return out.sort((a, b) => (a.id === 'owner' ? -1 : b.id === 'owner' ? 1 : String(a.name).localeCompare(String(b.name)))); };
+  const form = (e, day) => { e = e || {}; const ps = myProj().sort((a, b) => String(a.name).localeCompare(String(b.name))); const sel = new Set(e.people || []);
+    return `<div class="form">${field(L('العنوان', 'Title'), `<input class="inp" name="title" required dir="auto" value="${esc(e.title || '')}">`, 'full')}
+      ${field(L('النوع', 'Kind'), `<select name="kind">${KINDS.map(k => `<option value="${k[0]}" ${(e.kind || 'office') === k[0] ? 'selected' : ''}>${k[1]} ${esc(L(k[2], k[3]))}</option>`).join('')}</select>`)}
+      ${field(L('اليوم', 'Day'), `<input class="inp" type="date" name="day" required value="${esc(e.day || day || dkey(new Date()))}">`)}
+      ${field(L('من', 'From'), `<input class="inp" type="time" name="from" value="${esc(e.from || '10:00')}">`)}${field(L('لـ', 'To'), `<input class="inp" type="time" name="to" value="${esc(e.to || '11:00')}">`)}
+      <label class="check full"><input type="checkbox" name="allDay" ${e.allDay ? 'checked' : ''}> ${esc(L('طول اليوم', 'All day'))}</label>
+      ${field(L('المكان', 'Place'), `<input class="inp" name="place" dir="auto" value="${esc(e.place || '')}">`)}
+      ${field(L('المشروع (اختياري)', 'Project (optional)'), `<select name="projectId"><option value="">—</option>${ps.map(p => `<option value="${esc(p.id)}" ${e.projectId === p.id ? 'selected' : ''}>${esc((p.code ? p.code + ' · ' : '') + p.name)}</option>`).join('')}</select>`)}
+      <div class="field full"><label>${esc(L('مين معاك (بيوصلهم إشعار)', 'Who is on it (they are told)'))}</label><input class="inp" data-okcalq placeholder="${esc(L('دوّر بالاسم…', 'Search by name…'))}" style="margin-bottom:6px"><div data-okcalppl style="max-height:190px;overflow:auto;display:flex;flex-direction:column;gap:2px">${people().map(w => `<label class="check" data-n="${esc((w.name + ' ' + w.title).toLowerCase())}"><input type="checkbox" name="p_${esc(w.id)}" ${sel.has(w.id) ? 'checked' : ''}> <span class="notr">${esc(w.name)}</span> <span class="tiny muted notr">${esc(w.title)}</span></label>`).join('')}</div></div>
+      ${field(L('ملاحظات / الأجندة', 'Notes / agenda'), `<textarea name="notes" rows="3" dir="auto">${esc(e.notes || '')}</textarea>`, 'full')}
+      ${e.id ? '' : `<div class="tiny muted full">${esc(L('اجتماع أونلاين بلينك ومحضر؟ من «اجتماعات Zoom وMeet» ← «اجتماع جديد».', 'An online meeting with a link and minutes? From «Zoom & Meet» → «New meeting».'))}</div>`}</div>`; };
+  const save = async (f, e0) => { const v = formData(f); if (!String(v.title || '').trim()) { toast(L('اكتب العنوان', 'Write the title'), 'err'); return false; }
+    const ppl = Array.from(f.querySelectorAll('[name^="p_"]')).filter(x => x.checked).map(x => x.name.slice(2)); const now = nowISO();
+    const doc = Object.assign({}, e0 || {}, { id: (e0 && e0.id) || uid(), title: String(v.title).trim(), kind: v.kind || 'office', day: v.day, allDay: !!f.querySelector('[name=allDay]').checked, from: v.from || '', to: v.to || '', place: String(v.place || '').trim(), projectId: v.projectId || '', people: Array.from(new Set(ppl.concat(me() ? [me()] : []))), notes: String(v.notes || '').trim(), updatedAt: now });
+    if (!e0) Object.assign(doc, { by: me(), byName: myName(), byUid: (S.sbUser && S.sbUser.id) || '', byRole: isAdmin() ? 'admin' : (typeof role === 'function' ? role() : ''), createdAt: now });
+    try { await Store.save(COL, doc); } catch (e) { toast(L('ماتحفظش — جرّب تاني', 'Not saved — try again'), 'err'); return false; }
+    const newcomers = doc.people.filter(id => id !== me() && !((e0 && e0.people) || []).includes(id));
+    if (newcomers.length && typeof pushSend === 'function') { const when = `${doc.day}${doc.allDay ? '' : ' ' + doc.from}`; pushSend(newcomers.map(id => id === 'owner' ? 'role:admin' : 'w:' + id), (e0 ? L('اتضافت لموعد', 'Added to an appointment') : L('موعد جديد', 'New appointment')) + ': ' + doc.title, `${when}${doc.place ? ' · ' + doc.place : ''} — ${myName()}`, '/#/okcal', 'okcal-' + doc.id).catch(() => { }); }
+    toast(L('اتحفظ ✓', 'Saved ✓')); CS().at = doc.day; rerender(); return true; };
+  const canMod = e => !!e && (isAdmin() || e.byUid === ((S.sbUser && S.sbUser.id) || '~') || (assist() && ((e.people || []).includes('owner') || e.byRole === 'admin')));
+  const add = day => openModal({ title: L('موعد جديد', 'New appointment'), wide: true, submitLabel: L('حفظ', 'Save'), body: form(null, day), onSubmit: f => save(f, null) });
+  const openEv = id => { const e = byId(COL, id); if (!e) return; const kk = kOf(e.kind); const p = e.projectId && byId('projects', e.projectId);
+    if (canMod(e)) { openModal({ title: L('الموعد', 'Appointment'), wide: true, submitLabel: L('حفظ', 'Save'), body: form(e), onSubmit: f => save(f, e), extra: `<button type="button" class="btn ghost" data-okcaldel="${esc(e.id)}">${esc(L('امسحه', 'Delete'))}</button>` }); return; }
+    openModal({ title: `${kk[1]} ${e.title}`, body: `<div class="stack" style="gap:6px;font-size:14px"><div>${esc(e.day)} ${e.allDay ? esc(L('طول اليوم', 'all day')) : esc((e.from || '') + (e.to ? '–' + e.to : ''))}</div>${e.place ? `<div>📍 ${esc(e.place)}</div>` : ''}${p ? `<div>📁 <a href="#/projects/${esc(p.id)}">${esc(p.name)}</a></div>` : ''}<div>👥 ${esc((e.people || []).map(nm).filter(Boolean).join('، '))}</div>${e.notes ? `<div style="white-space:pre-wrap">${esc(e.notes)}</div>` : ''}<div class="tiny muted">${esc(L('عمله', 'Made by'))} ${esc(e.byName || '')}</div></div>` }); };
+  document.addEventListener('click', async ev => { const t = ev.target.closest && ev.target.closest('[data-okcalref],[data-okcalday],[data-okcaladd],[data-okcalnav],[data-okcalv],[data-okcaldel]'); if (!t) return;
+    if (t.dataset.okcaladd) { ev.preventDefault(); ev.stopPropagation(); return add(t.dataset.okcaladd); }
+    if (t.dataset.okcalref) { ev.preventDefault(); ev.stopPropagation(); const [k, id] = t.dataset.okcalref.split(':'); if (k === 'ev') return openEv(id); if (k === 'pj') { location.hash = '#/projects/' + id; return; } if (k === 'mt') { location.hash = '#/okmeets/' + id; return; } if (k === 'tk') { location.hash = '#/tasks/' + id; return; } return; }
+    if (t.dataset.okcalday) { const c = CS(); if (c.view === 'month') { c.at = t.dataset.okcalday; c.view = 'week'; rerender(); } return; }
+    if (t.dataset.okcalnav) { const c = CS(); const n = +t.dataset.okcalnav; const d = parseD(c.at); c.at = n === 0 ? dkey(new Date()) : c.view === 'month' ? dkey(new Date(d.getFullYear(), d.getMonth() + n, 1, 12)) : dkey(addD(d, 7 * n)); rerender(); return; }
+    if (t.dataset.okcalv) { CS().view = t.dataset.okcalv; rerender(); return; }
+    if (t.dataset.okcaldel) { const e = byId(COL, t.dataset.okcaldel); if (!e || !canMod(e)) return; try { await Store.update(COL, e.id, { deleted: true, deletedAt: nowISO(), deletedBy: myName() }); } catch (x) { return; } try { closeModal(); } catch (x) { /* */ } toast(L('اتمسح', 'Deleted')); rerender(); }
+  });
+  document.addEventListener('input', ev => { const q = ev.target; if (!q || !q.dataset || q.dataset.okcalq == null) return; const v = q.value.trim().toLowerCase(); q.parentElement.querySelectorAll('[data-okcalppl] label').forEach(l => { l.style.display = !v || (l.dataset.n || '').includes(v) ? '' : 'none'; }); });
+  if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.okcal = () => page();
+  if (typeof EXTRA_TITLES === 'object') EXTRA_TITLES.okcal = () => ({ title: L('الكالندر', 'Calendar'), sub: L('مواعيدك واجتماعاتك وتسليمات مشاريعك وتاسكاتك — بالشهر والأسبوع', 'Your appointments, meetings, project deadlines and tasks — by month and week') });
+  if (typeof VIEW_TITLES === 'object') try { Object.defineProperty(VIEW_TITLES, 'okcal', { configurable: true, enumerable: true, get: () => L('الكالندر', 'Calendar') }); } catch (e) { /* */ }
+  if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okcal')) { const i = NAV.findIndex(n => n && n.id === 'tasks'); NAV.splice(i >= 0 ? i + 1 : NAV.length, 0, { id: 'okcal', label: 'الكالندر', short: 'الكالندر', icon: 'calendar' }); }
+  if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okcal')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okcal']); });
+  if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okcal') return !!S.session && (typeof role !== 'function' || role() !== 'kiosk'); return base.apply(this, arguments); })(canSee);
+  if (typeof OEKO_I18N === 'object') OEKO_I18N['الكالندر'] = 'Calendar';
+})();

@@ -39089,7 +39089,7 @@ ${A} .fab{background:var(--primary)!important;color:var(--primary-ink)!important
     },
     studioz: {
       top: ['dashboard', 'door', 'okday', 'okdash'],   /* Ökoplan 13 Nov: the CEO's day and office dashboard sit at the top of the menu, not inside «My account» */
-      add: [{ key: 'pmo', ar: 'إدارة المشروعات', en: 'PMO', ids: ['okpmo', 'enquiries', 'okcrm', 'okdaily', 'okask', 'okmyproj', 'okorgjd'], before: 'clients' }, { key: 'intel', ar: 'الذكاء', en: 'AI', ids: ['okbrain', 'oksmart', 'ai', 'oklearn', 'okrules'], before: 'clients' }, { key: 'design', ar: 'التصميم', en: 'Design', ids: ['concept', 'studio'], before: 'clients' }, { key: 'comm', ar: 'التواصل', en: 'Communication', ids: ['tasks', 'pchats', 'meetings', 'okmeets', 'mail'], before: 'clients' }],
+      add: [{ key: 'pmo', ar: 'إدارة المشروعات', en: 'PMO', ids: ['okpmo', 'enquiries', 'okcrm', 'okdaily', 'okask', 'okmyproj', 'okorgjd'], before: 'clients' }, { key: 'intel', ar: 'الذكاء', en: 'AI', ids: ['okbrain', 'oksmart', 'ai', 'oklearn', 'okrules'], before: 'clients' }, { key: 'design', ar: 'التصميم', en: 'Design', ids: ['concept', 'studio'], before: 'clients' }, { key: 'comm', ar: 'التواصل', en: 'Communication', ids: ['okcal', 'tasks', 'pchats', 'meetings', 'okmeets', 'mail'], before: 'clients' }],
       into: [{ near: 'projects', ids: ['projects', 'pm', 'studioos', 'oktimeline', 'portfolio', 'okpipeedit'] }, { near: 'clients', ids: ['clients', 'quotes'] }, { near: 'settings', ids: ['reports', 'org', 'stuorg', 'audit', 'regulation', 'okabout', 'okweb', 'rdesk', 'settings'] }],
       rename: [{ near: 'clients', ar: 'تطوير الأعمال', en: 'Business development' }],
     },
