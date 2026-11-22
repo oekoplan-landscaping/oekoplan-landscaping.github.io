@@ -17981,7 +17981,7 @@ if (typeof STU_ON !== 'undefined' && STU_ON) {
     const st = osStatus(p.osStatus || 'data'); const idx = OS_STATUSES.findIndex(s => s.id === st.id); const shots = shotsOf(p.id);
     const done = shots.filter(s => s.state === 'done').length; const late = shots.filter(shotLate).length; const risk = shots.filter(s => shotRisk(s, p)).length;
     const left = p.clientDeadline ? daysBetween(todayISO(), p.clientDeadline) : null;
-    const steps = OS_STATUSES.filter(s => s.id !== 'camera' || p.camReq !== 'opt');
+    const steps = OS_STATUSES.filter(s => (s.id !== 'camera' || p.camReq !== 'opt') && !(Array.isArray(p.okSkip) && p.okSkip.includes(s.id)));   /* 22 Nov: a stage switched off for this project is not on its strip */
     const blk = p.blocked;
     return `<div class="card osp" style="margin-top:14px">
       <div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><h3 style="margin:0">تشغيل المشروع</h3><span class="stg"><i></i>${esc(st.en)}</span>${p.ptype ? `<span class="badge">${esc(OS_TYPES[p.ptype] || p.ptype)}</span>` : ''}<div class="grow"></div>

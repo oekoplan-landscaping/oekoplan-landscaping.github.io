@@ -439,12 +439,17 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
       ['أعمال فنية ومنحوتات وإشارات', 'Artwork, sculpture and signage selection'],
       ['تنسيق مع الاستشاريين (معماري · إنشائي · MEP)', 'Coordination with consultants (architect · structural · MEP)'],
       ['اعتماد تطوير التصميم', 'Design development approval']] },
-    { id: 'tender', name: 'Construction Documents & Tender (IFC)', ar: 'الرسومات التنفيذية ومستندات الطرح', pct: 25, riba: 'RIBA 4', gate: ['المكتب الفني ← مدير التصميم', 'Technical Office → Design Manager'], items: [
-      ['رسومات تنفيذية كاملة (IFC) لكل التخصصات', 'Full construction drawings (IFC) for all disciplines'],
-      ['تفاصيل الإنشاء', 'Construction details'],
+    /* 22 Nov (Rawan, PIN): tender (IFT) and construction (IFC) are two stages — IFC is optional, many projects stop at the tender */
+    { id: 'tender', name: 'Tender Documents (IFT)', ar: 'مستندات الطرح (IFT)', pct: 10, riba: 'RIBA 4', gate: ['المكتب الفني ← مدير التصميم', 'Technical Office → Design Manager'], items: [
+      ['رسومات الطرح (IFT) لكل التخصصات', 'Tender drawings (IFT) for all disciplines'],
       ['المواصفات الفنية', 'Technical specifications'],
       ['المقايسة (BOQ)', 'Bill of quantities (BOQ)'],
       ['مستندات الطرح والرد على استفسارات المقاولين', 'Tender documents and contractor queries'],
+      ['مراجعة QA/QC قبل الإصدار', 'QA/QC review before issue']] },
+    { id: 'ifc', name: 'Construction Documents (IFC)', ar: 'الرسومات التنفيذية (IFC)', pct: 15, riba: 'RIBA 4', optional: true, gate: ['المكتب الفني ← مدير التصميم', 'Technical Office → Design Manager'], items: [
+      ['رسومات تنفيذية كاملة (IFC) لكل التخصصات', 'Full construction drawings (IFC) for all disciplines'],
+      ['تفاصيل الإنشاء', 'Construction details'],
+      ['تحديث المقايسة والمواصفات على رسومات الـ IFC', 'BOQ and specifications updated to the IFC drawings'],
       ['مراجعة QA/QC قبل الإصدار', 'QA/QC review before issue']] },
     { id: 'super', name: 'Site Supervision', ar: 'الإشراف على التنفيذ', pct: 5, riba: 'RIBA 5', gate: ['مهندس الموقع ← التيم ليدر', 'Site engineer → Team lead'], items: [
       ['زيارات دورية وتقارير موقع', 'Periodic site visits and site reports'],
@@ -641,7 +646,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
   /* the sheet's names → the team file's names */
   const WHO = { 'Haidy Ehab': 'Haidy Ehab', 'Haidy Alaa': 'Haidy Alaa El-Din Amer', 'Maria Fayez': 'Maria Fayiz Metry', 'Salam Al Baik': 'Salam Albeik', 'Samah Wafa': 'Samah Hassan Wafa', 'Rana Essam': 'Rana Essam Mohamed', 'Patricia Edwar': 'Patricia Edwar Alber', 'Asmaa Hassan': 'Asmaa Hassan', 'Aya Yasser': 'Aya Yasser', 'Dalia Hassan': 'Dalia Hassan' };
   /* latest stage completed → the stage the project is in now (the office's stages: concept → schem → dd → tender → boq → super) */
-  const NEXT_STAGE = { '': 'concept', concept: 'schem', schem: 'dd', dd: 'tender', tender: 'super' };
+  const NEXT_STAGE = { '': 'concept', concept: 'schem', schem: 'dd', dd: 'tender', tender: 'ifc', ifc: 'super' };
   const STAGE_AR = { concept: 'التصور المبدئي', schem: 'التصميم التمهيدي', dd: 'تطوير التصميم', tender: 'مستندات الطرح', super: 'الإشراف على التنفيذ' };
   async function importProjects() {
     if (typeof isAdmin !== 'function' || !isAdmin()) return { added: 0, kept: 0, unmatched: [] };
@@ -1419,7 +1424,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
     if (t.dataset.oktab) { tab = t.dataset.oktab; try { localStorage.setItem('ok.ftab', tab); } catch (e) { /* */ } const card = t.closest('.okflow'); const p = byId('projects', card && card.dataset.pid); if (p) card.outerHTML = flowHTML(p); return; }
     if (t.dataset.oksite) { const [pid, on] = t.dataset.oksite.split(':'); const p = byId('projects', pid); if (!p || !canEdit(p)) return; await up(pid, { okSiteOn: on === '1' }); return; }
     if (t.dataset.okgate) {
-      const p = byId('projects', t.dataset.okgate); if (!p || !canEdit(p)) return; const i = stageIdx(p); const st = PIPE[i], nx = PIPE[i + 1]; if (!nx) return;
+      const p = byId('projects', t.dataset.okgate); if (!p || !canEdit(p)) return; const i = stageIdx(p); const st = PIPE[i], nx = PIPE.slice(i + 1).find(x => !(window.okSkipped && window.okSkipped(p, x.id))); if (!nx) return;
       const done = ((p.okSteps || {})[st.id] || []).length, n = st.items.length;
       openModal({ title: L(`اعتماد بوابة «${st.ar}»`, `Approve the «${st.name}» gate`), submitLabel: L('اعتمد وانقل المرحلة', 'Approve and move on'),
         body: `<div class="form"><div class="full small">${done === n ? `✅ ${esc(L('كل خطوات المرحلة متعلّمة', 'All stage steps are ticked'))}` : `⚠️ ${esc(L(`${n - done} خطوة لسه ماتعلمتش — تقدر تعتمد مع كتابة السبب`, `${n - done} step(s) not ticked — you can still approve with a reason`))}`}</div>${field2(L('ملاحظة الاعتماد', 'Approval note'), `<input name="note" maxlength="200" dir="auto" ${done === n ? '' : 'required'}>`)}<div class="full small muted">${esc(L('المرحلة الجاية: ', 'Next stage: '))}<b>${esc(L(nx.ar, nx.name))}</b> · ${esc(L('البوابة: ', 'Gate: '))}${esc(L(nx.gate[0], nx.gate[1]))}</div></div>`,
@@ -1646,7 +1651,8 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
     concept: [['CM', 'ماستر بلان الكونسبت', 'Concept masterplan'], ['CP', 'عرض الكونسبت (المود والصور المرجعية)', 'Concept presentation (mood & references)'], ['PP', 'باليتة النباتات المبدئية', 'Preliminary planting palette']],
     schem: [['SM', 'ماستر بلان تمهيدي', 'Schematic masterplan'], ['SZ', 'مخطط الهارد والسوفت سكيب', 'Hardscape / softscape zoning plan'], ['SS', 'قطاعات واسكتشات رئيسية', 'Key sections & sketches']],
     dd: [['DL', 'مخططات DD: التنسيق والمناسيب', 'DD plans: layout & grading'], ['DP', 'مخططات DD: الزراعة', 'DD plans: planting'], ['DI', 'مخططات DD: الري', 'DD plans: irrigation'], ['DE', 'مخططات DD: الإضاءة', 'DD plans: lighting'], ['DS', 'ملخص المواصفات + مقايسة مبدئية', 'Outline specifications + preliminary BOQ']],
-    tender: [['IFC', 'مجموعة الرسومات التنفيذية (IFC)', 'IFC drawing set'], ['SP', 'المواصفات الفنية', 'Technical specifications'], ['BQ', 'المقايسة (BOQ)', 'Bill of quantities'], ['TD', 'مستندات الطرح', 'Tender documents']],
+    tender: [['IFT', 'مجموعة رسومات الطرح (IFT)', 'IFT drawing set'], ['SP', 'المواصفات الفنية', 'Technical specifications'], ['BQ', 'المقايسة (BOQ)', 'Bill of quantities'], ['TD', 'مستندات الطرح', 'Tender documents']],
+    ifc: [['IFC', 'مجموعة الرسومات التنفيذية (IFC)', 'IFC drawing set'], ['CD', 'تفاصيل الإنشاء', 'Construction details']],
     super: [['SV', 'تقارير زيارات الموقع', 'Site visit reports'], ['SB', 'مراجعة الـSubmittals والشوب دروينج', 'Submittal & shop-drawing reviews'], ['SN', 'قايمة الملاحظات (Snag list)', 'Snag list']],
     delivered: [['OM', 'دليل التشغيل والصيانة', 'O&M manual'], ['HC', 'شهادة التسليم', 'Handover certificate'], ['AB', 'مراجعة As-built', 'As-built review']],
   };
@@ -1701,7 +1707,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
   document.addEventListener('click', async ev => {
     const t = ev.target.closest && ev.target.closest('[data-okgate]'); if (!t) return; ev.stopImmediatePropagation(); ev.preventDefault();
     const p = byId('projects', t.dataset.okgate); if (!p) return; const can = (typeof stuCanEdit === 'function' && stuCanEdit()) && (isMgr() || p.ownerId === me() || p.leadId === me()); if (!can) return;
-    const i = stageIdx(p); const st = PIPE()[i], nx = PIPE()[i + 1]; if (!nx) return; const cks = gateChecks(p); const bad = cks.filter(c => c.ok === false).length;
+    const i = stageIdx(p); const st = PIPE()[i], nx = PIPE().slice(i + 1).find(x => !(window.okSkipped && window.okSkipped(p, x.id))); if (!nx) return; const cks = gateChecks(p); const bad = cks.filter(c => c.ok === false).length;
     openModal({ title: L(`اعتماد بوابة «${st.ar}»`, `Approve the «${st.name}» gate`), submitLabel: L('اعتمد وانقل المرحلة', 'Approve and move on'),
       body: `<div class="form"><div class="full oksmck">${cks.map(c => `<div class="okck2 ${c.ok === true ? 'g' : c.ok === false ? 'r' : ''}"><i>${c.ok === true ? '✅' : c.ok === false ? '⚠️' : 'ℹ️'}</i><span>${esc(c.text)}</span></div>`).join('')}</div>${bad ? `<div class="full small" style="color:#b91c1c">${esc(L(`${bad} نقطة ناقصة — تقدر تعتمد مع كتابة السبب (بيتسجّل في البوابة)`, `${bad} item(s) missing — you can still approve with a reason (kept on the gate record)`))}</div>` : `<div class="full small">✅ ${esc(L('كل حاجة تمام — اعتمد', 'Everything is in place — approve'))}</div>`}<div class="field full"><label>${esc(L('ملاحظة الاعتماد', 'Approval note'))}</label><input name="note" maxlength="200" dir="auto" ${bad ? 'required' : ''}></div><div class="full small muted">${esc(L('المرحلة الجاية: ', 'Next stage: '))}<b>${esc(L(nx.ar, nx.name))}</b> · ${esc(L('البوابة: ', 'Gate: '))}${esc(L(nx.gate[0], nx.gate[1]))}</div></div>`,
       onSubmit: async f => { const note = f.querySelector('[name=note]').value.trim(); if (bad && !note) { toast(L('اكتب السبب', 'Write the reason'), 'err'); return false; }
@@ -6895,4 +6901,91 @@ html[data-theme="dark"] .okst .pill.okp-g{color:#5fd3a0}html[data-theme="dark"] 
   if (typeof Store === 'object' && Store.save) Store.save = (base => async function (col, doc) { const isNew = col === 'tasks' && doc && doc.assigneeId === 'owner' && !(doc.id && byId('tasks', doc.id)); const r = await base.apply(this, arguments);
     try { if (isNew && !isAdmin() && typeof pushSend === 'function') pushSend(['role:admin'], 'مهمة جديدة من ' + ((S.session && S.session.name) || ''), doc.title || '', '/#/tasks/' + doc.id, 'task-' + doc.id).catch(() => { }); } catch (e) { /* the task is saved anyway */ } return r; })(Store.save);
   if (typeof OEKO_I18N === 'object') OEKO_I18N['د. طارق صبحي — CEO'] = 'Dr. Tarek Sobhy — CEO';
+})();
+
+/* =====================================================================
+   22 Nov 2026 (Rawan's ticket, Mahmoud — PIN): each project's own stages.
+   · The office stages stay the template (IFT and the optional IFC are now two stages). On the project page «Project stages»:
+     the Project Owners, the Head of PMO and the CEO switch stages off (IFC on a project that stops at the tender) or back on.
+   · A stage written in the project's contract (p.okStages, released from the CRM) is not dropped by a Project Owner alone:
+     it becomes a request to the Head of PMO with the client's written approval (a file or a link) — she approves or refuses.
+   · A stage that is off disappears from the stage strip, the next-stage button and the claims; its share moves to the next stage.
+   · p.okSkip = [stage ids] · p.okSkipReq = [{ id, by, byName, at, why, file, link }] · p.okSkipLog
+   ===================================================================== */
+(() => {
+  if (window.__OK_PSTAGES__) return; window.__OK_PSTAGES__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const PIPE = () => window.OEKO_PIPELINE || [];
+  const me = () => (S.session && S.session.workerId) || '';
+  const myName = () => (S.session && S.session.name) || '';
+  const owners = p => [p.leadId, p.ownerId].concat(p.coOwnerIds || []).filter(Boolean);
+  const isPMO = () => !!(window.okAccess && window.okAccess.isPMO && window.okAccess.isPMO());
+  const approver = () => !!S.session && (isAdmin() || isPMO());
+  const canEd = p => !!p && !!S.session && (approver() || owners(p).includes(me()));
+  const skipOf = p => (p && Array.isArray(p.okSkip) ? p.okSkip : []);
+  const reqOf = p => (p && Array.isArray(p.okSkipReq) ? p.okSkipReq : []);
+  const contract = p => !!(p && Array.isArray(p.okStages) && p.okStages.length);
+  window.okSkipped = (p, id) => skipOf(p).includes(id);
+  const baseStages = p => contract(p) ? p.okStages.map(s => ({ id: s.id, name: s.name, ar: s.name, pct: s.pct, due: s.due, fromContract: true })) : PIPE().map(s => ({ id: s.id, name: s.name, ar: s.ar, pct: s.pct, optional: !!s.optional }));
+  /* the project's stages, with the share of a stage that is off moved to the next one (the last one gives it back to the one before) */
+  window.okProjStages = p => { const out = []; let carry = 0; const sk = skipOf(p);
+    baseStages(p).forEach(s => { if (sk.includes(s.id)) { carry += +s.pct || 0; return; } const x = Object.assign({}, s); if (carry && x.pct != null) { x.pct = (+x.pct || 0) + carry; carry = 0; } out.push(x); });
+    if (carry && out.length && out[out.length - 1].pct != null) out[out.length - 1].pct = (+out[out.length - 1].pct || 0) + carry; return out; };
+  const base0 = window.okStagesOf;
+  window.okStagesOf = p => (p && skipOf(p).length ? window.okProjStages(p).map(s => ({ id: s.id, name: s.name, ar: s.ar, pct: s.pct, due: s.due })) : (typeof base0 === 'function' ? base0(p) : PIPE()));
+  const stName = s => (s.fromContract ? s.name : L(s.ar, s.name));
+  const cur = p => (p && (p.osStatus || p.stage)) || '';
+  const pmoIds = () => list('workers').filter(w => /head of pmo/i.test(w.title || '') && !['inactive', 'left', 'suspended'].includes(w.status)).map(w => w.id);
+  const ping = (ids, t, b, url) => { try { if (typeof pushSend === 'function') pushSend(ids, t, b, url, 'okst-' + Date.now()).catch(() => { }); } catch (e) { /* */ } };
+
+  /* the button under the stage strip */
+  document.head.insertAdjacentHTML('beforeend', `<style>.okpst-b{margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.okpst-b .tiny{color:var(--muted)}.okpst-l{display:flex;flex-direction:column;gap:6px}.okpst-l label{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:9px 12px;cursor:pointer}.okpst-l label.off{opacity:.55}.okpst-l label .g{flex:1}.okpst-l .pc{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12.5px}.okpst-l .tg{font-size:11px;border-radius:999px;padding:2px 8px;background:var(--surface-2);color:var(--muted)}.okpst-r{border:1px solid rgba(245,179,1,.6);border-radius:12px;padding:10px 12px;margin-top:10px;font-size:13px}.okpst-r .row{gap:8px;margin-top:6px}</style>`);
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    const r = S.route || {}; if (r.view !== 'projects' || !r.id) return; const p = byId('projects', r.id); if (!p || !canEd(p)) return;
+    const flow = document.querySelector('#view .osflow'); if (!flow || flow.parentElement.querySelector('.okpst-b')) return;
+    const off = skipOf(p).length, pend = reqOf(p).length;
+    flow.insertAdjacentHTML('afterend', `<div class="okpst-b"><button type="button" class="btn sm ghost" data-okpst="${esc(p.id)}">✎ ${esc(L('مراحل المشروع', 'Project stages'))}</button>${off ? `<span class="tiny">${esc(L(`${off} مرحلة مش في المشروع ده`, `${off} stage(s) not in this project`))}</span>` : ''}${pend ? `<span class="tiny" style="color:#b7791f">⏳ ${esc(L(`${pend} طلب شيل مرحلة مستني رئيسة الـ PMO`, `${pend} stage-removal request(s) waiting for the Head of PMO`))}</span>` : ''}</div>`);
+  } catch (e) { /* ignore */ } });
+
+  const editor = pid => { const p = byId('projects', pid); if (!canEd(p)) return; const sk = skipOf(p), rq = reqOf(p), here = cur(p);
+    const rows = baseStages(p).map((s, i) => { const on = !sk.includes(s.id); const waiting = rq.some(x => x.id === s.id); const lock = s.id === here;
+      return `<label class="${on ? '' : 'off'}"><input type="checkbox" name="st_${esc(s.id)}" ${on ? 'checked' : ''} ${lock ? 'disabled' : ''}><span class="g">${String(i + 1).padStart(2, '0')} · ${esc(stName(s))}</span>${s.optional ? `<span class="tg">${esc(L('اختيارية', 'optional'))}</span>` : ''}${s.fromContract ? `<span class="tg">${esc(L('في العقد', 'in the contract'))}</span>` : ''}${lock ? `<span class="tg">${esc(L('المرحلة الحالية', 'current stage'))}</span>` : ''}${waiting ? `<span class="tg">⏳ ${esc(L('مستنية الموافقة', 'waiting for approval'))}</span>` : ''}${s.pct != null ? `<span class="pc">${esc(String(s.pct))}%</span>` : ''}</label>`; }).join('');
+    const reqs = rq.length ? rq.map((x, k) => { const s = baseStages(p).find(y => y.id === x.id) || { name: x.id, ar: x.id };
+      return `<div class="okpst-r"><b>${esc(L('طلب شيل مرحلة', 'Request to drop a stage'))}: ${esc(stName(s))}</b> · <span class="muted">${esc(x.byName || '')} · ${esc(String(x.at || '').slice(0, 10))}</span>${x.why ? `<div>${esc(x.why)}</div>` : ''}<div class="small">${esc(L('موافقة العميل المكتوبة', 'Client written approval'))}: ${x.link ? `<a href="${esc(x.link)}" target="_blank" rel="noopener">${esc(L('الرابط', 'the link'))} ↗</a>` : ''} ${x.file ? `<a href="#" data-okpstf="${esc(pid)}:${k}">${esc(L('الملف', 'the file'))} ↗</a>` : ''}</div>${approver() ? `<div class="row"><button type="button" class="btn sm p" data-okpstok="${esc(pid)}:${k}">${esc(L('موافقة', 'Approve'))}</button><button type="button" class="btn sm" data-okpstno="${esc(pid)}:${k}">${esc(L('رفض', 'Refuse'))}</button></div>` : ''}</div>`; }).join('') : '';
+    const needProof = contract(p) && !approver();
+    openModal({ title: L(`مراحل المشروع — ${p.name}`, `Project stages — ${p.name}`), wide: true, submitLabel: L('حفظ', 'Save'),
+      body: `<div class="small muted" style="margin-bottom:10px">${esc(L('شيل العلامة من أي مرحلة مش في المشروع ده (زي الـ IFC لو المشروع بيقف عند الطرح). نسبتها بتتنقل للمرحلة اللي بعدها، وبتختفي من شريط المراحل والمطالبات.', 'Untick any stage that is not in this project (like IFC when the project stops at the tender). Its share moves to the next stage, and it leaves the stage strip and the claims.'))}${needProof ? ' ' + esc(L('المراحل اللي في العقد: شيلها بيروح طلب لرئيسة الـ PMO، ولازم ترفق موافقة العميل المكتوبة.', 'Stages in the contract: dropping one goes to the Head of PMO as a request, with the client\'s written approval attached.')) : ''}</div>
+        <div class="okpst-l">${rows}</div>${reqs}
+        ${needProof ? `<div class="form" style="margin-top:12px">${field(L('موافقة العميل المكتوبة — ملف', 'Client written approval — file'), '<input type="file" name="proof" accept="image/*,application/pdf,.doc,.docx,.msg,.eml">')}${field(L('أو رابط (إيميل / درايف)', 'or a link (email / drive)'), '<input class="inp ltr" name="link" dir="ltr" placeholder="https://…">')}${field(L('ليه؟', 'Why?'), '<input class="inp" name="why" dir="auto">', 'full')}</div>` : ''}`,
+      onSubmit: async f => { const p1 = byId('projects', pid); if (!p1 || !canEd(p1)) return true; const all = baseStages(p1); const was = skipOf(p1);
+        const want = all.filter(s => s.id !== cur(p1) && !f.querySelector(`[name="st_${CSS.escape(s.id)}"]`).checked).map(s => s.id);
+        const back = was.filter(id => !want.includes(id)); let drop = want.filter(id => !was.includes(id)); const now = nowISO(); const log = (p1.okSkipLog || []).slice(-40); const patch = {};
+        let reqs1 = reqOf(p1).slice();
+        if (needProof) { const inContract = drop.filter(id => all.find(s => s.id === id && s.fromContract)); drop = drop.filter(id => !inContract.includes(id));
+          const newReq = inContract.filter(id => !reqs1.some(x => x.id === id));
+          if (newReq.length) { const v = formData(f); const fileIn = f.querySelector('[name=proof]'); let file = null;
+            if (fileIn && fileIn.files && fileIn.files[0]) { try { file = await Files.put(fileIn.files[0], fileIn.files[0].type); file.name = fileIn.files[0].name; } catch (e) { toast(L('الملف ما اترفعش — جرّب تاني أو حط رابط', 'The file did not upload — try again or add a link'), 'err'); return false; } }
+            if (!file && !String(v.link || '').trim()) { toast(L('ارفق موافقة العميل المكتوبة (ملف أو رابط)', 'Attach the client\'s written approval (a file or a link)'), 'err'); return false; }
+            newReq.forEach(id => reqs1.push({ id, by: me(), byName: myName(), at: now, why: String(v.why || '').trim(), link: String(v.link || '').trim(), file }));
+            const names = newReq.map(id => stName(all.find(s => s.id === id))).join('، ');
+            ping(pmoIds().map(x => 'w:' + x).concat(['role:admin']), L('طلب شيل مرحلة من مشروع', 'Request to drop a project stage'), `${p1.name}: ${names} — ${myName()}`, '/#/projects/' + pid); } }
+        const sk = was.filter(id => !back.includes(id)).concat(drop);
+        if (drop.length || back.length) { log.push({ at: now, by: myName(), off: drop, on: back }); patch.okSkip = sk; patch.okSkipLog = log; }
+        if (JSON.stringify(reqs1) !== JSON.stringify(reqOf(p1))) patch.okSkipReq = reqs1;
+        if (!Object.keys(patch).length) return true;
+        await Store.update('projects', pid, patch);
+        if ((drop.length || back.length) && approver()) ping(owners(p1).filter(x => x !== me()).map(x => 'w:' + x), L('مراحل المشروع اتعدّلت', 'The project stages changed'), `${p1.name} — ${myName()}`, '/#/projects/' + pid);
+        toast(reqs1.length > reqOf(p1).length ? L('اتبعت لرئيسة الـ PMO ✓', 'Sent to the Head of PMO ✓') : L('اتحفظ ✓', 'Saved ✓')); if (typeof rerender === 'function') rerender(); return true; } });
+  };
+  const decide = async (pid, k, ok) => { const p = byId('projects', pid); if (!p || !approver()) return; const rq = reqOf(p).slice(); const x = rq[k]; if (!x) return; rq.splice(k, 1); const now = nowISO();
+    const patch = { okSkipReq: rq }; if (ok) { patch.okSkip = Array.from(new Set(skipOf(p).concat([x.id]))); patch.okSkipLog = (p.okSkipLog || []).slice(-40).concat([{ at: now, by: myName(), off: [x.id], on: [], approved: x.byName }]); }
+    await Store.update('projects', pid, patch); const s = baseStages(p).find(y => y.id === x.id) || { name: x.id, ar: x.id };
+    ping(['w:' + x.by], ok ? L('اتوافق على شيل المرحلة', 'The stage removal was approved') : L('اترفض شيل المرحلة', 'The stage removal was refused'), `${p.name}: ${stName(s)} — ${myName()}`, '/#/projects/' + pid);
+    try { closeModal(); } catch (e) { /* */ } toast(ok ? L('اتوافق ✓', 'Approved ✓') : L('اترفض', 'Refused')); if (typeof rerender === 'function') rerender(); };
+  document.addEventListener('click', async ev => { const t = ev.target.closest && ev.target.closest('[data-okpst],[data-okpstok],[data-okpstno],[data-okpstf]'); if (!t) return; ev.preventDefault();
+    if (t.dataset.okpst) return editor(t.dataset.okpst);
+    if (t.dataset.okpstf) { const [pid, k] = t.dataset.okpstf.split(':'); const x = reqOf(byId('projects', pid))[+k]; if (x && x.file) { const u = await Files.url(x.file); if (u) window.open(u, '_blank', 'noopener'); } return; }
+    const [pid, k] = (t.dataset.okpstok || t.dataset.okpstno).split(':'); return decide(pid, +k, !!t.dataset.okpstok); });
+  if (typeof OEKO_I18N === 'object') Object.assign(OEKO_I18N, { 'مستندات الطرح (IFT)': 'Tender Documents (IFT)', 'الرسومات التنفيذية (IFC)': 'Construction Documents (IFC)' });
 })();
