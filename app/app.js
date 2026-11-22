@@ -52070,6 +52070,7 @@ ${text}`;
     let bottom = '';
     if (c.step === 'write' || c.step === 'clarify') bottom = composer('supq', 'chat', 'supSend', c.step === 'clarify' ? L('اكتب الرد هنا…', 'Type your answer here…') : L('مثال: بدوس «تسجيل حضور» ومفيش حاجة بتحصل', 'e.g. I tap «Check in» and nothing happens'));
     else if (c.step === 'answer') bottom = `<div class="row supacts"><button type="button" class="btn p" data-action="supBotOk">${icon('check')}<span>${esc(L('كده اتحلت', 'That solved it'))}</span></button><button type="button" class="btn" data-action="supBotNo">${icon('send')}<span>${esc(L('لأ، ابعتها للدعم', 'No, send it to support'))}</span></button></div>`;
+    else if (c.step === 'similar') { const st = byId(COL, c.sim) || {}; bottom = `<div class="row supacts"><button type="button" class="btn p" data-action="supSimYes">${icon('chat')}<span>${esc(L('كمّل في «', 'Continue in «') + clean(st.subj || '').slice(0, 40) + '»')}</span></button><button type="button" class="btn" data-action="supSimNo">${icon('plus')}<span>${esc(L('لأ، دي مشكلة جديدة', 'No, this is a new problem'))}</span></button></div>`; }
     else if (c.step === 'think' || c.step === 'sending') bottom = `<div class="muted small">${esc(L('ثانية واحدة…', 'One moment…'))}</div>`;
     else bottom = `<div class="row supacts">${c.ticketId ? `<a class="btn p" href="#/support/${esc(c.ticketId)}">${icon('chat')}<span>${esc(L('افتح المشكلة', 'Open the problem'))}</span></a>` : ''}<button type="button" class="btn ghost" data-action="supNew">${icon('plus')}<span>${esc(L('مشكلة تانية', 'Another problem'))}</span></button></div>`;
     return `<div class="card supchat"><div class="cardhead"><h3>${icon('lifebuoy')} ${esc(L('مشكلة جديدة', 'A new problem'))}</h3></div>${ctxChips(c.page, device())}<div class="supmsgs">${c.msgs.map(m => bubble(m, false)).join('')}</div>${bottom}</div>`;
@@ -52089,6 +52090,10 @@ ${text}`;
     SUP.draft.supq = ''; SUP.files.chat = [];
     c.msgs.push({ from: 'me', text, files, at: nowISO() });
     if (c.step === 'clarify' || c.step === 'answer') { c.answers = [c.answers, text].filter(Boolean).join('\n'); c.files1 = c.files1.concat(files); await sendTicket(false); return; }
+    /* 22 Nov (Mahmoud): «someone can go back into the same problem and comment again, so he does not explain from the start» —
+       a new message that looks like one of his recent problems is offered to that problem first */
+    if (!c.skipSim) { const sim = similarTo(said || text, c.page); if (sim) { c.pending = { text, files, att }; c.sim = sim.id;
+      c.msgs.push(Object.assign({ from: 'bot' }, SLT(`ده شبه مشكلتك «${clean(sim.subj || '')}» (${when(sim.lastAt || sim.createdAt)}). تحب تكمّل فيها بدل ما تشرح من الأول؟`, `This looks like your problem «${clean(sim.subj || '')}» (${when(sim.lastAt || sim.createdAt)}). Continue there instead of explaining again?`))); c.step = 'similar'; render(false); return; } }
     c.text = text; c.said = said; c.files0 = files; c.t0 = nowISO();
     const local = said ? inLang(supLang(), () => ruleAnswer(said)) : '';
     if (local) { c.local = local; c.msgs.push({ from: 'bot', text: local + '\n' + SL('ده حلّ مشكلتك؟', 'Did that solve it?') }); c.step = 'answer'; render(false); return; }
@@ -52100,6 +52105,33 @@ ${text}`;
     if (!bot && said.length < 40 && !files.length) { c.qs = [SL('حصل إيه بالظبط؟ وكنت متوقع إيه يحصل؟', 'What exactly happened, and what did you expect?')]; c.msgs.push(Object.assign({ from: 'bot' }, SLT('عشان نحلها أسرع: حصل إيه بالظبط؟ وكنت متوقع إيه يحصل؟', 'To fix it faster: what exactly happened, and what did you expect?'))); c.step = 'clarify'; render(false); return; }
     await sendTicket(false);
   };
+  /* a new message that looks like one of his recent problems (14 days): words in common (+ the same page) */
+  const SNORM = x => String(x || '').toLowerCase().replace(/[إأآا]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/[^\p{L}\p{N}\s]/gu, ' ');
+  const SSTOP = new Set(['the', 'and', 'that', 'this', 'with', 'from', 'have', 'for', 'are', 'not', 'but', 'you', 'what', 'when', 'your', 'there', 'into', 'about', 'can', 'its', 'it’s', 'still', 'please', 'مش', 'علي', 'في', 'من', 'اللي', 'لما', 'بس', 'ده', 'دي', 'انا', 'عشان', 'علشان', 'ازاي', 'كده', 'كمان', 'تاني', 'لسه', 'مفيش', 'فيه', 'عايز', 'عايزه', 'السيستم']);
+  const swords = x => new Set(SNORM(x).split(/\s+/).filter(w => w.length >= 3 && !SSTOP.has(w)));
+  function similarTo(text, page) {
+    const w0 = swords(text); if (w0.size < 2) return null; const cut = Date.now() - 14 * 864e5; let best = null;
+    mine().forEach(t => { const at = Date.parse(t.lastAt || t.createdAt || 0); if (!(at > cut)) return;
+      const w1 = swords([t.subj, t.sum, t.report].concat((t.thread || []).filter(m => m && m.from === 'me').map(m => m.text)).join(' ')); let n = 0; w0.forEach(w => { if (w1.has(w)) n++; });
+      const same = !!(page && t.page && page.hash && t.page.hash === page.hash); const score = n + (same ? 1.5 : 0);
+      if (n >= 2 && score >= 3 && (!best || score > best.score)) best = { t, score }; });
+    return best ? best.t : null;
+  }
+  /* add his message to an existing problem (reopens it when it was solved) */
+  async function addReply(id, text, files) {
+    const t = byId(COL, id); if (!t) return false; const now = nowISO(); const add = [];
+    if (t.status === 'solved') add.push(Object.assign({ id: uid(), at: now, from: 'sys' }, SLT('رجع على المشكلة تاني', 'Came back to this problem')));
+    add.push({ id: uid(), at: now, from: 'me', by: myId(), byName: me().name || '', text, files: files || [] });
+    add.push(Object.assign({ id: uid(), at: now, from: 'bot', ack: 1 }, SLT('✓ وصل ردّك للدعم الفني وهو شايفه — هيرد عليك هنا، وهيوصلك إشعار.', '✓ Support has your message and sees it — the reply comes here, and you will get a notice.')));
+    const patch = { thread: (t.thread || []).concat(add).slice(-200), lastAt: now, unreadOwner: true };
+    if (t.status === 'solved') { patch.status = 'new'; patch.reopenedAt = now; patch.solvedAt = null; }
+    try { await Store.update(COL, id, patch); } catch (e) { return false; }
+    push(ownerTo(), `رد من ${t.byName || ''} على مشكلته`, `${t.subj || ''} — ${text || 'صورة'}`, `/#/support/${id}`, 'sup-' + id); return true;
+  }
+  ACTIONS.supSimYes = async () => { const c = SUP.chat; if (!c || c.step !== 'similar' || !c.sim) return; c.step = 'sending'; render(false);
+    const ok = await addReply(c.sim, c.pending.text, c.pending.files); if (!ok) { c.step = 'similar'; toast(L('ماقدرتش أضيفها — جرّب تاني', 'Could not add it — try again'), 'err'); render(false); return; }
+    const id = c.sim; newChat(); location.hash = '#/support/' + id; };
+  ACTIONS.supSimNo = () => { const c = SUP.chat; if (!c || c.step !== 'similar') return; c.skipSim = true; c.msgs.splice(-2, 2); SUP.draft.supq = c.pending.text || ''; SUP.files.chat = c.pending.att || []; c.step = 'write'; c.sim = null; render(false); ACTIONS.supSend(); };
   ACTIONS.supBotOk = () => sendTicket(true);
   ACTIONS.supBotNo = () => sendTicket(false);
   const STUCK = /(?:واقف|وقف شغلي|مش عارف اشتغل|مش قادر (اشتغل|أشتغل|اكمل|أكمل)|مستعجل|ضروري|urgent|blocked|can.?t work|cannot work)/i;
@@ -52141,7 +52173,8 @@ ${text}`;
     if (own && t.status !== 'solved') acts.push(`<button type="button" class="btn sm p" data-action="supSolve" data-arg="${esc(id)}">${icon('check')}<span>${esc(L('اتحلت', 'Solved'))}</span></button>`);
     if (t.status === 'solved') acts.push(`<button type="button" class="btn sm" data-action="supReopen" data-arg="${esc(id)}">${icon('refresh')}<span>${esc(own ? L('افتحها تاني', 'Reopen') : L('لسه المشكلة موجودة؟ افتحها تاني', 'Still there? Reopen it'))}</span></button>`);
     const head = `<div class="card suphead"><div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><b class="notr" style="font-size:16px">${esc(t.subj || '')}</b>${badge(t.status)}${own ? devChip(t) : ''}<span class="muted tiny">${esc(code(t))}</span></div>${t.report ? `<div class="suprep"><div class="h">${icon('star')}<b>${esc(L('ملخص المشكلة', 'Summary of the problem'))}</b></div><div class="notr">${nl(t.report)}</div></div>` : t.sum && own ? `<div class="small muted notr" style="margin-top:4px">${esc(t.sum)}</div>` : ''}${info}${acts.length ? `<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:10px">${acts.join('')}</div>` : ''}</div>`;
-    const th = `<div class="card supchat"><div class="supmsgs">${(t.thread || []).map(m => bubble(m, own)).join('')}</div>${composer('supr', 'reply', 'supReply', own ? L('ردّك على الموظف…', 'Your reply to the person…') : L('زوّد تفاصيل أو ردّ…', 'Add details or reply…'), id)}</div>`;
+    const back = !own && t.status === 'solved' ? `<div class="small" style="margin:6px 0 2px;color:var(--muted)">${esc(L('الحل مش هو اللي كنت عايزه، أو لسه فيه حاجة؟ اكتب هنا تحت — المشكلة هتتفتح تاني، ومش محتاج تشرح من الأول.', 'Not what you wanted, or something is still missing? Write below — the problem reopens, no need to explain from the start.'))}</div>` : '';
+    const th = `<div class="card supchat"><div class="supmsgs">${(t.thread || []).map(m => bubble(m, own)).join('')}</div>${back}${composer('supr', 'reply', 'supReply', own ? L('ردّك على الموظف…', 'Your reply to the person…') : t.status === 'solved' ? L('اكتب اللي لسه ناقص…', 'Write what is still missing…') : L('زوّد تفاصيل أو ردّ…', 'Add details or reply…'), id)}</div>`;
     return head + th;
   }
   ACTIONS.supReply = async id => {
@@ -52152,7 +52185,7 @@ ${text}`;
     const tps = (SUP.files.reply || []).filter(x => x.tp).map(x => x.tp); if (tps.length) await Promise.race([Promise.all(tps), new Promise(r => setTimeout(r, 15000))]);
     const files = readyFiles('reply'); if (!text && !files.length) { toast(L('اكتب الرد الأول', 'Write the reply first'), 'err'); return; }
     const now = nowISO(); const m = { id: uid(), at: now, from: own ? 'owner' : 'me', by: myId(), byName: me().name || '', text, files };
-    const patch = { thread: (t.thread || []).concat([m]).slice(-200), lastAt: now };
+    const patch = { thread: (t.thread || []).concat(!own && t.status === 'solved' ? [Object.assign({ id: uid(), at: now, from: 'sys' }, SLT('رجع على المشكلة تاني', 'Came back to this problem')), m] : [m]).slice(-200), lastAt: now };
     if (own) { patch.unreadMe = true; if (t.status === 'new') patch.status = 'working'; }
     else { patch.unreadOwner = true; if (t.status === 'solved') { patch.status = 'new'; patch.reopenedAt = now; patch.solvedAt = null; } }
     /* 22 Nov (Rawan): «I continue in the same problem and support doesn't reply or see what I write» — an instant «seen», then the human reply */
@@ -52222,6 +52255,11 @@ ${text}`;
       <div class="tiny muted" style="margin-top:8px">${esc(L(`بتشوف هنا مشاكل ${sysName(sysKey())}${peers.length ? ' + ' + peers.map(sysName).join(' + ') : ''} — ملخص بالمفتوح بيوصلك كل يوم الساعة 9 بالليل.`, `You see the problems of ${sysName(sysKey())}${peers.length ? ' + ' + peers.map(sysName).join(' + ') : ''} here — a summary of the open ones reaches you every day at 9 PM.`))}</div>`;
   }
   ACTIONS.supTab = k => { SUP.tab = k; render(false); };
+  /* 22 Nov: his open problems (and the ones solved in the last 3 days) come first — he continues there instead of starting again */
+  function contHTML() {
+    const cut = Date.now() - 3 * 864e5; const xs = sortBy(mine().filter(t => t.status !== 'solved' || Date.parse(t.solvedAt || t.lastAt || 0) > cut), t => t.lastAt || t.createdAt || '', true).slice(0, 4); if (!xs.length) return '';
+    return `<div class="card"><div class="cardhead"><h3>${icon('chat')} ${esc(L('كمّل في مشكلة ليك', 'Continue one of your problems'))}</h3></div><div class="muted small" style="margin:-4px 0 8px">${esc(L('لو ليها علاقة بمشكلة قبل كده — أو التعديل مش هو اللي كنت عايزه — ادخل عليها واكتب، من غير ما تشرح من الأول.', 'If it is about an earlier problem — or the change is not what you wanted — open it and write there, no need to explain from the start.'))}</div><div class="list suplist">${xs.map(t => row(t, false)).join('')}</div></div>`;
+  }
   function myListHTML() {
     const xs = sortBy(mine(), t => t.lastAt || t.createdAt || '', true); if (!xs.length) return '';
     return `<div class="card"><div class="cardhead"><h3>${esc(L('مشاكلي', 'My problems'))}</h3><span class="muted small">${xs.length}</span></div><div class="list suplist">${xs.slice(0, 30).map(t => row(t, false)).join('')}</div></div>`;
@@ -52230,7 +52268,7 @@ ${text}`;
     if (r.id === 'session' && isOwner() && typeof window.nfTriageHTML === 'function') return window.nfTriageHTML();
     if (r.id) return ticketHTML(r.id);
     if (isOwner()) return inboxHTML();
-    return chatHTML() + myListHTML();
+    return contHTML() + chatHTML() + myListHTML();
   }
   EXTRA_VIEWS.support = r => (canUse() ? pageHTML(r) : `<div class="card"><div class="empty">${esc(L('مش متاح', 'Not available'))}</div></div>`);
   EXTRA_TITLES.support = r => {
