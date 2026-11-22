@@ -6838,3 +6838,24 @@ html[data-theme="dark"] .okst .pill.okp-g{color:#5fd3a0}html[data-theme="dark"] 
   window.addEventListener('hashchange', () => { if (mm()) shut(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden && mm()) shut(); });
 })();
+
+/* =====================================================================
+   22 Nov 2026 (Rawan's ticket): «I changed it to DD but the Concept deliverables and status still show».
+   A project carries its stage twice — «stage» (the project form) and «osStatus» (what the project page, the deliverables, the
+   claims and the timeline read, and what wins). The stage chip already moved both; the project form moved only «stage».
+   Now any save that changes «stage» moves «osStatus» with it (and stamps the date it entered the stage).
+   ===================================================================== */
+(() => {
+  if (window.__OK_STSYNC__) return; window.__OK_STSYNC__ = 1;
+  if (typeof Store !== 'object') return;
+  const ok = st => typeof st === 'string' && !!st && st !== '-';
+  const stamp = (at, st) => Object.assign({}, at || {}, { [st]: (at && at[st]) || nowISO() });
+  if (Store.save) Store.save = (base => async function (col, doc) {
+    try { if (col === 'projects' && doc && ok(doc.stage)) { const prev = (doc.id && byId('projects', doc.id)) || {};
+      if (doc.osStatus !== doc.stage && doc.stage !== prev.stage && (doc.osStatus == null || doc.osStatus === prev.osStatus)) { doc.osStatus = doc.stage; doc.osStatusAt = stamp(doc.osStatusAt || prev.osStatusAt, doc.stage); doc.stageAt = stamp(doc.stageAt || prev.stageAt, doc.stage); } } } catch (e) { /* the save goes on as it was */ }
+    return base.apply(this, arguments); })(Store.save);
+  if (Store.update) Store.update = (base => async function (col, id, patch) {
+    try { if (col === 'projects' && patch && ok(patch.stage) && !Object.prototype.hasOwnProperty.call(patch, 'osStatus')) { const prev = byId('projects', id) || {};
+      if (prev.osStatus && prev.osStatus !== patch.stage) { patch.osStatus = patch.stage; patch.osStatusAt = stamp(prev.osStatusAt, patch.stage); if (!patch.stageAt) patch.stageAt = stamp(prev.stageAt, patch.stage); } } } catch (e) { /* the save goes on as it was */ }
+    return base.apply(this, arguments); })(Store.update);
+})();
