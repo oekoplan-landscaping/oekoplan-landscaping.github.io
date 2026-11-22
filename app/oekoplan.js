@@ -2849,6 +2849,11 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
       const noCam = /NotFound|Overconstrained|NotReadable/.test(nm) || window.innerWidth > 760;
       toast(noCam ? L('الكود بيتمسح من الموبايل: افتح تطبيق Ökoplan على موبايلك ← علامة + ← «امسح الكود» ← وجّه الكاميرا على الكود.', 'Codes are scanned with the phone: open the Ökoplan app on your phone → + → «Scan a code» → point the camera at the code.') : L('مقدرتش أفتح الكاميرا — اسمح للتطبيق باستخدامها', 'Could not open the camera — allow the app to use it'), 'err'); }
   };
+  /* 22 Nov: the phone's other scanner («Scan computer code», the round button) read only the check-in code and ignored the unlock code
+     of a locked computer — so «it locks and the QR does not open it». Every scanner now hands any Ökoplan code here. */
+  window.okQrHandle = async text => { const w = me(); if (!w) return; text = String(text || ''); window.okModalDone = null;
+    if (/OKK\.[0-9a-f-]{36}\.[0-9a-f]{32,}/.test(text)) { if (window.okKeyApprove) await window.okKeyApprove(text); return; }
+    if (/^OKQ\./.test(text)) { if (w.noPunch) { toast(L('دورك مش محتاج بصمة', 'Your role needs no punch')); return; } await punchWith(text, w); } };
   async function punchWith(token, w) {
     try { const r = await fn({ a: 'verify', token }); if (!r.ok) { mdone(false, r.why || 'invalid'); closeModal(); toast(r.why === 'expired' ? L('الكود انتهى — امسح الكود الجديد على الشاشة', 'The code expired — scan the new one on the screen') : L('كود غير صالح', 'Invalid code'), 'err'); return; }
       mdone(true); closeModal(); const res = await kioskPunch(w, { method: 'qr', verify: { qr: r.station, qrAge: r.age, device: w.deviceCred ? 'qr' : undefined } }); if (res && res.blocked) toast(res.msg, 'err');
