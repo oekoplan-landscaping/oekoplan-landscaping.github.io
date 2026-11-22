@@ -999,6 +999,9 @@ html[data-theme="dark"] .okn{background:var(--surface-2)}
   let okPick = null;
   document.addEventListener('click', e => { if (!('ontouchstart' in window)) return; const n = e.target.closest && e.target.closest('.okorg .okn[data-okp]'); if (!n || e.target.closest('a,[data-okout]') || !okOrgCan()) return; if (!okPick) { if (n.dataset.okp === 'owner') return; okPick = n.dataset.okp; n.classList.add('drag'); toast(L('دلوقتي دوس على المدير الجديد', 'Now tap the new manager')); } else { const from = okPick; okPick = null; document.querySelectorAll('.okn.drag').forEach(x => x.classList.remove('drag')); if (n.dataset.okp !== from) okMove(from, n.dataset.okp); } });
   Object.assign(OEKO_I18N, { 'هيكل Ökoplan Landscaping': 'Ökoplan Landscaping structure', 'CEO': 'CEO', 'من غير مدير مباشر:': 'No direct manager yet:' });
+  /* 22 Nov: the project-operations card still spoke Arabic in English (seen on Rawan's project page) */
+  Object.assign(OEKO_I18N, { 'واقف': 'Blocked', 'المشروع ده لفريقه فقط': 'This project is for its team only', 'موعد العميل (ثابت)': 'Client deadline (fixed)', 'الهدف الداخلي D-2': 'Internal target D-2', 'كل المشاريع': 'All projects', 'باقي المشاريع': 'Other projects' });
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try { if (typeof I18N === 'undefined' || I18N.lang !== 'en') return; document.querySelectorAll('#view small').forEach(el => { const t = el.textContent || ''; if (t.indexOf('أقصى حد D-1:') === 0) el.textContent = t.replace('أقصى حد D-1:', 'Latest D-1:'); }); } catch (e) { /* cosmetic */ } });
 
   /* the sidebar chip: the person's own job title (from their file) instead of the access role; the owner keeps «CEO» */
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => {
