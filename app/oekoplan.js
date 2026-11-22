@@ -4754,7 +4754,10 @@ ${H} .okcrm .tabs button.on{background:${B};border-color:${B}}
       of the app on the phone); on his registered phone it opens directly. It closes the moment he leaves that project page
       or switches tab/window, and asks again next time. Server: nf_ok_key_new / _approve / _status, nf_ok_fin_view (the money
       no longer syncs to the Project Owners), ok_phones (the first phone that scans becomes his phone; the CEO can reset it).
-   2) The computer locks itself after 5 idle minutes; it opens with a QR scanned from the person's own phone, or the password.
+   2) The computer locks itself after 15 idle minutes (22 Nov: was 5); it opens with a QR scanned from the person's own phone, or the password.
+      «Idle» is the whole computer, not this tab: with the browser's Idle Detection (Chrome / Edge, one «Allow») a person working in
+      AutoCAD or Outlook stays open, and it locks 15 minutes after the mouse and keyboard stop — or at once when Windows itself locks.
+      Without it (another browser, or «Block»), time spent in another window does not count.
       Not on phones, not on the kiosk / the QR station.
    ===================================================================== */
 (() => {
@@ -4892,17 +4895,17 @@ html[data-theme="dark"] #oklock{background:#0d1719}
   } catch (e) { /* ignore */ } });
 
   /* ---------------- 2) the computer locks itself ---------------- */
-  const IDLE = 5 * 60e3; let last = Date.now(), lockedNow = false;
+  const IDLE = 15 * 60e3; let last = Date.now(), lockedNow = false;
   const lockable = () => !!S.session && !phone() && !(typeof role === 'function' && role() === 'kiosk') && !(S.route && S.route.view === 'okqr');
   const bump = () => { if (!lockedNow) last = Date.now(); };
   ['mousemove', 'mousedown', 'keydown', 'wheel', 'touchstart', 'scroll'].forEach(e => window.addEventListener(e, bump, { passive: true, capture: true }));
-  const unlock = () => { lockedNow = false; last = Date.now(); stopWait(); try { sessionStorage.removeItem('ok.locked'); } catch (e) { /* */ } const g = document.getElementById('oklock'); if (g) g.remove(); };
+  const unlock = () => { lockedNow = false; last = Date.now(); setTimeout(() => { try { offerAsk(); } catch (e) { /* */ } }, 1500); stopWait(); try { sessionStorage.removeItem('ok.locked'); } catch (e) { /* */ } const g = document.getElementById('oklock'); if (g) g.remove(); };
   const lock = () => {
     if (lockedNow || !lockable()) return; lockedNow = true; close(); try { sessionStorage.setItem('ok.locked', '1'); } catch (e) { /* */ }
     let logo = '_src/brand/lockup.png'; try { logo = new URL('_src/brand/lockup.png', document.baseURI).href; } catch (e) { /* */ }
     const nm = (S.session && S.session.name) || '';
     document.body.insertAdjacentHTML('beforeend', `<div id="oklock" dir="${en() ? 'ltr' : 'rtl'}"><div class="box">
-      <div class="who"><img src="${esc(logo)}" alt="Ökoplan Landscaping" onerror="this.style.display='none'"><div class="grow"><h2>${esc(L('السيستم اتقفل', 'The system is locked'))}</h2><small>${esc(nm)} · ${esc(L('اتقفل لوحده بعد 5 دقايق من غير استخدام', 'Locked by itself after 5 idle minutes'))}</small></div></div>
+      <div class="who"><img src="${esc(logo)}" alt="Ökoplan Landscaping" onerror="this.style.display='none'"><div class="grow"><h2>${esc(L('السيستم اتقفل', 'The system is locked'))}</h2><small>${esc(nm)} · ${esc(L('اتقفل لوحده بعد 15 دقيقة من غير استخدام', 'Locked by itself after 15 idle minutes'))}</small></div></div>
       <div class="okls"><h3>${esc(L('اعمل سكان من موبايلك', 'Scan with your phone'))}</h3><p>${esc(L('افتح تطبيق Ökoplan على موبايلك — الكاميرا هتفتح لوحدها (أو علامة + ← «امسح الكود»).', 'Open the Ökoplan app on your phone — the camera opens by itself (or + → «Scan a code»).'))}</p><div class="okkey" data-okhost></div></div>
       <form class="okls" autocomplete="off"><h3>${esc(L('أو كلمة السر', 'Or your password'))}</h3><input type="password" name="pw" autocomplete="current-password" placeholder="${esc(L('كلمة السر', 'Password'))}"><div class="err"></div><button type="submit" class="go">${esc(L('افتح', 'Unlock'))}</button><button type="button" class="out" data-out>${esc(L('تسجيل خروج', 'Sign out'))}</button></form></div></div>`);
     const g = document.getElementById('oklock'); const f = g.querySelector('form'); const err = f.querySelector('.err');
@@ -4918,8 +4921,44 @@ html[data-theme="dark"] #oklock{background:#0d1719}
     f.querySelector('[data-out]').addEventListener('click', () => { unlock(); const o = document.querySelector('[data-action="logout"]'); if (o) o.click(); else if (ACTIONS.logout) ACTIONS.logout(); });
     setTimeout(() => { try { f.querySelector('[name=pw]').focus(); } catch (e) { /* */ } }, 80);
   };
-  setInterval(() => { if (!lockedNow && lockable() && Date.now() - last > IDLE) lock(); }, 15e3);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && !lockedNow && lockable() && Date.now() - last > IDLE) lock(); });
+  /* 22 Nov (Mahmoud): smart — «as long as the mouse moves it stays open; when the mouse stops 15 minutes it locks; not
+     locked just because the system sat in the background». The computer's own idle state (Idle Detection) drives it;
+     without it, time with the tab hidden or another window in front does not count. */
+  const SYS = { det: null, on: false, bg: false };
+  const idleOK = () => { try { return 'IdleDetector' in window && window.isSecureContext && !phone(); } catch (e) { return false; } };
+  const idlePerm = async () => { try { const st = await navigator.permissions.query({ name: 'idle-detection' }); return st.state; } catch (e) { return 'unknown'; } };
+  async function startIdle() {
+    if (SYS.on || !idleOK()) return SYS.on; if ((await idlePerm()) !== 'granted') return false;
+    try { const d = new IdleDetector(); d.addEventListener('change', () => {
+        if (d.userState === 'active' && d.screenState !== 'locked') { bump(); return; }
+        if (!lockedNow && lockable()) lock(); });
+      await d.start({ threshold: IDLE }); SYS.det = d; SYS.on = true; bump(); hideAsk(); return true; } catch (e) { console.warn('[ok] idle', e); return false; }
+  }
+  /* the one-time «Allow» (the browser asks only after a tap) */
+  const ASKK = 'ok.idleAsk';
+  const hideAsk = () => { const b = document.getElementById('okidle'); if (b) b.remove(); };
+  async function offerAsk() {
+    if (SYS.on || !idleOK() || !S.session || !lockable() || document.getElementById('okidle')) return;
+    let snooze = 0; try { snooze = +localStorage.getItem(ASKK) || 0; } catch (e) { /* */ } if (Date.now() < snooze) return;
+    const st = await idlePerm(); if (st === 'granted') { startIdle(); return; } if (st === 'denied' || document.getElementById('okidle')) return;
+    document.body.insertAdjacentHTML('beforeend', `<div id="okidle" dir="${en() ? 'ltr' : 'rtl'}"><span>🔓 ${esc(L('علشان السيستم مايتقفلش وإنت شغّال على برامج تانية على الكمبيوتر، اسمح له يعرف إنك قاعد على الكمبيوتر.', 'So the system does not lock while you work in other programs on this computer, let it know you are at the computer.'))}</span><button type="button" class="go" data-okidle="yes">${esc(L('اسمح', 'Allow'))}</button><button type="button" class="no" data-okidle="no">${esc(L('بعدين', 'Later'))}</button></div>`);
+  }
+  document.addEventListener('click', async ev => { const t = ev.target.closest && ev.target.closest('[data-okidle]'); if (!t) return; ev.preventDefault();
+    if (t.dataset.okidle === 'no') { try { localStorage.setItem(ASKK, String(Date.now() + 3 * 864e5)); } catch (e) { /* */ } hideAsk(); return; }
+    let r = 'denied'; try { r = await IdleDetector.requestPermission(); } catch (e) { r = 'denied'; } hideAsk();
+    if (r === 'granted' && await startIdle()) toast(L('تمام ✓ — السيستم هيفضل فاتح طول ما إنت شغّال على الكمبيوتر، ويتقفل بعد 15 دقيقة من غير ماوس ولا كيبورد', 'Done ✓ — the system stays open while you work on the computer, and locks after 15 minutes with no mouse or keyboard'));
+    else { try { localStorage.setItem(ASKK, String(Date.now() + 7 * 864e5)); } catch (e) { /* */ } toast(L('ماشي — الوقت اللي بتقضيه في برامج تانية مش هيتحسب، والقفل بعد 15 دقيقة من غير استخدام هنا', 'OK — time in other programs will not count; it locks after 15 idle minutes here'), 'info'); }
+  });
+  document.head.insertAdjacentHTML('beforeend', `<style>#okidle{position:fixed;inset-inline:16px;bottom:16px;z-index:99990;max-width:640px;margin-inline:auto;display:flex;align-items:center;gap:10px;background:var(--surface,#fff);border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 36px rgba(0,0,0,.14);padding:12px 14px;font-size:13.5px;line-height:1.5}#okidle span{flex:1}#okidle button{border:0;border-radius:12px;height:38px;padding:0 16px;font:700 13.5px var(--font,system-ui);cursor:pointer}#okidle .go{background:#50b1e7;color:#fff}#okidle .no{background:var(--surface-2);color:var(--ink)}</style>`);
+  /* without Idle Detection: the time with the tab hidden or another window in front is not counted */
+  const toBg = () => { SYS.bg = true; };
+  const toFg = () => { if (!SYS.bg) return; SYS.bg = false; if (!SYS.on && !lockedNow) last = Date.now(); };
+  document.addEventListener('visibilitychange', () => { if (document.hidden) toBg(); else toFg(); });
+  window.addEventListener('blur', toBg); window.addEventListener('focus', toFg);
+  setInterval(() => { if (lockedNow || !lockable()) return; if (SYS.on) return; /* the computer's own idle state decides */
+    if (SYS.bg || document.hidden) return; if (Date.now() - last > IDLE) lock(); }, 15e3);
+  setTimeout(() => { startIdle().then(ok => { if (!ok) setTimeout(offerAsk, 20e3); }); }, 4e3);
+  document.addEventListener('nf:login', () => setTimeout(() => { startIdle().then(ok => { if (!ok) setTimeout(offerAsk, 20e3); }); }, 3e3));
   /* a refresh does not open it */
   if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try { let s0 = null; try { s0 = sessionStorage.getItem('ok.locked'); } catch (e) { /* */ } if (s0 && !lockedNow && lockable()) lock(); if (!S.session && lockedNow) unlock(); } catch (e) { /* ignore */ } });
   window.okLockNow = lock;
@@ -5261,8 +5300,8 @@ html[data-theme="dark"] #oklock{background:#0d1719}
         L('«تايم لاين المشاريع»: إيه المتأخر النهارده.', '«Projects timeline»: what is late today.'),
         L('قواعد التشغيل الآلي والهيكل التنظيمي.', 'The automation rules and the organisation chart.')] },
     { id: 'lock', show: () => !!S.session, art: 'lock', go: '',
-      t: L('الكمبيوتر بيتقفل لوحده بعد 5 دقايق', 'The computer locks itself after 5 minutes'),
-      s: [L('لو سبت الكمبيوتر 5 دقايق من غير استخدام، السيستم بيتقفل.', 'Leave the computer 5 minutes and the system locks.'),
+      t: L('الكمبيوتر بيتقفل لوحده بعد 15 دقيقة', 'The computer locks itself after 15 minutes'),
+      s: [L('لو سبت الكمبيوتر 15 دقيقة من غير ما تلمس الماوس أو الكيبورد، السيستم بيتقفل — وطول ما إنت شغّال على أي برنامج تاني على الكمبيوتر بيفضل فاتح.', 'Leave the computer 15 minutes without touching the mouse or keyboard and the system locks — while you work in any other program on the computer it stays open.'),
         L('افتحه بسكان من موبايلك (افتح التطبيق والكاميرا بتفتح لوحدها) أو بكلمة السر.', 'Open it with a scan from your phone (open the app — the camera opens by itself) or your password.'),
         L('وفيه زرار تحديث ⟳ فوق، والصفحات اللي بتفتحها بتفضل تابات فوق.', 'There is also a refresh ⟳ button at the top, and the pages you open stay as tabs.')] },
     { id: 'mail', show: () => !!S.session && !!me(), art: 'mail', go: '#/me',
