@@ -39089,8 +39089,8 @@ ${A} .fab{background:var(--primary)!important;color:var(--primary-ink)!important
     },
     studioz: {
       top: ['dashboard', 'door', 'okday', 'okdash'],   /* Ökoplan 13 Nov: the CEO's day and office dashboard sit at the top of the menu, not inside «My account» */
-      add: [{ key: 'pmo', ar: 'إدارة المشروعات', en: 'PMO', ids: ['okpmo', 'okdaily', 'okask', 'okmyproj', 'okcrm', 'okorgjd'], before: 'clients' }, { key: 'intel', ar: 'الذكاء', en: 'AI', ids: ['okbrain', 'oksmart', 'ai', 'oklearn', 'okrules'], before: 'clients' }, { key: 'design', ar: 'التصميم', en: 'Design', ids: ['concept', 'studio'], before: 'clients' }, { key: 'comm', ar: 'التواصل', en: 'Communication', ids: ['tasks', 'pchats', 'meetings', 'okmeets', 'mail'], before: 'clients' }],
-      into: [{ near: 'projects', ids: ['projects', 'pm', 'studioos', 'oktimeline', 'portfolio', 'okpipeedit'] }, { near: 'clients', ids: ['enquiries', 'clients', 'quotes'] }, { near: 'settings', ids: ['reports', 'org', 'stuorg', 'audit', 'regulation', 'okabout', 'okweb', 'rdesk', 'settings'] }],
+      add: [{ key: 'pmo', ar: 'إدارة المشروعات', en: 'PMO', ids: ['okpmo', 'enquiries', 'okcrm', 'okdaily', 'okask', 'okmyproj', 'okorgjd'], before: 'clients' }, { key: 'intel', ar: 'الذكاء', en: 'AI', ids: ['okbrain', 'oksmart', 'ai', 'oklearn', 'okrules'], before: 'clients' }, { key: 'design', ar: 'التصميم', en: 'Design', ids: ['concept', 'studio'], before: 'clients' }, { key: 'comm', ar: 'التواصل', en: 'Communication', ids: ['tasks', 'pchats', 'meetings', 'okmeets', 'mail'], before: 'clients' }],
+      into: [{ near: 'projects', ids: ['projects', 'pm', 'studioos', 'oktimeline', 'portfolio', 'okpipeedit'] }, { near: 'clients', ids: ['clients', 'quotes'] }, { near: 'settings', ids: ['reports', 'org', 'stuorg', 'audit', 'regulation', 'okabout', 'okweb', 'rdesk', 'settings'] }],
       rename: [{ near: 'clients', ar: 'تطوير الأعمال', en: 'Business development' }],
     },
     construction: {
@@ -52115,6 +52115,8 @@ ${text}`;
     const subj = clean((c.bot && c.bot.title) || firstLine(c.said || c.text).slice(0, 80) || mediaName);
     const heard = ((c.md && c.md.said) || []).filter(Boolean); const report = clean((c.bot && c.bot.report) || (heard.length ? `${L('بيقول', 'Says')}: ${heard.join(' ')}` : '')).slice(0, 1200);
     const t = { id, byId: W.id, byName: W.name, workerId: W.workerId, deptId: W.deptId, dept: W.dept, role: W.role, roleName: W.roleName, job: W.job, sys: sysKey(), page: c.page || null, dev: device(), build: String(window.NF_BUILD || ''), lang: supLang(), mgr: W.mgr, urgent: !!((c.bot && c.bot.urgent) || STUCK.test([c.said, c.text, c.answers].join(' '))), subj, sum: (c.bot && c.bot.summary) || '', report, kind: (c.bot && c.bot.kind) || (c.local ? 'rule' : 'bug'), status: byBot ? 'solved' : 'new', solvedBy: byBot ? 'bot' : null, solvedAt: byBot ? now : null, thread, lastAt: now, unreadOwner: !byBot, unreadMe: false };
+    /* 22 Nov (Rawan): «your answer of getting back to IT support is the one that disappears» — it lived only in this chat; now it is part of the problem */
+    if (!byBot) t.thread = thread.concat([Object.assign({ id: uid(), at: now, from: 'bot' }, SLT(`✓ وصلت للدعم الفني — رقمها ${code(t)}. كمّل هنا في نفس المشكلة لو عندك أي تفاصيل تانية، والرد هيوصلك هنا وفي إشعار.`, `✓ It reached support — number ${code(t)}. Keep writing here in the same problem if you have anything to add; the reply comes here and as a notice.`))]);
     try { await Store.save(COL, t); }
     catch (e) { c.step = c.qs.length ? 'clarify' : 'write'; c.msgs.push({ from: 'bot', text: L('ماقدرتش أبعتها دلوقتي — اتأكد من النت وجرّب تاني.', 'Could not send it now — check the connection and try again.') }); render(false); return; }
     c.ticketId = id; c.step = 'sent';
@@ -52153,6 +52155,9 @@ ${text}`;
     const patch = { thread: (t.thread || []).concat([m]).slice(-200), lastAt: now };
     if (own) { patch.unreadMe = true; if (t.status === 'new') patch.status = 'working'; }
     else { patch.unreadOwner = true; if (t.status === 'solved') { patch.status = 'new'; patch.reopenedAt = now; patch.solvedAt = null; } }
+    /* 22 Nov (Rawan): «I continue in the same problem and support doesn't reply or see what I write» — an instant «seen», then the human reply */
+    if (!own) { const last = (t.thread || []).slice().reverse().find(x => x && x.from !== 'me'); const acked = last && last.from === 'bot' && last.ack && Date.now() - Date.parse(last.at || 0) < 30 * 60e3;
+      if (!acked) patch.thread = patch.thread.concat([Object.assign({ id: uid(), at: now, from: 'bot', ack: 1 }, SLT('✓ وصل ردّك للدعم الفني وهو شايفه — هيرد عليك هنا، وهيوصلك إشعار.', '✓ Support has your message and sees it — the reply comes here, and you will get a notice.'))]).slice(-200); }
     try { await Store.update(COL, id, patch); } catch (e) { return; }
     const replyAtt = (SUP.files.reply || []).slice(); SUP.draft.supr = ''; SUP.files.reply = [];
     if (!own && files.some(f => f.kind === 'video' || f.kind === 'audio')) followUpReport(id, text, replyAtt, files);
