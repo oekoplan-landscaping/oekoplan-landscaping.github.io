@@ -266,7 +266,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
 ## ثالثًا: مواعيد العمل والعمل الإضافي
 - المكتب الرئيسي: الحضور مرن، والبصمة قبل الميعاد مقبولة في أي وقت. آخر ميعاد للحضور 10:00 صباحًا للـ Landscape Architect والـ Junior Landscape Architect، و11:00 صباحًا للـ Senior والـ Lead والمديرين. الانصراف بعد 8 ساعات عمل فعلية + نصف ساعة راحة (12:30 – 1:00 ظهرًا) محسوبة من وقت بصمة الحضور.
 - المواقع: من 9:00 صباحًا حتى 5:00 مساءً، 6 أيام أسبوعيًا داخل القاهرة الكبرى، أو 12 يوم عمل متواصلة مقابل 3 أيام راحة للمواقع خارج القاهرة الكبرى.
-- الأجر الإضافي: المكتب ساعة من الأجر الأساسي عن كل ساعة إضافية (ساعتان في العطلات الرسمية)؛ المواقع ساعة ونصف عن كل ساعة إضافية — بتكليف من المدير المباشر وبعد اعتماده في السيستم.
+- الأجر الإضافي: ساعة ونصف من الأجر الأساسي عن كل ساعة إضافية في أيام العمل — في المكتب والمواقع (ساعتان في العطلات الرسمية) — بتكليف من المدير المباشر وبعد اعتماده في السيستم.
 ## رابعًا: نظام الإجازات
 - الإجازة السنوية: 21 يومًا بأجر كامل لمن أمضى سنة في الخدمة، وتزداد إلى 30 يومًا لمن أمضى 10 سنوات أو تجاوز سن الخمسين.
 - الإجازة العارضة: بحد أقصى 6 أيام متقطعة في السنة تُخصم من الإجازة السنوية.
@@ -302,7 +302,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
 ## 3. Working hours and overtime
 - Head office: arrival is flexible and punching in early is always accepted. Latest arrival is 10:00 for Landscape Architects and Junior Landscape Architects, and 11:00 for Seniors, Leads and managers. Leave after 8 effective hours + a 30-minute break (12:30–13:00), counted from your punch-in.
 - Sites: 09:00 to 17:00, 6 days a week inside Greater Cairo, or 12 consecutive days on / 3 off for sites outside Greater Cairo.
-- Overtime: office — one hour of basic pay per extra hour (two on public holidays); sites — one and a half hours per extra hour; assigned by the direct manager and approved in the system.
+- Overtime: one and a half hours of basic pay per extra hour on working days — office and sites (two on public holidays); assigned by the direct manager and approved in the system.
 ## 4. Leave
 - Annual leave: 21 paid days after one year of service; 30 days after 10 years of service or past the age of 50.
 - Casual leave: up to 6 separate days a year, deducted from the annual balance.
@@ -330,7 +330,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
     company: NAME,
     companyAr: NAME_AR,
     legal: { company: 'شركة أوكوبلان لتنسيق المواقع (ÖKOPLAN Landscaping)', address: 'مساكن شيراتون — هليوبوليس — مصر الجديدة — القاهرة', activity: 'تنسيق المواقع', headcount: 60, law: 'قانون العمل رقم 12 لسنة 2003', phone: '', email: 'info@oekoplanlandscaping.com', site: 'https://oekoplan-landscaping.github.io' },
-    hoursPerDay: 8, otMultiplier: 1, weekStart: 0,
+    hoursPerDay: 8, otMultiplier: 1.5, weekStart: 0,   /* 22 Nov (PIN): office overtime on working days 1.5× like the sites; public holidays 2× */
     shiftStart: '08:00', shiftEnd: '16:30', breakMinutes: 30, graceMinutes: 180,
     brands: [{ id: 'oek', name: NAME, desc: 'تصميم لاند سكيب · استشارات · إشراف على التنفيذ', code: 'OEK', color: C.teal, route: [] }],
     departments: DEPTS.map(d => ({ id: d.id, name: d.name, admin: !!d.admin })),
@@ -359,7 +359,7 @@ html[data-theme="dark"] .okcard .slalt button{color:#6fcbbf}
   /* «تطبيق بنود اللائحة» writes Ökoplan's regulation */
   if (typeof applyRegulationSettings === 'function') applyRegulationSettings = async silent => {
     const s = Object.assign({}, S.settings); const d = clone(OEKO_DEFAULTS);
-    s.shifts = d.shifts.concat((s.shifts || []).filter(x => !d.shifts.find(y => y.id === x.id))); s.leaveTypes = d.leaveTypes; s.policy = Object.assign({}, s.policy || {}, d.policy); s.hoursPerDay = 8; s.otMultiplier = 1; s.trades = d.trades; s.regulation = Object.assign({}, s.regulation || {}, { text: d.regulation.text, textEn: d.regulation.textEn, title: d.regulation.title }); s.regPolicyApplied = (s.regulation && s.regulation.version) || 1;
+    s.shifts = d.shifts.concat((s.shifts || []).filter(x => !d.shifts.find(y => y.id === x.id))); s.leaveTypes = d.leaveTypes; s.policy = Object.assign({}, s.policy || {}, d.policy); s.hoursPerDay = 8; s.otMultiplier = 1.5; s.trades = d.trades; s.regulation = Object.assign({}, s.regulation || {}, { text: d.regulation.text, textEn: d.regulation.textEn, title: d.regulation.title }); s.regPolicyApplied = (s.regulation && s.regulation.version) || 1;
     await Store.saveSettings(s); if (!silent) toast(L('تم تطبيق لائحة أوكوبلان على الإعدادات', 'Ökoplan regulation applied to the settings'));
   };
 
@@ -6861,4 +6861,38 @@ html[data-theme="dark"] .okst .pill.okp-g{color:#5fd3a0}html[data-theme="dark"] 
     try { if (col === 'projects' && patch && ok(patch.stage) && !Object.prototype.hasOwnProperty.call(patch, 'osStatus')) { const prev = byId('projects', id) || {};
       if (prev.osStatus && prev.osStatus !== patch.stage) { patch.osStatus = patch.stage; patch.osStatusAt = stamp(prev.osStatusAt, patch.stage); if (!patch.stageAt) patch.stageAt = stamp(prev.stageAt, patch.stage); } } } catch (e) { /* the save goes on as it was */ }
     return base.apply(this, arguments); })(Store.update);
+})();
+
+/* =====================================================================
+   22 Nov 2026 (Mahmoud — PIN): tasks between the leaders.
+   «Ahmed, Dr. Tarek, Rawan and any Project Owner can send a task to another Project Owner, or to Ahmed, Dr. Tarek or Rawan.»
+   · the circle (server: nf_ok_leader_ids): heads and managers, the Head of PMO, the CEO's assistant, every Project Owner of a live project;
+   · someone in the circle gets the others in «Assigned to» — names and titles only (nf_ok_leaders), on top of his own department as before;
+   · Dr. Tarek is offered as «د. طارق صبحي — CEO» (the CEO's own id, «owner»); everyone else keeps today's list.
+   ===================================================================== */
+(() => {
+  if (window.__OK_LEADTASK__) return; window.__OK_LEADTASK__ = 1;
+  const L = (a, b) => (typeof I18N !== 'undefined' && I18N.lang === 'en' ? b : a);
+  const meW = () => (S.session && S.session.workerId) || '';
+  const LT = { ids: new Set(), at: 0, busy: false };
+  const amIn = () => !!S.session && (isAdmin() || (typeof role === 'function' && role() === 'hr') || LT.ids.has(meW()));
+  const load = () => {
+    if (!S.session || LT.busy || Date.now() - LT.at < 10 * 60e3 || !S.sb || typeof S.sb.rpc !== 'function') return; LT.busy = true; LT.at = Date.now();
+    Promise.resolve(S.sb.rpc('nf_ok_leaders')).then(r => { LT.busy = false; const a = r && Array.isArray(r.data) ? r.data : []; LT.ids = new Set(a.map(x => x && x.id).filter(Boolean));
+      if (!(S.data && S.data.workers instanceof Map)) return; a.forEach(x => { if (!x || !x.id) return; const cur = S.data.workers.get(x.id); if (!cur) S.data.workers.set(x.id, x); }); }).catch(() => { LT.busy = false; });
+  };
+  document.addEventListener('nf:ready', () => setTimeout(load, 2500)); document.addEventListener('nf:login', () => setTimeout(() => { LT.at = 0; load(); }, 3000)); setTimeout(load, 5000); setInterval(load, 10 * 60e3);
+  /* «Assigned to»: the circle on top of his own department */
+  if (typeof taskScopeIds === 'function') taskScopeIds = (base => function () { const sc = base.apply(this, arguments); if (!sc || !amIn()) return sc; LT.ids.forEach(id => sc.ids.add(id)); sc.ids.add('owner'); return sc; })(taskScopeIds);
+  /* Dr. Tarek in the list (he has no staff file — his tasks go to the CEO's own id), and the department starts at «general»
+     so the department filter does not hide the circle (it keeps only the chosen department's people) */
+  const ceoName = () => (S.settings && S.settings.ownerName) || L('د. طارق صبحي', 'Dr. Tarek Sobhy');
+  if (typeof taskForm === 'function') taskForm = (base => function (t) { let html = base.apply(this, arguments); try { if (!amIn() || isAdmin()) return html; const t0 = t || {};
+      html = html.replace(/(<select id="f-assigneeId" name="assigneeId">)(<option value=""[^>]*>[^<]*<\/option>)?/, (m, open, first) => html.indexOf('value="owner"') >= 0 ? m : `${open}${first || ''}<option value="owner"${t0.assigneeId === 'owner' ? ' selected' : ''}>${esc(ceoName())} — CEO</option>`);
+      if (!t0.deptId) html = html.replace(/(<select id="f-deptId" name="deptId">)([\s\S]*?)(<\/select>)/, (m, o, inner, c) => o + inner.replace(/ selected(="selected")?/g, '') + c);
+    } catch (e) { /* the form as it was */ } return html; })(taskForm);
+  /* a task to Dr. Tarek reaches his phone (his push address is the CEO's, not a staff file) */
+  if (typeof Store === 'object' && Store.save) Store.save = (base => async function (col, doc) { const isNew = col === 'tasks' && doc && doc.assigneeId === 'owner' && !(doc.id && byId('tasks', doc.id)); const r = await base.apply(this, arguments);
+    try { if (isNew && !isAdmin() && typeof pushSend === 'function') pushSend(['role:admin'], 'مهمة جديدة من ' + ((S.session && S.session.name) || ''), doc.title || '', '/#/tasks/' + doc.id, 'task-' + doc.id).catch(() => { }); } catch (e) { /* the task is saved anyway */ } return r; })(Store.save);
+  if (typeof OEKO_I18N === 'object') OEKO_I18N['د. طارق صبحي — CEO'] = 'Dr. Tarek Sobhy — CEO';
 })();
