@@ -3006,7 +3006,7 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
   const canMoney = p => !!p && (isAdmin() || finId(p) === me() || isFinMgr() || (typeof window.okFinAll === 'function' && window.okFinAll()));
   const mNum = v => { const n = +String(v == null ? '' : v).replace(/[^\d.-]/g, ''); return isFinite(n) ? n : 0; };
   const mFmt = n => Math.round(n).toLocaleString('en-US');
-  const mShow = {}; const mOn = pid => mShow[pid] && Date.now() - mShow[pid] < 20000;
+  const mShow = {}; const MSEC = 60000; /* 22 Nov (PIN): one minute on the numbers, then they hide by themselves (was 20 s) */ const mOn = pid => mShow[pid] && Date.now() - mShow[pid] < MSEC;
   const mVal = (pid, n) => (mOn(pid) ? `${mFmt(n)} <small>${esc(L('ج.م', 'EGP'))}</small>` : '••••');
   const mOf = (p, s) => { const f = byId('okfin', p.id) || {}; const pays = list('okpay').filter(x => x && !x.deleted && x.projectId === p.id && x.stage === s.id);
     const want = mNum((f.stages || {})[s.id]) || (mNum(f.contract) && s.pct != null ? mNum(f.contract) * (+s.pct || 0) / 100 : 0); const got = pays.reduce((a, x) => a + mNum(x.amount), 0);
@@ -3015,7 +3015,11 @@ body.printing .notesfab,body.fab-hide .notesfab,body.nf-typing .notesfab,body.nf
     if (!c && !got) return `<div class="tiny muted" style="margin:2px 0 6px">${esc(L('قيم العقد والمراحل لسه ما اتدخلتش.', 'Contract and stage values are not entered yet.'))}</div>`;
     return `<div class="okrow"><span class="muted">${esc(L('قيمة العقد', 'Contract'))}</span><b>${mVal(p.id, c)}</b><span class="muted">${esc(L('اتحصّل', 'Collected'))}</span><b>${mVal(p.id, got)}</b><span class="muted">${esc(L('فاضل', 'Left'))}</span><b>${mVal(p.id, Math.max(0, c - got))}</b></div>`; };
   const mRow = (p, s) => { const m = mOf(p, s); if (!m.want && !m.got) return ''; return `<span class="okp" title="${esc(L('المطلوب · اتحصّل · فاضل', 'Due · collected · left'))}">${mVal(p.id, m.want)} · ${mVal(p.id, m.got)} · ${mVal(p.id, m.left)}</span>`; };
-  document.addEventListener('click', ev => { const t = ev.target.closest && ev.target.closest('[data-okamt]'); if (!t) return; ev.preventDefault(); const pid = t.dataset.okamt; mShow[pid] = mOn(pid) ? 0 : Date.now(); if (typeof rerender === 'function') rerender(); setTimeout(() => { if (typeof rerender === 'function') rerender(); }, 20500); });
+  document.addEventListener('click', ev => { const t = ev.target.closest && ev.target.closest('[data-okamt]'); if (!t) return; ev.preventDefault(); const pid = t.dataset.okamt; mShow[pid] = mOn(pid) ? 0 : Date.now(); if (typeof rerender === 'function') rerender(); setTimeout(() => { if (typeof rerender === 'function') rerender(); }, MSEC + 500); });
+  /* leaving the page (another page, another tab or program) hides them; the button counts down the seconds left */
+  const mHideAll = () => { if (!Object.keys(mShow).some(k => mOn(k))) return; Object.keys(mShow).forEach(k => { mShow[k] = 0; }); if (typeof rerender === 'function') rerender(); };
+  window.addEventListener('hashchange', mHideAll); document.addEventListener('visibilitychange', () => { if (document.hidden) mHideAll(); }); window.addEventListener('blur', mHideAll);
+  setInterval(() => { document.querySelectorAll('[data-okamt]').forEach(b => { const pid = b.dataset.okamt; if (!mOn(pid)) return; const left = Math.max(0, Math.ceil((MSEC - (Date.now() - mShow[pid])) / 1000)); const tx = L('اخفي المبالغ', 'Hide amounts') + ' · ' + left; if (b.textContent !== tx) b.textContent = tx; }); }, 1000);
   const d10 = iso => (iso ? fmtDate(String(iso).slice(0, 10)) : '');
   const stName = (sid) => { const s = PIPE().find(x => x.id === sid); return s ? L(s.ar, s.name) : ((window.okStageName && window.okStageName(sid)) || sid); };
   const tell = (ids, title, body, pid) => { ids = Array.from(new Set((ids || []).filter(id => id && id !== me()))); if (!ids.length) return;
@@ -3683,12 +3687,12 @@ ${done}${office}${boqRows()}</div>`;
   /* ---------- money entry on the project page ---------- */
   const F = (label, html, full) => `<div class="field ${full ? 'full' : ''}"><label>${esc(label)}</label>${html}</div>`;
   const finContract = pid => { const p = byId('projects', pid); if (!p || !canC()) return; const f0 = byId('okfin', pid) || {};
-    openModal({ title: L(`قيم العقد — ${p.name}`, `Contract values — ${p.name}`), submitLabel: L('احفظ', 'Save'),
+    openModal({ cls: 'okmoney', title: L(`قيم العقد — ${p.name}`, `Contract values — ${p.name}`), submitLabel: L('احفظ', 'Save'),
       body: `<div class="form">${F(L('إجمالي قيمة العقد', 'Total contract value'), `<input name="contract" inputmode="decimal" value="${esc(f0.contract || '')}">`, true)}${window.okStagesOf(p).map(s => F(L(s.ar, s.name) + (s.pct != null ? ' · ' + s.pct + '%' : ''), `<input name="st_${s.id}" inputmode="decimal" value="${esc((f0.stages || {})[s.id] || '')}">`)).join('')}</div><div class="tiny muted" style="margin-top:8px">${esc(L('الأرقام دي بتظهر ليكي وللـ CEO بس.', 'These figures are visible to you and the CEO only.'))}</div>`,
       onSubmit: async f => { const v = formData(f); const stages = {}; window.okStagesOf(p).forEach(s => { const n = num(v['st_' + s.id]); if (n) stages[s.id] = n; });
         await Store.save('okfin', { id: pid, projectId: pid, contract: num(v.contract), stages, updatedAt: nowISO(), updatedBy: myName() }, { silent: true }); toast(L('اتحفظ', 'Saved')); if (typeof rerender === 'function') rerender(); return true; } }); };
   const finPay = pid => { const p = byId('projects', pid); if (!p || !canP()) return; const ps = list('okpay').filter(x => x && !x.deleted && x.projectId === pid).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
-    openModal({ title: L(`تسجيل تحصيل — ${p.name}`, `Record money received — ${p.name}`), submitLabel: L('سجّل', 'Record'),
+    openModal({ cls: 'okmoney', title: L(`تسجيل تحصيل — ${p.name}`, `Record money received — ${p.name}`), submitLabel: L('سجّل', 'Record'),
       body: `<div class="form">${F(L('المبلغ', 'Amount'), `<input name="amount" inputmode="decimal" required>`)}${F(L('التاريخ', 'Date'), `<input name="date" type="date" value="${today()}" required>`)}${F(L('المرحلة (اختياري)', 'Stage (optional)'), `<select name="stage"><option value="">—</option>${window.okStagesOf(p).map(s => `<option value="${s.id}">${esc(L(s.ar, s.name))}</option>`).join('')}</select>`)}${F(L('ملاحظة (اختياري)', 'Note (optional)'), `<input name="note">`)}</div>${ps.length ? `<div style="margin-top:12px"><b class="small">${esc(L('اللي اتسجل قبل كده', 'Recorded so far'))}</b>${ps.map(x => `<div class="small" style="display:flex;gap:10px;padding:6px 0;border-top:1px solid var(--line)"><span>${esc(fmtDate(x.date))}</span><b>${fmt(num(x.amount))}</b><span class="muted">${esc([x.stage && stName(x.stage), x.note].filter(Boolean).join(' · '))}</span></div>`).join('')}</div>` : ''}<div class="tiny muted" style="margin-top:8px">${esc(L('الأرقام دي بتظهر ليك وللـ CEO بس.', 'These figures are visible to you and the CEO only.'))}</div>`,
       onSubmit: async f => { const v = formData(f); const n = num(v.amount); if (!(n > 0)) { toast(L('اكتب المبلغ', 'Write the amount'), 'err'); return false; }
         await Store.save('okpay', { id: uid(), projectId: pid, amount: n, date: v.date || today(), stage: v.stage || '', note: String(v.note || '').trim(), by: myName(), byId: me(), createdAt: nowISO() }, { silent: true }); toast(L('اتسجّل', 'Recorded')); if (typeof rerender === 'function') rerender(); return true; } }); };
@@ -4861,12 +4865,12 @@ html[data-theme="dark"] #oklock{background:#0d1719}
 
   /* ---------------- 1) project money ---------------- */
   let open = null;   /* { pid, fin: injected?, pays: [ids] } */
-  const close = () => { if (!open) return; const o = open; open = null;
+  const close = () => { if (!open) return; const o = open; open = null; clearTimeout(o.t);
     try { if (o.fin && S.data.okfin) S.data.okfin.delete(o.pid); (o.pays || []).forEach(id => S.data.okpay && S.data.okpay.delete(id)); } catch (e) { /* */ }
     if (typeof rerender === 'function') rerender(); };
   const inject = (pid, d) => { const o = { pid, fin: false, pays: [] }; S.data.okfin = S.data.okfin || new Map(); S.data.okpay = S.data.okpay || new Map();
     if (d.fin && !S.data.okfin.has(pid)) { S.data.okfin.set(pid, d.fin); o.fin = true; }
-    (d.pays || []).forEach(x => { if (x && x.id && !S.data.okpay.has(x.id)) { S.data.okpay.set(x.id, x); o.pays.push(x.id); } }); open = o; };
+    (d.pays || []).forEach(x => { if (x && x.id && !S.data.okpay.has(x.id)) { S.data.okpay.set(x.id, x); o.pays.push(x.id); } }); open = o; o.t = setTimeout(() => { if (open === o) { close(); toast(L('الأرقام اتقفلت لوحدها — عدّت دقيقة', 'The numbers closed by themselves — a minute passed'), 'info'); } }, 60e3); };
   const isOpen = pid => !!open && open.pid === pid;
   const unlockMoney = (pid, again) => {
     const done = d => { if (!d || d.status !== 'ok') { toast(d && d.status === 'other_phone' ? L('ده مش الموبايل المتسجّل بتاعك — افتحها من الكمبيوتر واعمل سكان من موبايلك', 'This is not your registered phone — open it on the computer and scan from your phone') : d && d.status === 'denied' ? L('الفلوس دي مش من صلاحيتك', 'This money is not yours to see') : L('مااتفتحتش — جرّب تاني', 'Did not open — try again'), 'err'); return; }
@@ -6443,13 +6447,13 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
      Closed again when she leaves the page or the window. ---------- */
   const COST = { rates: null, sal: {}, busy: false };   /* sal: the hourly cost from each one's salary (server-computed, never the salary itself) */
   const costOpen = () => !!COST.rates;
-  const costClose = () => { if (COST.rates) { COST.rates = null; COST.sal = {}; try { if (window.okKeyKit) window.okKeyKit.stop(); } catch (e) { /* */ } rerender(); } };
+  const costClose = () => { clearTimeout(COST.t); if (COST.rates) { COST.rates = null; COST.sal = {}; try { if (window.okKeyKit) window.okKeyKit.stop(); } catch (e) { /* */ } rerender(); } };
   /* Mahmoud (19 Nov): «الساعة دي يبقى احسبها من مرتب كل واحد» — the salary first; the written rates only for whoever has no salary in his file yet */
   const rateOf = wid => { const R = COST.rates || {}; if (COST.sal && COST.sal[wid] != null) return +COST.sal[wid]; const w = byId('workers', wid) || {}; const v = R['w:' + wid] != null ? R['w:' + wid] : (w.title && R['g:' + w.title] != null ? R['g:' + w.title] : R.default); return v == null ? null : +v; };
   const egp = n => `${fmtMoney(Math.round(+n || 0))} ${L('ج.م', 'EGP')}`;
   const costOf = rows => { let c = 0, miss = 0; rows.forEach(r => { const h = durH(r); const rt = rateOf(r.wid); if (rt == null) miss += h; else c += h * rt; }); return { c, miss }; };
   const costTxt = rows => { const k = costOf(rows); return `${egp(k.c)}${k.miss ? ` <span class="tiny muted">· ${esc(L('ناقص سعر لـ', 'no rate for'))} ${fmtDur(k.miss)}</span>` : ''}`; };
-  const costDone = d => { COST.busy = false; if (!d || d.status !== 'ok') { toast(d && d.status === 'other_phone' ? L('ده مش الموبايل المتسجّل بتاعك', 'This is not your registered phone') : d && d.status === 'denied' ? L('التكلفة دي للـ CEO ورئيسة الـ PMO بس', 'The cost is for the CEO and the Head of PMO only') : L('ما اتفتحتش — جرّب تاني', 'Not opened — try again'), 'err'); return; } COST.rates = d.rates || {}; COST.sal = d.sal || {}; rerender(); };
+  const costDone = d => { COST.busy = false; if (!d || d.status !== 'ok') { toast(d && d.status === 'other_phone' ? L('ده مش الموبايل المتسجّل بتاعك', 'This is not your registered phone') : d && d.status === 'denied' ? L('التكلفة دي للـ CEO ورئيسة الـ PMO بس', 'The cost is for the CEO and the Head of PMO only') : L('ما اتفتحتش — جرّب تاني', 'Not opened — try again'), 'err'); return; } COST.rates = d.rates || {}; COST.sal = d.sal || {}; COST.at = Date.now(); clearTimeout(COST.t); COST.t = setTimeout(() => { if (COST.rates) { costClose(); toast(L('التكلفة اتقفلت لوحدها — عدّت دقيقة', 'The cost closed by itself — a minute passed'), 'info'); } }, 60e3); rerender(); };
   const costUnlock = () => {
     if (COST.busy) return; COST.busy = true; const kit = window.okKeyKit;
     if (isAdmin()) { rpc('nf_ok_cost_view', { p_key: null, p_device: null }).then(costDone).catch(() => { COST.busy = false; }); return; }
@@ -6461,7 +6465,8 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
     setTimeout(() => { COST.busy = false; }, 1500);
   };
   window.addEventListener('hashchange', () => { if (COST.rates && !(S.route && (S.route.view === 'okdaily' || (S.route.view === 'projects' && S.route.id)))) costClose(); });
-  document.addEventListener('visibilitychange', () => { if (document.hidden && !isAdmin()) costClose(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) costClose(); });
+  setInterval(() => { if (!COST.rates || !COST.at) return; const left = Math.max(0, Math.ceil((60e3 - (Date.now() - COST.at)) / 1000)); document.querySelectorAll('[data-okcost="close"]').forEach(b => { const tx = L('اخفي المبالغ', 'Hide amounts') + ' · ' + left; if (b.textContent !== tx) b.textContent = tx; }); }, 1000);
   const costBtn = () => costOpen() ? `<button type="button" class="btn sm ghost" data-okcost="rates">💰 ${esc(L('سعر الساعة', 'Hourly rates'))}</button><button type="button" class="btn sm ghost" data-okcost="close">${esc(L('اخفي المبالغ', 'Hide amounts'))}</button>` : `<button type="button" class="btn sm" data-okcost="open">💰 ${esc(L('التكلفة بالجنيه', 'Cost in EGP'))}</button>`;
   /* the rates: a default, one per grade (job title), and per person when it differs */
   const ratesForm = () => {
@@ -6474,10 +6479,10 @@ html[data-theme="dark"] .okhow .c .art{background:linear-gradient(135deg,#12303f
       <h4>${esc(L('لكل درجة', 'Per grade'))}</h4><table>${titles.map(t => `<tr><td>${esc(t)} <span class="tiny muted">· ${ws.filter(w => w.title === t).length}</span></td><td>${inp('g:' + t, R['g:' + t], R.default != null ? String(R.default) : '')}</td></tr>`).join('')}</table>
       <h4>${esc(L('لكل شخص (لو مختلف عن درجته)', 'Per person (when it differs from the grade)'))}</h4><table>${ws.map(w => { const g = w.title && R['g:' + w.title] != null ? R['g:' + w.title] : R.default; const sl = COST.sal && COST.sal[w.id] != null ? COST.sal[w.id] : null; return `<tr><td>${esc(w.name || '')}<div class="tiny muted">${esc(w.title || '')}</div></td><td>${sl != null ? `<span class="small"><b>${esc(fmtMoney(sl))}</b> ${esc(L('ج/س — من المرتب', 'EGP/h — from the salary'))}</span>` : inp('w:' + w.id, R['w:' + w.id], g != null ? String(g) : '')}</td></tr>`; }).join('')}</table></div>`;
   };
-  const ratesOpen = () => { if (!costOpen()) return; openModal({ title: L('سعر الساعة', 'Hourly rates'), wide: true, body: ratesForm(), submitLabel: L('حفظ', 'Save'), onSubmit: async f => {
+  const ratesOpen = () => { if (!costOpen()) return; openModal({ cls: 'okmoney', title: L('سعر الساعة', 'Hourly rates'), wide: true, body: ratesForm(), submitLabel: L('حفظ', 'Save'), onSubmit: async f => {
     const R = COST.rates || {}; const ch = {}; f.querySelectorAll('[data-okrate]').forEach(i => { const k = i.dataset.okrate; const v = String(i.value || '').trim(); const old = R[k] != null ? String(R[k]) : ''; if (v !== old) ch[k] = v === '' ? null : +v; });
     if (!Object.keys(ch).length) return true;
-    try { const r = await rpc('nf_ok_rates_set', { p: ch }); if (!r || r.status !== 'ok') throw new Error('x'); Object.keys(ch).forEach(k => { if (ch[k] == null) delete R[k]; else R[k] = ch[k]; }); COST.rates = Object.assign({}, R); toast(L('اتحفظت ✓', 'Saved ✓')); rerender(); return true; } catch (e) { toast(L('ما اتحفظتش — جرّب تاني', 'Not saved — try again'), 'err'); return false; } } }); };
+    try { const r = await rpc('nf_ok_rates_set', { p: ch }); if (!r || r.status !== 'ok') throw new Error('x'); Object.keys(ch).forEach(k => { if (ch[k] == null) delete R[k]; else R[k] = ch[k]; }); if (costOpen()) COST.rates = Object.assign({}, R); toast(L('اتحفظت ✓', 'Saved ✓')); rerender(); return true; } catch (e) { toast(L('ما اتحفظتش — جرّب تاني', 'Not saved — try again'), 'err'); return false; } } }); };
   document.addEventListener('click', ev => { const b = ev.target.closest && ev.target.closest('[data-okcost]'); if (!b) return; ev.preventDefault(); const a = b.dataset.okcost; if (a === 'open') costUnlock(); else if (a === 'close') costClose(); else if (a === 'rates') ratesOpen(); });
 
   /* ---------- «مهام اليوم» — the CEO and the Head of PMO: who does what, engineer-hours per project ---------- */
@@ -6776,3 +6781,21 @@ html[data-theme="dark"] .okst .pill.okp-g{color:#5fd3a0}html[data-theme="dark"] 
       if (xs.length && mb && !mb.querySelector('.okbehalf')) mb.insertAdjacentHTML('afterbegin', `<div class="okbehalf banner" style="margin:0 0 10px;background:var(--accent-soft);color:var(--accent);border-radius:12px;padding:8px 12px;font-size:13px">👤 ${xs.map(a => esc(L(`${a.via.name} ${a.status === 'rejected' ? 'رفض' : 'وافق'} بالنيابة عنك · ${fmtDate(String(a.at).slice(0, 10))} ${fmtTm(new Date(a.at).toTimeString().slice(0, 5))}`, `${a.via.name} ${a.status === 'rejected' ? 'rejected' : 'approved'} on your behalf · ${fmtDate(String(a.at).slice(0, 10))} ${fmtTm(new Date(a.at).toTimeString().slice(0, 5))}`))).join('<br>')}<div class="tiny" style="opacity:.8;margin-top:2px">${esc(L('الموظف شايفها موافقتك إنت.', 'The employee sees it as your decision.'))}</div></div>`); } } catch (e) { /* */ }
     return out; })(ACTIONS.reqOpen);
 } catch (e) { console.warn('oeko approve', e); } })();
+
+/* =====================================================================
+   22 Nov 2026 (Mahmoud — PIN): money never stays open on a screen.
+   A window with amounts in it (contract values, money received, hourly rates — marked «okmoney») closes by itself after one
+   minute with no typing or tapping inside it, and at once when the person leaves the page, the tab or the program.
+   (The amounts on the pages themselves: stage claims, phone-opened project money and engineer cost — one minute each, in their own modules.)
+   ===================================================================== */
+(() => {
+  if (window.__OK_MONEY1__) return; window.__OK_MONEY1__ = 1;
+  const L = (a, b) => (typeof I18N !== 'undefined' && I18N.lang === 'en' ? b : a);
+  const mm = () => document.querySelector('#modalroot .okmoney');
+  let t0 = 0;
+  ['input', 'keydown', 'pointerdown'].forEach(e => document.addEventListener(e, ev => { if (ev.target && ev.target.closest && ev.target.closest('.okmoney')) t0 = Date.now(); }, true));
+  const shut = why => { t0 = 0; try { closeModal(); } catch (e) { /* */ } if (why) toast(why, 'info'); };
+  setInterval(() => { if (!mm()) { t0 = 0; return; } if (!t0) t0 = Date.now(); if (Date.now() - t0 > 60e3) shut(L('اتقفلت لوحدها — عدّت دقيقة على الأرقام', 'Closed by itself — a minute on the numbers')); }, 1000);
+  window.addEventListener('hashchange', () => { if (mm()) shut(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && mm()) shut(); });
+})();
