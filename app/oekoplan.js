@@ -1278,6 +1278,8 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
     { id: 'lead', ar: 'طلب جديد', en: 'Lead / Enquiry', hint: ['مصدر الطلب · المطوّر · الموقع · نوع المشروع', 'source · developer · location · project type'] },
     { id: 'brief', ar: 'مراجعة البريف', en: 'Brief review', hint: ['فهم المطلوب · زيارة أولية · قرار Go / No-Go', 'understand the ask · first visit · Go / No-Go'] },
     { id: 'proposal', ar: 'تجهيز العرض', en: 'Preparing the offer', hint: ['نطاق الخدمات · الجدول · المخرجات · الفريق', 'scope of services · schedule · deliverables · team'] },
+    /* 23 Nov (Rawan's ticket, PIN): every offer is reviewed and approved by the Head of PMO before it goes out — by Dr. Tarek or the PMO team while she is on leave */
+    { id: 'review', ar: 'مراجعة واعتماد قبل التقديم', en: 'Review & approval', hint: ['رئيسة الـ PMO بتراجع وتعتمد — وفي إجازتها د. طارق أو فريق الـ PMO', 'the Head of PMO reviews and approves — Dr. Tarek or the PMO team while she is on leave'] },
     /* 19 Nov (Rawan, Head of PMO): the offer's status after it goes out — submitted · negotiation · waiting for the client · awarded / not awarded */
     { id: 'sub', ar: 'العرض اتقدّم', en: 'Submitted', hint: ['اتبعت للعميل — تاريخ التقديم في السجل', 'sent to the client — the date is in the history'] },
     { id: 'nego', ar: 'تفاوض', en: 'Negotiation', hint: ['Scope matrix · التعديلات · شروط التعاقد', 'scope matrix · revisions · contract terms'] },
@@ -1315,6 +1317,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
   ACTIONS.okEnqNew = () => { if (!enqVis()) return; openModal({ title: L('طلب جديد', 'New enquiry'), wide: true, body: enqForm({}), submitLabel: L('تسجيل', 'Log it'), onSubmit: async f => { const r = await enqSave(f, {}); if (!r) return false; toast(L('اتسجّل', 'Logged')); rerender(); return true; } }); };
   ACTIONS.okEnqEdit = id => { const e = byId(COL, id); if (!e || !enqVis()) return; openModal({ title: L('تعديل الطلب', 'Edit enquiry'), wide: true, body: enqForm(e), onSubmit: async f => { const r = await enqSave(f, e); if (!r) return false; rerender(); return true; } }); };
   const enqLog = async (e, text, patch) => { const log = (e.log || []).concat([{ at: nowISO(), by: myName(), text }]).slice(-100); await Store.save(COL, Object.assign({}, e, patch || {}, { log, updatedAt: nowISO() })); rerender(); };
+  window.okEnqLog = enqLog;
   ACTIONS.okEnqOpen = id => {
     const e = byId(COL, id); const ro = !!e && !enqVis() && onOffer(e); if (!e || !(enqVis() || ro)) return; const si = ESTAGES.findIndex(s => s.id === e.stage); const closed = ro || ['won', 'lost'].includes(e.stage);
     const bar = `<div class="okstepbar">${ESTAGES.map((s, i) => `<i class="${i <= si || e.stage === 'won' ? 'on' : ''}" title="${esc(L(s.ar, s.en))}"></i>`).join('')}</div>`;
@@ -1322,7 +1325,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
     const acts = closed ? '' : `<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:10px">
       ${si > 0 ? `<button type="button" class="btn sm ghost" data-okenq="back:${e.id}">← ${esc(L(ESTAGES[si - 1].ar, ESTAGES[si - 1].en))}</button>` : ''}
       ${e.stage === 'brief' && !(e.gonogo && e.gonogo.decision) ? `<button type="button" class="btn sm p" data-okenq="go:${e.id}">✅ Go</button><button type="button" class="btn sm d" data-okenq="nogo:${e.id}">⛔ No-Go</button>` : ''}
-      ${si < ESTAGES.length - 1 ? `<button type="button" class="btn sm p" data-okenq="next:${e.id}">${esc(L(ESTAGES[si + 1].ar, ESTAGES[si + 1].en))} →</button>` : ''}
+      ${e.stage === 'review' && !(window.okRevEnq && window.okRevEnq.approved(e)) ? (window.okRevEnq ? window.okRevEnq.bar(e) : '') : si < ESTAGES.length - 1 ? `${e.stage === 'review' && window.okRevEnq ? window.okRevEnq.bar(e) : ''}<button type="button" class="btn sm p" data-okenq="next:${e.id}">${esc(L(ESTAGES[si + 1].ar, ESTAGES[si + 1].en))} →</button>` : ''}
       ${['proposal', 'sub', 'nego', 'wait'].includes(e.stage) ? `<button type="button" class="btn sm p" data-okenq="win:${e.id}">${esc(L('اترسى علينا — حوّله لمشروع', 'Awarded — make it a project'))}</button>` : ''}
       <button type="button" class="btn sm ghost" data-okenq="lost:${e.id}">${esc(L('ماترساش / اتلغى', 'Not awarded / cancelled'))}</button></div>`;
     openModal({ title: e.name, wide: true, footer: `<button type="button" class="btn" data-action="closemodal">${esc(L('إغلاق', 'Close'))}</button>${closed ? '' : `<button type="button" class="btn ghost" data-action="okEnqEdit" data-arg="${e.id}">${icon('edit')}<span>${esc(L('تعديل', 'Edit'))}</span></button>`}`,
@@ -1334,7 +1337,12 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
   document.addEventListener('click', async ev => {
     const b = ev.target.closest && ev.target.closest('[data-okenq]'); if (!b) return; const [op, id] = b.dataset.okenq.split(':'); const e = byId(COL, id); if (!e || !enqVis()) return;
     const si = ESTAGES.findIndex(s => s.id === e.stage);
-    if (op === 'next' && si < ESTAGES.length - 1) { const s = ESTAGES[si + 1]; closeModal(); await enqLog(e, L(`اتنقل لـ«${s.ar}»`, `Moved to «${s.en}»`), { stage: s.id }); }
+    if (op === 'next' && si < ESTAGES.length - 1) { const s = ESTAGES[si + 1];
+      if (e.stage === 'review' && window.okRevEnq && !window.okRevEnq.approved(e)) { toast(L('العرض لسه مستني الاعتماد', 'The offer is still waiting for approval'), 'err'); return; }
+      closeModal();
+      if (s.id === 'review' && window.okRevEnq) { await window.okRevEnq.send(e); return; }
+      await enqLog(e, L(`اتنقل لـ«${s.ar}»`, `Moved to «${s.en}»`), { stage: s.id }); }
+    if ((op === 'rvok' || op === 'rvno') && window.okRevEnq) { closeModal(); await window.okRevEnq.decide(e, op === 'rvok'); return; }
     if (op === 'back' && si > 0) { const s = ESTAGES[si - 1]; closeModal(); await enqLog(e, L(`رجع لـ«${s.ar}»`, `Back to «${s.en}»`), { stage: s.id }); }
     if (op === 'go' || op === 'nogo') {
       closeModal();
@@ -1698,6 +1706,7 @@ html[data-theme="dark"] .okflow .okpill.g{color:#86efac}html[data-theme="dark"] 
       { ok: steps === n, text: L(`خطوات المرحلة: ${steps}/${n}`, `Stage steps: ${steps}/${n}`) },
       { ok: sh.length ? shDone === sh.length : null, text: sh.length ? L(`المخرجات المعتمدة: ${shDone}/${sh.length}`, `Approved deliverables: ${shDone}/${sh.length}`) : L('مفيش مخرجات مسجّلة للمرحلة دي', 'No deliverables recorded for this stage') },
       { ok: st.id === 'data' ? null : app, text: st.id === 'data' ? L('مرحلة داخلية — مش محتاجة اعتماد عميل', 'Internal stage — no client approval needed') : app ? L('اعتماد العميل مسجّل ✓', 'Client approval recorded ✓') : sub ? L(rejLast ? 'آخر رد من العميل: مرفوض — إعادة تقديم' : 'اتسلّم للعميل ولسه مفيش اعتماد مسجّل', rejLast ? 'Last client response: rejected — resubmit' : 'Submitted to the client, no approval recorded yet') : L('ماتسلّمش للعميل أصلًا', 'Not submitted to the client at all') },
+      ...(st.id === 'data' ? [] : [(() => { const rv = (p.okRev || {})[st.id] || {}; return { ok: rv.state === 'approved', text: rv.state === 'approved' ? L(`مراجعة الـ Project Owner قبل التسليم ✓ — ${rv.by || ''}`, `Project Owner review before submission ✓ — ${rv.by || ''}`) : rv.state === 'pending' ? L('مراجعة الـ Project Owner قبل التسليم: لسه مستنية', 'Project Owner review before submission: still waiting') : L('مراجعة الـ Project Owner قبل التسليم لسه ما اتعملتش', 'Project Owner review before submission not done yet') }; })()]),
       { ok: !rfis, text: rfis ? L(`${rfis} RFI مفتوح`, `${rfis} open RFI(s)`) : L('مفيش RFIs مفتوحة', 'No open RFIs') },
       { ok: !risks, text: risks ? L(`${risks} خطر مفتوح في السجل`, `${risks} open risk(s) in the log`) : L('مفيش مخاطر مفتوحة', 'No open risks') },
     ];
@@ -3666,7 +3675,7 @@ ${done}${office}${boqRows()}</div>`;
       <h4>${esc(L('المشاريع على المراحل', 'Projects by stage'))}</h4><div class="bar">${c.byStage.map((x, i) => `<i style="width:${(x.ps.length / tot) * 100}%;background:${TONES[i % TONES.length]}"></i>`).join('')}</div><div class="lg">${c.byStage.map((x, i) => `<button type="button" data-okd="list:st-${x.s.id}"><u style="background:${TONES[i % TONES.length]}"></u>${esc(stName(x.s.id))} <b>${x.ps.length}</b></button>`).join('')}</div>
       <div class="pcs">${c.act.slice().sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''))).slice(0, 8).map(pcard).join('')}</div><p class="note"><a href="#/projects" style="color:var(--kb);font-weight:600;text-decoration:none">${esc(L('كل المشاريع ←', 'All projects →'))}</a></p>`);
     const sClaims = sec('claims', L('المطالبات والتحصيل', 'Claims and collection'), '', `<div class="okg">${tile(c.toSend.length, L('اتسلمت ومطالبتها ما اتبعتتش', 'Delivered, not claimed'), 'tosend', c.toSend.length ? 'w' : '')}${tile(c.waiting.length, L('اتبعتت ومستنية التحصيل', 'Sent, waiting'), 'waiting', old.length ? 'c' : '')}${tile(c.collM.length, L('اتحصّل الشهر ده', 'Collected this month'), 'collm', 'g', arrow(c.collM.length, c.collL.length))}${tile(c.delivM.length, L('مراحل اتسلمت الشهر ده', 'Stages delivered this month'), 'delivm', 'a', arrow(c.delivM.length, c.delivL.length))}</div>`);
-    const ES = [['lead', L('طلب جديد', 'Lead')], ['brief', L('مراجعة البريف', 'Brief review')], ['proposal', L('تجهيز العرض', 'Preparing the offer')], ['sub', L('العرض اتقدّم', 'Submitted')], ['nego', L('تفاوض', 'Negotiation')], ['wait', L('مستنيين رد العميل', 'Waiting for client reply')]];
+    const ES = [['lead', L('طلب جديد', 'Lead')], ['brief', L('مراجعة البريف', 'Brief review')], ['proposal', L('تجهيز العرض', 'Preparing the offer')], ['review', L('مراجعة واعتماد', 'Review & approval')], ['sub', L('العرض اتقدّم', 'Submitted')], ['nego', L('تفاوض', 'Negotiation')], ['wait', L('مستنيين رد العميل', 'Waiting for client reply')]];
     const sEnq = sec('enq', L('الفرص الجديدة', 'New business'), `${c.enqOpen.length} ${esc(L('مفتوحة', 'open'))}`, `<div class="okg">${ES.map(([id, t]) => tile(c.enqOpen.filter(e => e.stage === id).length, t, 'enq', ''))
       .join('')}${tile(c.enqLate.length, L('خطوتها متأخرة', 'Overdue step'), 'enqlate', c.enqLate.length ? 'c' : '')}${tile(c.enqWon.length, L('اترست علينا الشهر ده', 'Awarded this month'), 'enq', 'g')}${tile(c.enqLost.length, L('ماترستش الشهر ده', 'Not awarded this month'), 'enq', '')}</div>`);
     let teamB = ''; try { const at = (typeof attendanceFor === 'function' ? attendanceFor(today()) : {}) || {}; const ws = list('workers').filter(w => w.status !== 'inactive' && w.status !== 'left'); const pun = ws.filter(w => !w.noPunch && !(window.okIsFlex && window.okIsFlex(w) && !((at[w.id] || {}).in || (at[w.id] || {}).s === 'L'))); let inn = 0, lt = 0, lv = [], out = 0; pun.forEach(w => { const r = at[w.id] || {}; if (r.s === 'L') lv.push(w.name); else if (r.out) out++; else if (r.in) { inn++; if (r.late) lt++; } });
@@ -3770,7 +3779,7 @@ ${done}${office}${boqRows()}</div>`;
   const listPage = () => { const open = enqs().filter(e => !['lost'].includes(e.stage)).sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
     const linked = list(COL).filter(d => d && String(d.id).startsWith('p:'));
     const ps = list('projects').filter(p => p && p.status !== 'archived').sort((a, b) => String(a.name).localeCompare(String(b.name)));
-    return `<div class="hd"><div><h1>CRM</h1><p>${esc(L('الفرص والأوفرات والعقود — ليكي وللـ CEO بس', 'Deals, offers and contracts — you and the CEO only'))}</p></div><span class="grow"></span><button type="button" class="btn pb" data-action="okEnqNew">+ ${esc(L('Deal جديد', 'New deal'))}</button><a class="btn" href="#/enquiries">${esc(L('لوحة المراحل', 'Pipeline board'))}</a></div>${inboxBox()}<div class="tabs">${[['deals', 'Deals'], ['clients', L('العملاء', 'Clients')]].map(t => `<button type="button" class="${ltab === t[0] ? 'on' : ''}" data-okcrm="ltab:${t[0]}">${esc(t[1])}</button>`).join('')}</div>${ltab === 'clients' ? clientsPage() : `
+    return `<div class="hd"><div><h1>CRM</h1><p>${esc(L('الفرص والأوفرات والعقود — للـ CEO وفريق الـ PMO بس', 'Deals, offers and contracts — the CEO and the PMO team only'))}</p></div><span class="grow"></span><button type="button" class="btn pb" data-action="okEnqNew">+ ${esc(L('Deal جديد', 'New deal'))}</button><a class="btn" href="#/enquiries">${esc(L('لوحة المراحل', 'Pipeline board'))}</a></div>${inboxBox()}<div class="tabs">${[['deals', 'Deals'], ['clients', L('العملاء', 'Clients')]].map(t => `<button type="button" class="${ltab === t[0] ? 'on' : ''}" data-okcrm="ltab:${t[0]}">${esc(t[1])}</button>`).join('')}</div>${ltab === 'clients' ? clientsPage() : `
     <div class="bx"><h3>Deals <span class="pl a">${open.length}</span></h3><div class="dl">${open.map(e => `<button type="button" class="dc" data-okcrm="open:${esc(e.id)}"><b>${esc(e.name || '')}</b><small>${esc([e.developer, e.location].filter(Boolean).join(' · ') || '—')}</small>${dealPills(deal(e.id))}</button>`).join('') || `<span class="note">${esc(L('مفيش Deals لسه — ابدأ بـ «Deal جديد».', 'No deals yet — start with «New deal».'))}</span>`}</div></div>
     <div class="bx"><h3>${esc(L('عقد لمشروع شغال بالفعل', 'Contract for a project already running'))}</h3><div class="fg"><div><label>${esc(L('اختار المشروع', 'Choose the project'))}</label><select id="okcrmp"><option value="">—</option>${ps.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select></div></div>${linked.length ? `<div class="dl" style="margin-top:12px">${linked.map(d => `<button type="button" class="dc" data-okcrm="open:${esc(d.id)}"><b>${esc(title(d.id))}</b>${dealPills(d)}</button>`).join('')}</div>` : ''}</div>`}`; };
 
@@ -3963,6 +3972,7 @@ ${done}${office}${boqRows()}</div>`;
 
   /* email to the client with the Word file */
   const mailForm = async (d, e) => { const o = e.o; const rec = recOf(d, e); const s = apState(rec, o);
+    if (e.kind === 'offer' && window.okRevEnq && !(await window.okRevEnq.gateMail(d.id))) return;
     if (s === 'pending') { toast(L('مستنية موافقة د. طارق الأول', 'Waiting for Dr. Tarek’s approval first'), 'err'); return; }
     if (s === 'changes') { toast(L('د. طارق طلب تعديل — عدّلي واطلبي الموافقة تاني', 'Dr. Tarek asked for changes — edit and ask again'), 'err'); return; }
     if (s === 'stale') { toast(L('اتعدّل بعد موافقة د. طارق — اطلبي الموافقة تاني', 'Changed after Dr. Tarek approved — ask again'), 'err'); return; }
@@ -3980,6 +3990,7 @@ ${done}${office}${boqRows()}</div>`;
         const cur2 = recOf(deal(d.id), e) || {}; const sent = (cur2.sent || []).concat([{ at: nowISO(), by: myName(), to: String(v.to).trim(), cc: v.cc || '', from: r.from || '', fmt: fmt2 }]);
         await updRec(e, Object.assign({ sent }, e.kind === 'offer' ? { status: (cur2.status === 'draft' || !cur2.status) ? 'sent' : cur2.status } : { status: 'sent' }));
         if (c.id && !c.email) { try { await save(Object.assign({}, c, { email: String(v.to).trim() })); } catch (x) { /* */ } }
+        if (e.kind === 'offer' && window.okRevEnq) { try { await window.okRevEnq.sent(d.id, String(v.to).trim()); } catch (x) { /* */ } }
         toast(L('اتبعت للعميل ✓', 'Sent to the client ✓') + (r.onDomain === false ? ' — ' + L('من عنوان مؤقت لحد ما إيميل Ökoplan يتفعّل', 'from a temporary address until the Ökoplan address is set up') : '')); return true; } }); };
 
   const openEd = async (did, kind, v) => { await libs(); const d = deal(did); cur = did; if (kind === 'agr') { ed = { kind, did, v: null, o: d.agreement && d.agreement.doc ? clone(d.agreement.doc) : newAgrDoc(d) }; } else { const rec = v ? (d.offers || []).find(x => String(x.v) === String(v)) : null; ed = { kind: 'offer', did, v: rec ? rec.v : null, o: rec ? clone(docOf(rec)) : newOfferDoc(d) }; if (rec && !rec.doc) ed.v = null; } rerender(); window.scrollTo(0, 0);
@@ -4028,7 +4039,7 @@ ${done}${office}${boqRows()}</div>`;
     const done = async note => { await updRec(e, { approval: Object.assign({}, rec.approval || {}, { state: ok ? 'approved' : 'changes', by: myName(), at: nowISO(), note: note || (ok ? '' : (rec.approval || {}).note || ''), sig: ok ? sigOf(e.kind === 'agr' ? rec.doc : (rec.doc || e.o)) : '' }) }); notify(by ? [by] : (set().okDealViewers || []), ok ? L(`د. طارق وافق على ${what(e)} ${tl} ✓`, `Dr. Tarek approved ${what(e)} ${tl} ✓`) : L(`د. طارق طلب تعديل في ${what(e)} ${tl}`, `Dr. Tarek asked for changes to ${what(e)} ${tl}`), note || (ok ? L('تقدري تبعتيه للعميل.', 'You can send it to the client.') : ''), d.id); toast(ok ? L('اتوافق ✓', 'Approved ✓') : L('اتبعت طلب التعديل', 'Change request sent')); rerender(); };
     if (ok) { await done(''); return; } askNote(L('إيه المطلوب يتعدّل؟', 'What should change?'), done); };
 
-  const page = r => { if (!vis()) return `<div class="banner warn">${esc(L('الصفحة دي للـ CEO والـ Head of PMO', 'This page is for the CEO and the Head of PMO'))}</div>`;
+  const page = r => { if (!vis()) return `<div class="banner warn">${esc(L('الصفحة دي للـ CEO وفريق الـ PMO', 'This page is for the CEO and the PMO team'))}</div>`;
     if (r && r.id && r.id !== lastRid) { lastRid = r.id; const id = decodeURIComponent(r.id); if (id !== cur) { cur = id; ed = null; draft = null; tab = id.startsWith('p:') ? 'contract' : 'offers'; } }
     if (!cur) return `${CSS}<div class="okcrm">${listPage()}</div>`; const d = deal(cur);
     if (ed && ed.did === cur) return `${CSS}<div class="okcrm">${editorPage(d)}</div>`; const cl = clientOf(d);
@@ -7118,4 +7129,217 @@ html[data-theme="dark"] .okst .pill.okp-g{color:#5fd3a0}html[data-theme="dark"] 
   if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okcal')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okcal']); });
   if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okcal') return !!S.session && (typeof role !== 'function' || role() !== 'kiosk'); return base.apply(this, arguments); })(canSee);
   if (typeof OEKO_I18N === 'object') OEKO_I18N['الكالندر'] = 'Calendar';
+})();
+
+/* =====================================================================
+   23 Nov 2026 (Rawan's tickets #VT0O / #ACPV — approved by Mahmoud with the PIN):
+   A) Offers: a «Review & approval» stage between «Preparing the offer» and «Submitted». The Head of PMO approves;
+      while she is on an approved leave (server: nf_ok_pmo_away) Dr. Tarek or the PMO team (settings.okPmoTeam) approve.
+      Moving an offer into the stage sends the approver a task and a notification; the CRM email to the client waits for it.
+   B) Projects: before a stage goes to the client, the Project Owner reviews and approves it — the team presses
+      «Ready for review», the Project Owner gets a task and a notification, approves or sends it back with notes.
+      p.okRev = { [stageId]: { state: pending | approved | changes, ask…, by, at, note, taskId } }. A Project Owner who logs the
+      submission himself approves it with it. The smart gate shows it as one of its checks.
+   ===================================================================== */
+(() => {
+  if (window.__OK_REVIEW__) return; window.__OK_REVIEW__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const me = () => (S.session && S.session.workerId) || (isAdmin() ? 'owner' : '');
+  const myName = () => (S.session && S.session.name) || '';
+  const isPMO = () => !!(window.okAccess && window.okAccess.isPMO && window.okAccess.isPMO());
+  const team = () => ((S.settings && S.settings.okPmoTeam) || []).filter(Boolean);
+  const nm = id => id === 'owner' ? ((S.settings && S.settings.ownerName) || L('د. طارق', 'Dr. Tarek')) : ((byId('workers', id) || {}).name || '');
+  const d10 = v => String(v || '').slice(0, 10);
+  const push = (ids, t, b, url, tag) => { ids = Array.from(new Set((ids || []).filter(x => x && x !== me() && x !== 'w:' + me()))); if (!ids.length || typeof pushSend !== 'function') return; try { const r = pushSend(ids, String(t).slice(0, 110), String(b || '').slice(0, 280), url, tag); if (r && r.catch) r.catch(() => { }); } catch (e) { /* */ } };
+  const W = ids => ids.filter(Boolean).map(i => i === 'owner' || i === 'admin' ? 'role:admin' : 'w:' + i);
+  const pill = (txt, c) => `<span class="okpill ${c || ''}" style="display:inline-flex;align-items:center;border-radius:999px;padding:3px 10px;border:1px solid var(--line);font-size:12px;font-weight:600">${txt}</span>`;
+  const closeTask = async id => { if (!id) return; try { const t = byId('tasks', id); if (t && !['done', 'closed', 'cancelled'].includes(t.status)) await Store.update('tasks', id, { status: 'done', doneAt: nowISO(), doneByName: myName(), updatedAt: nowISO() }); } catch (e) { /* the task may not be mine to close */ } };
+  const newTask = async (o) => { const t = Object.assign({ id: 'okrv_' + uid(), deptId: null, priority: 'normal', status: 'open', kind: 'task', createdBy: (S.session && S.session.id) || null, createdByName: myName(), createdAt: nowISO(), updatedAt: nowISO(), assignedAt: nowISO() }, o);
+    t.participants = (o.participants || []).filter(x => x && x !== t.assigneeId).map(x => ({ id: x, name: nm(x) }));
+    try { await Store.save('tasks', t, { silent: true }); return t.id; } catch (e) { console.warn('okrev task', e); return ''; } };
+
+  /* ---------- is the Head of PMO on leave today? (server) ---------- */
+  const AW = { v: false, at: 0 };
+  const away = () => { if (Date.now() - AW.at > 30 * 60e3 && S.sb && S.sb.rpc && S.session) { AW.at = Date.now(); Promise.resolve(S.sb.rpc('nf_ok_pmo_away')).then(r => { const v = !!(r && r.data === true); if (v !== AW.v) { AW.v = v; if (typeof rerender === 'function') rerender(); } }).catch(() => { }); } return AW.v; };
+  const head = () => team()[0] || '';
+  const canApprove = () => !!S.session && (isAdmin() || isPMO() || (team().includes(me()) && away()));
+  const waitingFor = () => away() ? L('د. طارق أو فريق الـ PMO', 'Dr. Tarek or the PMO team') : (nm(head()) || L('رئيسة الـ PMO', 'the Head of PMO'));
+
+  /* ---------- A) offers ---------- */
+  const crm = id => '#/okcrm/' + encodeURIComponent(id);
+  const approvedE = e => !!e && (e.review || {}).state === 'approved';
+  const enqBar = e => { const rv = e.review || {};
+    if (rv.state === 'approved') return pill(`✅ ${esc(L('اتعتمد', 'Approved'))} — ${esc(rv.by || '')} · ${esc(d10(rv.at))}`, 'g');
+    if (canApprove()) return `<button type="button" class="btn sm p" data-okenq="rvok:${esc(e.id)}">✅ ${esc(L('اعتمد العرض', 'Approve the offer'))}</button><button type="button" class="btn sm ghost" data-okenq="rvno:${esc(e.id)}">↩ ${esc(L('رجّعه بتعديلات', 'Send back with changes'))}</button>`;
+    return pill(`⏳ ${esc(L('مستني اعتماد ', 'Waiting for approval by '))}${esc(waitingFor())}`, 'y'); };
+  const sendEnq = async e => { const rv = { state: 'pending', round: ((e.review || {}).round || 0) + 1, askBy: myName(), askById: me(), askAt: nowISO() };
+    if (!canApprove()) { const aw = away(); const to = aw ? (team().slice(1).length ? team().slice(1) : team()) : [head()];
+      rv.taskId = await newTask({ title: L(`مراجعة واعتماد العرض — ${e.name}`, `Review and approve the offer — ${e.name}`), desc: L(`${myName()} خلّص العرض وبعته للمراجعة قبل التقديم للعميل.`, `${myName()} finished the offer and sent it for review before it goes to the client.`), assigneeId: to[0], participants: to.slice(1), link: crm(e.id), source: 'okrev' });
+      push(W(to).concat(aw ? ['role:admin'] : []), L(`عرض مستني اعتمادك — ${e.name}`, `An offer waits for your approval — ${e.name}`), L(`${myName()} بعته للمراجعة قبل التقديم`, `${myName()} sent it for review before submission`), './' + crm(e.id), 'okrev-' + e.id); }
+    await window.okEnqLog(e, L('اتنقل لـ«مراجعة واعتماد قبل التقديم» — مستني الاعتماد', 'Moved to «Review & approval» — waiting for approval'), { stage: 'review', review: rv });
+    toast(canApprove() ? L('العرض في مرحلة المراجعة — اعتمده لما تخلص', 'The offer is in review — approve it when you are done') : L(`اتبعت للاعتماد — ${waitingFor()}`, `Sent for approval — ${waitingFor()}`)); };
+  const decideEnq = async (e, ok) => { if (!canApprove()) { toast(L('الاعتماد لرئيسة الـ PMO', 'Approval is for the Head of PMO'), 'err'); return; }
+    const rv = Object.assign({}, e.review || {}); const tell = [rv.askById, e.ownerId].filter(x => x && x !== 'owner');
+    if (ok) { Object.assign(rv, { state: 'approved', by: myName(), byId: me(), at: nowISO() }); await closeTask(rv.taskId);
+      await window.okEnqLog(e, L(`اتعتمد العرض ✓ — ${myName()}`, `Offer approved ✓ — ${myName()}`), { review: rv });
+      push(W(tell), L(`العرض اتعتمد ✓ — ${e.name}`, `Offer approved ✓ — ${e.name}`), L(`${myName()} اعتمده — يتقدّم للعميل`, `${myName()} approved it — it can go to the client`), './' + crm(e.id), 'okrev-' + e.id); toast(L('اتعتمد ✓', 'Approved ✓')); return; }
+    openModal({ title: L('رجّع العرض بتعديلات', 'Send the offer back with changes'), submitLabel: L('رجّعه', 'Send back'), body: `<div class="form"><div class="field full"><label>${esc(L('المطلوب تعديله', 'What needs changing'))}</label><textarea name="note" rows="4" dir="auto" required></textarea></div></div>`,
+      onSubmit: async f => { const note = String(f.querySelector('[name=note]').value || '').trim(); if (!note) { toast(L('اكتب المطلوب', 'Write what is needed'), 'err'); return false; }
+        Object.assign(rv, { state: 'changes', by: myName(), byId: me(), at: nowISO(), note }); await closeTask(rv.taskId);
+        await window.okEnqLog(e, L(`رجع بتعديلات — ${note}`, `Sent back with changes — ${note}`), { review: rv, stage: 'proposal' });
+        push(W(tell), L(`العرض رجع بتعديلات — ${e.name}`, `The offer came back with changes — ${e.name}`), note, './' + crm(e.id), 'okrev-' + e.id); return true; } }); };
+  const gateMail = async dealId => { const e = byId('enquiries', dealId); if (!e || approvedE(e) || ['sub', 'nego', 'wait', 'won'].includes(e.stage)) return true;
+    if (canApprove()) { if (!(await confirmDlg(L('العرض ده لسه ماتعتمدش في «مراجعة واعتماد قبل التقديم». تعتمده وتبعته؟', 'This offer has not been approved in «Review & approval» yet. Approve it and send?'), L('اعتمد وكمّل', 'Approve and continue'), false))) return false;
+      const rv = Object.assign({}, e.review || {}, { state: 'approved', by: myName(), byId: me(), at: nowISO() }); await closeTask(rv.taskId); await window.okEnqLog(e, L(`اتعتمد العرض ✓ — ${myName()}`, `Offer approved ✓ — ${myName()}`), { review: rv, stage: e.stage === 'proposal' ? 'review' : e.stage }); return true; }
+    toast(e.stage === 'review' ? L(`العرض مستني اعتماد ${waitingFor()} قبل ما يتبعت`, `The offer waits for approval by ${waitingFor()} before it is sent`) : L('ودّي العرض لمرحلة «مراجعة واعتماد قبل التقديم» الأول — من «الفرص والعروض»', 'Move the offer to «Review & approval» first — from «Enquiries & proposals»'), 'err'); return false; };
+  const sentEnq = async (dealId, to) => { const e = byId('enquiries', dealId); if (!e || !['proposal', 'review'].includes(e.stage)) return; await window.okEnqLog(e, L(`اتقدّم للعميل بالإيميل${to ? ' (' + to + ')' : ''}`, `Submitted to the client by email${to ? ' (' + to + ')' : ''}`), { stage: 'sub', submittedAt: nowISO() }); };
+  window.okRevEnq = { approved: approvedE, bar: enqBar, send: sendEnq, decide: decideEnq, gateMail, sent: sentEnq, canApprove, away, recheck: () => { AW.at = 0; return away(); } };
+
+  /* ---------- B) project stages ---------- */
+  const PIPE = () => window.OEKO_PIPELINE || [];
+  const owners = p => Array.from(new Set([p.leadId, p.ownerId].concat(p.coOwnerIds || []).filter(Boolean)));
+  const stageOf = p => { const i = PIPE().findIndex(s => s.id === (p.osStatus || p.stage)); return i >= 0 ? PIPE()[i] : null; };
+  const editable = () => typeof stuCanEdit === 'function' && stuCanEdit();
+  const canRv = p => editable() && (isAdmin() || owners(p).includes(me()));
+  const canAsk = p => editable() && (canRv(p) || isPMO() || (p.team || []).includes(me()));
+  const barHTML = p => { const st = stageOf(p); if (!st || st.id === 'data') return ''; const rv = (p.okRev || {})[st.id] || {}; const who = owners(p).map(nm).filter(Boolean).join('، ') || 'Project Owner';
+    let state = '', info = '', btns = '';
+    if (rv.state === 'approved') { state = pill(`✅ ${esc(L('اتعتمدت للتسليم', 'Approved for submission'))}`, 'g'); info = `${esc(rv.by || '')} · ${esc(d10(rv.at))}${rv.note ? ' — ' + esc(rv.note) : ''}`; }
+    else if (rv.state === 'pending') { state = pill(`⏳ ${esc(L('مستنية مراجعة ', 'Waiting for review by '))}${esc(who)}`, 'y'); info = `${esc(rv.askBy || '')} · ${esc(d10(rv.askAt))}${rv.askNote ? ' — ' + esc(rv.askNote) : ''}`;
+      if (canRv(p)) btns = `<button type="button" class="btn sm p" data-okrv="ok:${p.id}">✅ ${esc(L('اعتمد للتسليم', 'Approve for submission'))}</button><button type="button" class="btn sm ghost" data-okrv="no:${p.id}">↩ ${esc(L('رجّعها بملاحظات', 'Send back with notes'))}</button>`; }
+    else { if (rv.state === 'changes') { state = pill(`↩ ${esc(L('رجعت بملاحظات', 'Sent back with notes'))}`, 'r'); info = `${esc(rv.by || '')} · ${esc(d10(rv.at))}${rv.note ? ' — ' + esc(rv.note) : ''}`; }
+      else info = esc(L('لما المرحلة تخلص، الفريق يدوس «جاهز للمراجعة» — والـ Project Owner يراجع ويعتمد قبل ما تتسلّم للعميل', 'When the stage is done the team presses «Ready for review» — the Project Owner reviews and approves before it goes to the client'));
+      btns = (canRv(p) ? `<button type="button" class="btn sm p" data-okrv="ok:${p.id}">✅ ${esc(L('اعتمد للتسليم', 'Approve for submission'))}</button>` : '') + (canAsk(p) && !canRv(p) ? `<button type="button" class="btn sm p" data-okrv="ask:${p.id}">👁 ${esc(rv.state === 'changes' ? L('جاهز للمراجعة تاني', 'Ready for review again') : L('جاهز للمراجعة', 'Ready for review'))}</button>` : ''); }
+    return `<div class="okrev" data-pid="${p.id}" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 4px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface-2)"><b class="small">👁 ${esc(L(`مراجعة الـ Project Owner قبل التسليم — ${st.ar}`, `Project Owner review before submission — ${st.name}`))}</b>${state}<span class="tiny muted" style="flex:1;min-width:160px">${info}</span>${btns}</div>`; };
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    if (!(S.route && S.route.view === 'projects' && S.route.id)) return; const p = byId('projects', S.route.id); if (!p) return;
+    const pipe = document.querySelector('.okpipe'); if (!pipe) return; const html = barHTML(p); const old = pipe.querySelector('.okrev'); const sig = String(html.length) + ':' + (p.updatedAt || '') + ':' + (en() ? 'en' : 'ar');
+    if (old && old.dataset.sig === sig) return; if (old) old.remove(); if (!html) return;
+    const hd = pipe.querySelector('.okph'); if (hd) hd.insertAdjacentHTML('afterend', html); else pipe.insertAdjacentHTML('afterbegin', html);
+    const el = pipe.querySelector('.okrev'); if (el) el.dataset.sig = sig; } catch (e) { /* ignore */ } });
+  const setRev = async (p, sid, rec) => { await Store.update('projects', p.id, { okRev: Object.assign({}, p.okRev || {}, { [sid]: rec }) }); if (typeof rerender === 'function') rerender(); };
+  document.addEventListener('click', async ev => { const t = ev.target.closest && ev.target.closest('[data-okrv]'); if (!t) return; ev.preventDefault();
+    const [op, pid] = t.dataset.okrv.split(':'); const p = byId('projects', pid); if (!p) return; const st = stageOf(p); if (!st) return; const rv = (p.okRev || {})[st.id] || {}; const url = './#/projects/' + pid;
+    if (op === 'ask') { if (!canAsk(p)) return;
+      openModal({ title: L(`جاهز لمراجعة الـ Project Owner — ${st.ar}`, `Ready for the Project Owner review — ${st.name}`), submitLabel: L('ابعت للمراجعة', 'Send for review'),
+        body: `<div class="form"><div class="field full"><label>${esc(L('إيه اللي جاهز؟ (ولينك الملفات لو فيه)', 'What is ready? (and the files link, if any)'))}</label><textarea name="note" rows="3" dir="auto"></textarea></div></div>`,
+        onSubmit: async f => { const note = String(f.querySelector('[name=note]').value || '').trim(); const os = owners(p).filter(x => x !== me());
+          const taskId = os.length ? await newTask({ title: L(`مراجعة قبل التسليم — ${p.name} · ${st.ar}`, `Review before submission — ${p.name} · ${st.name}`), desc: note || L('المرحلة جاهزة لمراجعتك قبل التسليم للعميل.', 'The stage is ready for your review before it goes to the client.'), assigneeId: os[0], participants: os.slice(1), projectId: pid, link: '#/projects/' + pid, source: 'okrev' }) : '';
+          await setRev(p, st.id, { state: 'pending', round: (rv.round || 0) + 1, askBy: myName(), askById: me(), askAt: nowISO(), askNote: note, taskId });
+          push(W(os), L(`مرحلة مستنية مراجعتك — ${p.name}`, `A stage waits for your review — ${p.name}`), `${L(st.ar, st.name)} · ${myName()}${note ? ' — ' + note : ''}`, url, 'okrv-' + pid); toast(L('اتبعتت للمراجعة', 'Sent for review')); return true; } }); return; }
+    if (!canRv(p)) return;
+    if (op === 'ok') { openModal({ title: L(`اعتماد «${st.ar}» للتسليم`, `Approve «${st.name}» for submission`), submitLabel: L('اعتمد', 'Approve'), body: `<div class="form"><div class="field full"><label>${esc(L('ملاحظة (اختياري)', 'Note (optional)'))}</label><input name="note" maxlength="200" dir="auto"></div></div>`,
+      onSubmit: async f => { const note = String(f.querySelector('[name=note]').value || '').trim(); await closeTask(rv.taskId);
+        await setRev(p, st.id, Object.assign({}, rv, { state: 'approved', by: myName(), byId: me(), at: nowISO(), note }));
+        if (rv.askById && rv.askById !== me()) push(W([rv.askById]), L(`المرحلة اتعتمدت للتسليم ✓ — ${p.name}`, `Stage approved for submission ✓ — ${p.name}`), `${L(st.ar, st.name)} · ${myName()}${note ? ' — ' + note : ''}`, url, 'okrv-' + pid);
+        toast(L('اتعتمدت ✓', 'Approved ✓')); return true; } }); return; }
+    if (op === 'no') { openModal({ title: L(`رجّع «${st.ar}» بملاحظات`, `Send «${st.name}» back with notes`), submitLabel: L('رجّعها', 'Send back'), body: `<div class="form"><div class="field full"><label>${esc(L('الملاحظات', 'Notes'))}</label><textarea name="note" rows="4" dir="auto" required></textarea></div></div>`,
+      onSubmit: async f => { const note = String(f.querySelector('[name=note]').value || '').trim(); if (!note) { toast(L('اكتب الملاحظات', 'Write the notes'), 'err'); return false; } await closeTask(rv.taskId);
+        await setRev(p, st.id, Object.assign({}, rv, { state: 'changes', by: myName(), byId: me(), at: nowISO(), note }));
+        if (rv.askById && rv.askById !== me()) push(W([rv.askById]), L(`المرحلة رجعت بملاحظات — ${p.name}`, `The stage came back with notes — ${p.name}`), note, url, 'okrv-' + pid);
+        toast(L('رجعت للفريق', 'Sent back to the team')); return true; } }); }
+  });
+  /* a Project Owner who logs the client submission himself approves the stage with it */
+  if (typeof Store === 'object' && typeof Store.update === 'function') Store.update = (base => async function (col, id, patch) { const args = Array.from(arguments);
+    try { if (col === 'projects' && patch && patch.okSub) { const p = byId('projects', id); if (p && owners(p).includes(me())) { const add = {};
+      Object.keys(patch.okSub).forEach(sid => { const b4 = (((p.okSub || {})[sid] || {}).events || []).length; const fresh = ((patch.okSub[sid] || {}).events || []).slice(b4).some(x => x && x.k === 'sub' && !x.auto && !x.reminder); const rv = (p.okRev || {})[sid] || {};
+        if (fresh && rv.state !== 'approved') add[sid] = Object.assign({}, rv, { state: 'approved', by: myName(), byId: me(), at: nowISO(), note: L('اتعتمدت مع التسليم', 'Approved with the submission'), auto: true }); });
+      if (Object.keys(add).length) { if (Object.keys(add).some(sid => ((p.okRev || {})[sid] || {}).taskId)) Object.keys(add).forEach(sid => closeTask(((p.okRev || {})[sid] || {}).taskId)); args[2] = Object.assign({}, patch, { okRev: Object.assign({}, p.okRev || {}, patch.okRev || {}, add) }); } } } } catch (e) { /* */ }
+    return base.apply(this, args); })(Store.update);
+  if (typeof OEKO_I18N === 'object') Object.assign(OEKO_I18N, { 'مراجعة واعتماد قبل التقديم': 'Review & approval' });
+})();
+
+/* =====================================================================
+   23 Nov 2026 (Rawan's ticket #ACPV — PIN): «VO / PMO queries» inside each project.
+   · Anyone on the project (team, Project Owners) asks the PMO a question or requests a Variation (VO) from the project page.
+   · It reaches the PMO team (settings.okPmoTeam: the Head of PMO + the PMO coordinator) as a task and a notification;
+     they answer from «VO & queries» (#/okpq, under PMO) and the answer comes back inside the same project, with a notification.
+   · Data: docs col «okpq» {projectId, kind vo|q, no, title, msgs[], status open|answered|closed, taskId} — seen by the project's
+     people, the PMO team and the CEO (server: nf_okpq_vis).
+   ===================================================================== */
+(() => {
+  if (window.__OK_PQ__) return; window.__OK_PQ__ = 1;
+  const en = () => typeof I18N !== 'undefined' && I18N.lang === 'en';
+  const L = (a, b) => (en() ? b : a);
+  const COL = 'okpq';
+  if (typeof COLS !== 'undefined' && Array.isArray(COLS) && !COLS.includes(COL)) COLS.push(COL);
+  S.data[COL] = S.data[COL] || new Map();
+  if (typeof Store === 'object' && typeof Store.subscribeAll === 'function') Store.subscribeAll = (base => function () { base.call(this); const db = S.db; if (!db || !db.collection) return; try { S.unsub.push(db.collection(COL).onSnapshot(snap => { S.data[COL] = new Map(snap.docs.map(d => [d.id, d.data()])); S.loaded[COL] = true; rerender(); }, e => console.warn('snapshot', COL, e))); } catch (e) { console.warn('okpq sub', e); } })(Store.subscribeAll);
+  const me = () => (S.session && S.session.workerId) || (isAdmin() ? 'owner' : '');
+  const myUid = () => (S.sbUser && S.sbUser.id) || '';
+  const myName = () => (S.session && S.session.name) || '';
+  const isPMO = () => !!(window.okAccess && window.okAccess.isPMO && window.okAccess.isPMO());
+  const team = () => ((S.settings && S.settings.okPmoTeam) || []).filter(Boolean);
+  const pmo = () => !!S.session && (isAdmin() || isPMO() || team().includes(me()));
+  const nm = id => id === 'owner' ? ((S.settings && S.settings.ownerName) || L('د. طارق', 'Dr. Tarek')) : ((byId('workers', id) || {}).name || '');
+  const owners = p => Array.from(new Set([p.leadId, p.ownerId].concat(p.coOwnerIds || []).filter(Boolean)));
+  const onProj = p => !!p && (owners(p).includes(me()) || (p.team || []).includes(me()));
+  const editable = () => typeof stuCanEdit === 'function' && stuCanEdit();
+  const canAsk = p => editable() && (onProj(p) || pmo());
+  const qs = () => list(COL).filter(q => q && !q.deleted);
+  const ofProj = pid => qs().filter(q => q.projectId === pid).sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
+  const d10 = v => String(v || '').slice(0, 10);
+  const KIND = { vo: ['طلب Variation (VO)', 'Variation request (VO)', 'b'], q: ['استفسار للـ PMO', 'PMO query', ''] };
+  const ST = { open: ['مفتوح', 'Open', 'y'], answered: ['اترد عليه', 'Answered', 'g'], closed: ['مقفول', 'Closed', ''] };
+  const pill = (m, x) => `<span class="okpill ${m[2] || ''}" style="display:inline-flex;align-items:center;border-radius:999px;padding:2px 9px;border:1px solid var(--line);font-size:11.5px;font-weight:600">${esc(L(m[0], m[1]))}${x || ''}</span>`;
+  const push = (ids, t, b, url, tag) => { ids = Array.from(new Set((ids || []).filter(x => x && x !== 'w:' + me()))); if (!ids.length || typeof pushSend !== 'function') return; try { const r = pushSend(ids, String(t).slice(0, 110), String(b || '').slice(0, 280), url, tag); if (r && r.catch) r.catch(() => { }); } catch (e) { /* */ } };
+  const W = ids => ids.filter(Boolean).map(i => i === 'owner' ? 'role:admin' : 'w:' + i);
+  const away = () => { try { return !!(window.okRevEnq && window.okRevEnq.away()); } catch (e) { return false; } };
+  const taskTo = () => { const t = team(); if (!t.length) return { a: '', p: [] }; const a = away() && t.length > 1 ? t[1] : t[0]; return { a, p: t.filter(x => x !== a) }; };
+  const setTask = async (id, open) => { if (!id) return; try { const t = byId('tasks', id); if (!t) return; const isOpen = !['done', 'closed', 'cancelled'].includes(t.status); if (open === isOpen) return; await Store.update('tasks', id, open ? { status: 'open', doneAt: null, updatedAt: nowISO() } : { status: 'done', doneAt: nowISO(), doneByName: myName(), updatedAt: nowISO() }); } catch (e) { /* */ } };
+
+  const CSS = `<style>.okpqc .okpqi{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-top:10px}.okpqi .h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.okpqi .ms{display:flex;flex-direction:column;gap:6px;margin-top:8px}.okpqi .m{border-radius:12px;padding:7px 10px;background:var(--surface-2);font-size:13.5px;line-height:1.55;white-space:pre-wrap}.okpqi .m.pmo{background:color-mix(in srgb,var(--accent,#50b1e7) 12%,var(--surface))}.okpqi .m small{display:block;color:var(--muted);font-size:11.5px;margin-bottom:2px;white-space:normal}.okpqi .rp{display:flex;gap:6px;margin-top:8px;align-items:flex-end;flex-wrap:wrap}.okpqi .rp textarea{flex:1;min-width:200px}.okpqi.hl{box-shadow:0 0 0 2px var(--accent,#50b1e7)}</style>`;
+  const item = (q, withProj) => { const p = byId('projects', q.projectId); const mine = q.byUid === myUid(); const canW = editable() && q.status !== 'closed' && (pmo() || mine || onProj(p));
+    return `<div class="okpqi ${S.route && S.route.view === 'okpq' && S.route.id === q.id ? 'hl' : ''}" id="okpq-${esc(q.id)}"><div class="h"><b class="ltr">${esc(q.no || '')}</b>${pill(KIND[q.kind] || KIND.q)}<b>${esc(q.title || '')}</b>${pill(ST[q.status] || ST.open)}${withProj ? `<a class="small" href="#/projects/${esc(q.projectId)}">📁 ${esc((p && p.name) || q.projectName || '')}${q.projectCode ? ' · ' + esc(q.projectCode) : ''}</a>` : ''}<span style="flex:1"></span>${q.need ? `<span class="tiny muted">${esc(L('مطلوب يوم ', 'needed by '))}${esc(q.need)}</span>` : ''}</div>
+      <div class="ms">${(q.msgs || []).map(m => `<div class="m ${m.who === 'pmo' ? 'pmo' : ''}"><small>${m.who === 'pmo' ? '🗂 ' : ''}${esc(m.byName || '')} · ${esc(d10(m.at))}</small>${esc(m.text || '')}</div>`).join('')}</div>
+      ${canW ? `<div class="rp"><textarea rows="2" dir="auto" data-okpqtx="${esc(q.id)}" placeholder="${esc(pmo() && !mine ? L('رد الـ PMO…', 'The PMO answer…') : L('اكتب إضافة أو سؤال تاني…', 'Write an addition or a follow-up…'))}"></textarea><button type="button" class="btn sm p" data-okpq="reply:${esc(q.id)}">${esc(pmo() && !mine ? L('رد', 'Answer') : L('ابعت', 'Send'))}</button><button type="button" class="btn sm ghost" data-okpq="close:${esc(q.id)}">${esc(L('اقفل', 'Close'))}</button></div>` : ''}</div>`; };
+  const section = p => { const xs = ofProj(p.id); const open = xs.filter(q => q.status === 'open').length;
+    return `${CSS}<div class="card okpqc" data-pid="${esc(p.id)}"><div class="row" style="align-items:center;gap:8px;flex-wrap:wrap"><h3 style="margin:0">${esc(L('VO / استفسارات الـ PMO', 'VO / PMO queries'))}</h3>${open ? pill(ST.open, ' · ' + open) : ''}<span style="flex:1"></span>${canAsk(p) ? `<button type="button" class="btn sm p" data-okpq="new:${esc(p.id)}">+ ${esc(L('اسأل الـ PMO', 'Ask the PMO'))}</button>` : ''}</div>
+      <p class="small muted" style="margin:6px 0 0">${esc(L('استفسار أو طلب Variation على المشروع — بيوصل لفريق الـ PMO كتاسك، والرد بيرجع هنا.', 'A question or a Variation request on this project — it reaches the PMO team as a task, and the answer comes back here.'))}</p>${xs.map(q => item(q, false)).join('') || ''}</div>`; };
+  if (Array.isArray(RENDER_HOOKS)) RENDER_HOOKS.push(() => { try {
+    if (!(S.route && S.route.view === 'projects' && S.route.id)) return; const p = byId('projects', S.route.id); if (!p || !(canAsk(p) || pmo() || ofProj(p.id).length)) return;
+    const anchor = document.querySelector('.okpo[data-pid]'); if (!anchor) return; const html = section(p); const sig = String(html.length) + ':' + ofProj(p.id).map(q => q.updatedAt || '').join(',') + (en() ? 'en' : 'ar');
+    const old = document.querySelector('.okpqc[data-pid]'); const keep = old && Array.from(old.querySelectorAll('[data-okpqtx]')).some(x => x.value);
+    if (old && (old.dataset.sig === sig || keep)) return; if (old) old.remove();
+    const after = anchor.parentElement.querySelector('.okterms') || anchor; after.insertAdjacentHTML('afterend', html); const el = document.querySelector('.okpqc[data-pid]'); if (el) el.dataset.sig = sig; } catch (e) { /* ignore */ } });
+
+  const ask = pid => { const p = byId('projects', pid); if (!p || !canAsk(p)) return;
+    openModal({ title: L(`اسأل الـ PMO — ${p.name}`, `Ask the PMO — ${p.name}`), submitLabel: L('ابعت', 'Send'),
+      body: `<div class="form"><div class="field"><label>${esc(L('النوع', 'Type'))}</label><select name="kind"><option value="q">${esc(L(KIND.q[0], KIND.q[1]))}</option><option value="vo">${esc(L(KIND.vo[0], KIND.vo[1]))}</option></select></div><div class="field"><label>${esc(L('مطلوب يوم (اختياري)', 'Needed by (optional)'))}</label><input name="need" type="date"></div><div class="field full"><label>${esc(L('العنوان', 'Subject'))}</label><input name="title" maxlength="120" dir="auto" required></div><div class="field full"><label>${esc(L('التفاصيل', 'Details'))}</label><textarea name="text" rows="4" dir="auto" required></textarea></div></div><div class="tiny muted" style="margin-top:8px">${esc(L('بيوصل لـ ', 'It goes to '))}${esc(team().map(nm).filter(Boolean).join(L(' و', ' and ')) || L('فريق الـ PMO', 'the PMO team'))}${esc(L(' — من غير أرقام مالية.', ' — no money figures.'))}</div>`,
+      onSubmit: async f => { const v = formData(f); const title = String(v.title || '').trim(), text = String(v.text || '').trim(); if (!title || !text) { toast(L('اكتب العنوان والتفاصيل', 'Write the subject and the details'), 'err'); return false; }
+        const kind = v.kind === 'vo' ? 'vo' : 'q'; const n = ofProj(pid).filter(q => q.kind === kind).length; const id = uid(); const now = nowISO(); const to = taskTo();
+        const tid = to.a ? 'okpq_' + uid() : '';
+        const doc = { id, projectId: pid, projectName: p.name || '', projectCode: p.code || '', kind, no: `${kind === 'vo' ? 'VO' : 'Q'}-${String(n + 1).padStart(3, '0')}`, title, need: v.need || '', status: 'open', msgs: [{ id: uid(), who: 'team', by: me(), byName: myName(), at: now, text }], by: me(), byName: myName(), byUid: myUid(), at: now, updatedAt: now, taskId: tid };
+        try { await Store.save(COL, doc); } catch (e) { toast(L('ماتبعتش — جرّب تاني', 'Not sent — try again'), 'err'); return false; }
+        if (tid) { try { await Store.save('tasks', { id: tid, title: L(`${kind === 'vo' ? 'طلب VO' : 'استفسار PMO'} — ${p.name}: ${title}`, `${kind === 'vo' ? 'VO request' : 'PMO query'} — ${p.name}: ${title}`), desc: text, deptId: null, assigneeId: to.a, participants: to.p.map(x => ({ id: x, name: nm(x) })), projectId: pid, okPq: id, dueDate: v.need || null, priority: 'normal', status: 'open', kind: 'task', source: 'okpq', createdBy: (S.session && S.session.id) || null, createdByName: myName(), createdAt: now, updatedAt: now, assignedAt: now, link: '#/okpq/' + id }, { silent: true }); } catch (e) { console.warn('okpq task', e); } }
+        push(W(team().filter(x => x !== me())), L(`${kind === 'vo' ? 'طلب VO' : 'استفسار'} — ${p.name}`, `${kind === 'vo' ? 'VO request' : 'Query'} — ${p.name}`), `${myName()}: ${title}`, './#/okpq/' + id, 'okpq-' + id);
+        toast(L('اتبعت للـ PMO ✓', 'Sent to the PMO ✓')); if (typeof rerender === 'function') rerender(); return true; } }); };
+  document.addEventListener('click', async ev => { const t = ev.target.closest && ev.target.closest('[data-okpq]'); if (!t) return; ev.preventDefault();
+    const [op, id] = t.dataset.okpq.split(':'); if (op === 'new') return ask(id); if (op === 'f') { S.ui = S.ui || {}; S.ui.okpq = id; rerender(); return; }
+    const q = byId(COL, id); if (!q) return; const p = byId('projects', q.projectId); const mine = q.byUid === myUid(); if (!editable() || !(pmo() || mine || onProj(p))) return; const now = nowISO();
+    if (op === 'reply') { const box = document.querySelector(`[data-okpqtx="${CSS.escape ? CSS.escape(id) : id}"]`); const text = String((box && box.value) || '').trim(); if (!text) { toast(L('اكتب الرد', 'Write the answer'), 'err'); return; }
+      const who = pmo() && !mine ? 'pmo' : 'team'; const msgs = (q.msgs || []).concat([{ id: uid(), who, by: me(), byName: myName(), at: now, text }]);
+      const status = who === 'pmo' ? 'answered' : 'open'; try { await Store.update(COL, q.id, { msgs, status, updatedAt: now }); } catch (e) { toast(L('ماتبعتش — جرّب تاني', 'Not sent — try again'), 'err'); return; } if (box) box.value = '';
+      await setTask(q.taskId, status === 'open');
+      if (who === 'pmo') push(W([q.by].concat(owners(p || {})).filter(x => x !== me())), L(`رد الـ PMO — ${q.no} · ${q.projectName || ''}`, `PMO answer — ${q.no} · ${q.projectName || ''}`), text, './#/projects/' + q.projectId, 'okpq-' + q.id);
+      else push(W(team().filter(x => x !== me())), L(`إضافة على ${q.no} — ${q.projectName || ''}`, `Follow-up on ${q.no} — ${q.projectName || ''}`), `${myName()}: ${text}`, './#/okpq/' + q.id, 'okpq-' + q.id);
+      toast(L('اتبعت ✓', 'Sent ✓')); rerender(); return; }
+    if (op === 'close') { if (!(await confirmDlg(L(`تقفل ${q.no}؟`, `Close ${q.no}?`), L('اقفل', 'Close'), false))) return; try { await Store.update(COL, q.id, { status: 'closed', closedAt: now, closedBy: myName(), updatedAt: now }); } catch (e) { return; } await setTask(q.taskId, false); toast(L('اتقفل', 'Closed')); rerender(); }
+  });
+
+  /* ---------- the PMO page: every query and VO across the projects ---------- */
+  const page = r => { if (!pmo()) return `<div class="banner warn">${esc(L('الصفحة دي لفريق الـ PMO', 'This page is for the PMO team'))}</div>`;
+    S.ui = S.ui || {}; let f = S.ui.okpq || 'open'; if (r && r.id) { const q0 = byId(COL, r.id); if (q0 && S.ui.okpqJump !== r.id) { S.ui.okpqJump = r.id; f = S.ui.okpq = q0.status || 'open'; setTimeout(() => { const el = document.getElementById('okpq-' + r.id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 120); } }
+    const all = qs().sort((a, b) => String(b.updatedAt || b.at || '').localeCompare(String(a.updatedAt || a.at || ''))); const xs = all.filter(q => (q.status || 'open') === f);
+    const tabs = Object.keys(ST).map(k => `<button type="button" class="btn sm ${f === k ? 'p' : 'ghost'}" data-okpq="f:${k}">${esc(L(ST[k][0], ST[k][1]))} · ${all.filter(q => (q.status || 'open') === k).length}</button>`).join('');
+    const groups = {}; xs.forEach(q => { (groups[q.projectId] = groups[q.projectId] || []).push(q); });
+    return `${CSS}<div class="okpqc"><div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:6px">${tabs}</div>${Object.keys(groups).map(pid => { const p = byId('projects', pid); const g = groups[pid]; return `<div class="card" style="margin-top:12px"><h3 style="margin:0 0 4px">📁 ${esc((p && p.name) || g[0].projectName || '')}${g[0].projectCode ? ` <span class="tiny muted ltr">${esc(g[0].projectCode)}</span>` : ''}</h3>${g.map(q => item(q, false)).join('')}</div>`; }).join('') || `<div class="card"><div class="okempty" style="padding:18px;text-align:center" >${esc(L('مفيش حاجة هنا', 'Nothing here'))}</div></div>`}</div>`; };
+  if (typeof EXTRA_VIEWS === 'object') EXTRA_VIEWS.okpq = r => page(r);
+  if (typeof EXTRA_TITLES === 'object') EXTRA_TITLES.okpq = () => ({ title: L('VO والاستفسارات', 'VO & queries'), sub: L('استفسارات وطلبات الـ Variation من فرق المشاريع — الرد بيرجع جوه المشروع', 'Queries and Variation requests from the project teams — the answer goes back inside the project') });
+  if (typeof VIEW_TITLES === 'object') try { Object.defineProperty(VIEW_TITLES, 'okpq', { configurable: true, enumerable: true, get: () => L('VO والاستفسارات', 'VO & queries') }); } catch (e) { /* */ }
+  if (Array.isArray(NAV) && !NAV.some(n => n && n.id === 'okpq')) { const i = NAV.findIndex(n => n && n.id === 'okpmo'); NAV.splice(i >= 0 ? i + 1 : NAV.length, 0, { id: 'okpq', get label() { return L('VO والاستفسارات', 'VO & queries'); }, get short() { return L('الاستفسارات', 'Queries'); }, icon: 'chat', count: () => { try { return pmo() ? qs().filter(q => q.status === 'open').length : 0; } catch (e) { return 0; } }, countCls: 'warn' }); }
+  if (typeof ROLE_VIEWS === 'object') Object.keys(ROLE_VIEWS).forEach(r => { if (Array.isArray(ROLE_VIEWS[r]) && !ROLE_VIEWS[r].includes('okpq')) ROLE_VIEWS[r] = ROLE_VIEWS[r].concat(['okpq']); });
+  if (typeof canSee === 'function') canSee = (base => function (v) { if (v === 'okpq') return pmo(); return base.apply(this, arguments); })(canSee);
+  if (typeof OEKO_I18N === 'object') Object.assign(OEKO_I18N, { 'VO والاستفسارات': 'VO & queries' });
 })();
